@@ -81,9 +81,11 @@ def _send_recv_msg(host, broadcast, msg, receive=True):
 
     if broadcast:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        host = '255.255.255.255'
+        _host = host or '255.255.255.255'
+    else:
+        _host = host
 
-    sock.sendto(msg.encode('utf-8'), (host, DDP_PORT))
+    sock.sendto(msg.encode('utf-8'), (_host, DDP_PORT))
 
     if receive:
         return sock.recvfrom(1024)
@@ -122,3 +124,44 @@ def launch(host, credential, broadcast=None):
     """Launch."""
     msg = get_ddp_launch_message(credential)
     _send_msg(host, broadcast, msg)
+
+
+class Discovery:
+    """Device Discovery server."""
+
+    def __init__(self):
+        """Init."""
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.settimeout(3.0)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        self.msg = get_ddp_search_message()
+        self.host = '255.255.255.255'
+        self.ps_list = []
+
+    def search(self):
+        """Search for Devices."""
+        finished = False
+        try:
+            self.send()
+        except (socket.error, socket.timeout):
+            self.sock.close
+            return
+        while finished is False:
+            try:
+                device = self.receive()
+                if device not in self.ps_list:
+                    self.ps_list.append(device)
+            except (socket.error, socket.timeout):
+                return self.ps_list
+
+    def send(self):
+        """Broadcast Message."""
+        self.sock.sendto(self.msg.encode('utf-8'), (self.host, DDP_PORT))
+
+    def receive(self):
+        """Receive Message."""
+        data, addr = self.sock.recvfrom(1024)
+        if data is not None:
+            data = parse_ddp_response(data.decode('utf-8'))
+            data[u'host-ip'] = addr[0]
+            return data
