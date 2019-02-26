@@ -4,6 +4,7 @@ from __future__ import print_function
 import binascii
 import logging
 import socket
+import time
 
 from construct import (Bytes, Const, Int32ul, Padding, Struct)
 from Cryptodome.Cipher import AES, PKCS1_OAEP
@@ -30,7 +31,9 @@ def _get_public_key_rsa():
 
 class Connection(object):
     """The TCP connection class."""
+
     def __init__(self, host, credential=None, port=997):
+        """Init Class."""
         self._host = host
         self._credential = credential
         self._port = port
@@ -57,13 +60,17 @@ class Connection(object):
         self._reset_crypto_init_vector()
         self._random_seed = None
 
-    def login(self):
+    def login(self, pin=None):
         """Login."""
         _LOGGER.debug('Login')
-        self._send_login_request()
+        if pin is None:
+            self._send_login_request()
+        else:
+            self._send_login_request(pin)
         msg = self._recv_msg()
         msg = self._decipher.decrypt(msg)
         _LOGGER.debug('RX: %s %s', len(msg), binascii.hexlify(msg))
+        return self._handle_response('login', msg)
 
     def standby(self):
         """Request standby."""
@@ -72,6 +79,7 @@ class Connection(object):
         msg = self._recv_msg()
         msg = self._decipher.decrypt(msg)
         _LOGGER.debug('RX: %s %s', len(msg), binascii.hexlify(msg))
+        return self._handle_response('standby', msg)
 
     def start_title(self, title_id):
         """Start an application/game title."""
@@ -80,25 +88,57 @@ class Connection(object):
         msg = self._recv_msg()
         msg = self._decipher.decrypt(msg)
         _LOGGER.debug('RX: %s %s', len(msg), binascii.hexlify(msg))
+        return self._handle_response('start_title', msg)
 
     def remote_control(self, op, hold_time=0):
-        """Send reomte control command."""
+        """Send remote control command."""
         _LOGGER.debug('Remote control: %s (%s)', op, hold_time)
         self._send_remote_control_request(op, hold_time)
-        #msg = self._recv_msg()
-        #msg = self._decipher.decrypt(msg)
-        #_LOGGER.debug('RX: %s %s', len(msg), binascii.hexlify(msg))
+
+    def send_status(self):
+        """Send client connection status."""
+        _LOGGER.debug('Sending Status: Connected')
+        self._send_status()
+        msg = self._recv_msg()
+        msg = self._decipher.decrypt(msg)
+        _LOGGER.debug('RX: %s %s', len(msg), binascii.hexlify(msg))
+        return self._handle_response('send_status', msg)
+
+    def _handle_response(self, command, msg):
+        """Return Pass/Fail for sent message."""
+        pass_response = {
+            'send_status': 18,
+            'remote_control': 18,
+            'start_title': 11,
+            'standby': 27,
+            'login': [0, 17]
+        }
+
+        if command == 'login':
+            response_byte = msg[8]
+            if response_byte in pass_response['login']:
+                _LOGGER.debug("Login Successful")
+                return True
+            else:
+                _LOGGER.debug("Login Failed")
+                return False
+        else:
+            response_byte = msg[4]
+
+        _LOGGER.debug("RECV: %s for Command: %s", response_byte, command)
+        if pass_response[command] != response_byte:
+            _LOGGER.warning("Command: %s Failed", command)
+            return False
+        return True
 
     def _send_msg(self, msg, encrypted=False):
         _LOGGER.debug('TX: %s %s', len(msg), binascii.hexlify(msg))
         if encrypted:
             msg = self._cipher.encrypt(msg)
-            _LOGGER.debug('TX(cypted): %s %s', len(msg), binascii.hexlify(msg))
         self._socket.send(msg)
 
     def _recv_msg(self, encrypted=False):
         msg = self._socket.recv(1024)
-        _LOGGER.debug('RX: %s %s', len(msg), binascii.hexlify(msg))
         return msg
 
     def _set_crypto_init_vector(self, init_vector):
@@ -150,7 +190,7 @@ class Connection(object):
         msg = fmt.build({'key': key, 'seed': seed})
         self._send_msg(msg)
 
-    def _send_login_request(self):
+    def _send_login_request(self, pin=None):
         fmt = Struct(
             'length' / Const(b'\x80\x01\x00\x00'),
             'type' / Const(b'\x1e\x00\x00\x00'),
@@ -163,12 +203,17 @@ class Connection(object):
             'pin_code' / Bytes(16),
         )
 
+        if pin is None:
+            self.pin = b''
+        else:
+            self.pin = pin.encode()
+
         config = {
             'app_label': b'PlayStation'.ljust(256, b'\x00'),
             'account_id': self._credential.encode().ljust(64, b'\x00'),
             'os_version': b'4.4'.ljust(16, b'\x00'),
-            'model': b'PS4 Waker'.ljust(16, b'\x00'),
-            'pin_code': b''.ljust(16, b'\x00'),
+            'model': b'Home-Assistant'.ljust(16, b'\x00'),
+            'pin_code': self.pin.ljust(16, b'\x00'),
         }
 
         _LOGGER.debug('config %s', config)
@@ -204,6 +249,35 @@ class Connection(object):
             'op' / Int32ul,
             'hold_time' / Int32ul,
         )
+        # Prebuild required remote messages."""
+        msg_open_rc = fmt.build({'op': 1024, 'hold_time': 0})
+        msg_key_off = fmt.build({'op': 256, 'hold_time': 0})
+        msg_close_rc = fmt.build({'op': 2048, 'hold_time': 0})
+        msg_command = fmt.build({'op': op, 'hold_time': hold_time})
 
-        msg = fmt.build({'op': op, 'hold_time': hold_time})
+        # Send Messages
+        self._send_msg(msg_open_rc, encrypted=True)
+        time.sleep(0.1)
+        self._send_msg(msg_command, encrypted=True)
+        self._send_msg(msg_key_off, encrypted=True)
+        time.sleep(0.4)
+        self._send_msg(msg_close_rc, encrypted=True)
+        time.sleep(0.1)
+
+        """recv_msg() is blocking. Is slow returning msg.
+        Needs async/thread to receive callback."""
+        # msg = self._recv_msg()
+        # msg = self._decipher.decrypt(msg)
+        # _LOGGER.debug('RX: %s %s', len(msg), binascii.hexlify(msg))
+        # return self._handle_response('remote_control', msg)
+
+    def _send_status(self):
+        fmt = Struct(
+            'length' / Const(b'\x0c\x00\x00\x00'),
+            'type' / Const(b'\x14\x00\x00\x00'),
+            'status' / Const(b'\x00\x00\x00\x00'),
+            'dummy' / Padding(4),
+        )
+
+        msg = fmt.build({})
         self._send_msg(msg, encrypted=True)
