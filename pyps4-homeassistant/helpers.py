@@ -18,7 +18,8 @@ class Helper:
         from pyps4_homeassistant import ddp
 
         _LOGGER.debug("Searching for PS4 Devices")
-        devices = ddp.search()
+        discover = ddp.Discovery()
+        devices = discover.search()
         for device in devices:
             _LOGGER.debug("Found PS4 at: %s", device['host-ip'])
         return devices
