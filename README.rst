@@ -2,7 +2,7 @@ pyps4-homeassistant
 
 ============================
 
-|BuildStatus| |PypiVersion| |PyPiPythonVersions| |Coveralls| |CodeClimate|
+|PypiVersion| |PyPiPythonVersions|
 
 Purpose
 ----------
@@ -47,15 +47,8 @@ References
 .. _ps4-waker: https://github.com/dhleong/ps4-waker
 
 
-.. |BuildStatus| image:: https://travis-ci.org/hthiery/python-ps4.png?branch=master
-                 :target: https://travis-ci.org/hthiery/python-ps4
 .. |PyPiVersion| image:: https://badge.fury.io/py/pyps4-homeassistant.svg
                  :target: http://badge.fury.io/py/pyps4-homeassistant
 .. |PyPiPythonVersions| image:: https://img.shields.io/pypi/pyversions/pyps4-homeassistant.svg
                         :alt: Python versions
                         :target: http://badge.fury.io/py/pyps4-homeassistant
-.. |Coveralls|   image:: https://coveralls.io/repos/github/hthiery/python-ps4/badge.svg?branch=master
-                 :target: https://coveralls.io/github/hthiery/python-ps4?branch=master
-.. |CodeClimate| image:: https://api.codeclimate.com/v1/badges/193b80aebe76c6d8a2a2/maintainability
-				 :target: https://codeclimate.com/github/hthiery/python-ps4/maintainability
-				 :alt: Maintainability
