@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
+from threading import Timer
 import json
 import logging
 import time
@@ -15,6 +16,42 @@ _LOGGER = logging.getLogger(__name__)
 def open_credential_file(filename):
     """Open credential file."""
     return json.load(open(filename))
+
+
+class StatusTimer():
+    """Status Thread Class."""
+
+    def __init__(self, seconds, target):
+        """Init."""
+        self._should_continue = False
+        self.is_running = False
+        self.seconds = seconds
+        self.target = target
+        self.thread = None
+
+    def _handle_target(self):
+        self.is_running = True
+        self.target()
+        self.is_running = False
+        self._start_timer()
+
+    def _start_timer(self):
+        """Restart Timer."""
+        if self._should_continue:
+            self.thread = Timer(self.seconds, self._handle_target)
+            self.thread.start()
+
+    def start(self):
+        """Start Timer."""
+        if not self._should_continue and not self.is_running:
+            self._should_continue = True
+            self._start_timer()
+
+    def cancel(self):
+        """Cancel Timer."""
+        if self.thread is not None:
+            self._should_continue = False
+            self.thread.cancel()
 
 
 class Ps4(object):
@@ -38,6 +75,8 @@ class Ps4(object):
         self._socket = None
         self._credential = None
         self._connected = False
+        self._status_timer = None
+        self._keep_alive = False
 
         if credential:
             self._credential = credential
@@ -52,17 +91,32 @@ class Ps4(object):
         if self.is_standby():
             raise NotReady
 
-        if not self._connected:
+        if self._connected is False:
             self.wakeup()
             self.launch()
             time.sleep(0.5)
             self._connection.connect()
-            self._connected = True
+            login = self._connection.login()
+            if login is True:
+                self._connected = True
+                if self._keep_alive is True:
+                    _LOGGER.debug("Keep Alive feature enabled")
+                    self._status_timer = StatusTimer(30, self.send_status)
+                    self._status_timer.start()
 
     def close(self):
         """Close the connection to the PS4."""
         self._connection.disconnect()
         self._connected = False
+        self._keep_alive = False
+        if self._status_timer is not None:
+            self._status_timer.cancel()
+            self._status_timer = None
+
+    def is_keepalive(self):
+        """Check if keep alive should be sent."""
+        if self._keep_alive is False:
+            self.close()
 
     def get_status(self):
         """Get current status info.
@@ -91,7 +145,6 @@ class Ps4(object):
     def standby(self):
         """Standby."""
         self.open()
-        self._connection.login()
         self._connection.standby()
         self.close()
 
@@ -101,13 +154,12 @@ class Ps4(object):
         `title_id`: title to start
         """
         self.open()
-        self._connection.login()
         self._connection.start_title(title_id)
         if running_id is not None:
             self._connection.remote_control(16, 0)
         elif running_id == title_id:
             _LOGGER.warning("Title: %s already started", title_id)
-        self.close()
+        self.is_keepalive()
 
     def remote_control(self, button_name, hold_time=0):
         """Send a remote control button press.
@@ -128,11 +180,6 @@ class Ps4(object):
         buttons.append(button_name)
 
         self.open()
-        is_login = self._connection.login()
-        while is_login is not True:
-            pass
-        time.sleep(0.4)
-        self._connection.remote_control(1024, 0)
 
         for button in buttons:
             try:
@@ -154,11 +201,14 @@ class Ps4(object):
                 raise UnknownButton
 
             self._connection.remote_control(operation, hold_time)
-            self._connection.remote_control(256, 0)
-            time.sleep(0.4)
+        self.is_keepalive()
 
-        self._connection.remote_control(2048, 0)
-        self.close()
+    def send_status(self):
+        """Send connection status to PS4."""
+        if self._connected is True:
+            is_loggedin = self._connection.send_status()
+            if is_loggedin is False:
+                self.close()
 
     def get_host_status(self):
         """Get PS4 status code.
@@ -238,6 +288,7 @@ class Ps4(object):
             url = self.get_ps_store_url(title, region)
         req = None
         match_id = {}
+        match_title = {}
         type_list = ['Full Game', 'Game', 'PSN Game', 'Bundle', 'App']
         try:
             req = requests.get(url[0], headers=url[1])
@@ -249,24 +300,42 @@ class Ps4(object):
             _LOGGER.warning("PS cover art request failed, %s", warning)
             return
 
+        # Filter through each item in search request
+
+        # Filter each item by prioritized type
         for game_type in type_list:
             for item in result:
                 has_parent = False
+
+                # Set each item as Game object
                 game = self._game(item)
                 if self._is_game_type(game, game_type):
                     if game['parent'] is not None:
                         has_parent = True
                     parse_id = self._parse_id(game)
+                    title_parse = game['name']
+
+                    # If passed SKU matches object SKU
                     if parse_id == title_id:
-                        title_parse = game['name']
                         cover_art = self._get_cover(game)
                         if cover_art is not None:
+
+                            # If true likely a bundle, dlc, deluxe edition
                             if has_parent is False:
                                 match_id.update({title_parse: cover_art})
+
+                            # Most likely the intended item so return
                             if title.upper() == title_parse.upper():
                                 return title_parse, cover_art
 
-        return self._get_similar(title, match_id)
+                    # Last resort filter if SKU wrong, but title matches.
+                    elif title.upper() == title_parse.upper():
+                        cover_art = self._get_cover(game)
+                        if cover_art is not None:
+                            if has_parent is False:
+                                match_title.update({title_parse: cover_art})
+
+        return self._get_similar(title, match_id, match_title)
 
     def _game(self, item):
         """Create game object."""
@@ -298,16 +367,23 @@ class Ps4(object):
             return cover_art
         return
 
-    def _get_similar(self, title, match_id):
+    def _get_similar(self, title, match_id, match_title):
         """Return similar title."""
-        if match_id is not None:
-            _LOGGER.debug("Found similar titles: %s", match_id)
+        if match_id:
+            _LOGGER.info("Found similar titles: %s", match_id)
             for _title, url in match_id.items():
                 if title.upper() in _title.upper():
-                    _LOGGER.debug("Using matching title: %s", _title)
+                    _LOGGER.info("Using similar title: %s", _title)
                     cover_art = url
                     return _title, cover_art
-            return None, None
+        elif match_title:
+            _LOGGER.warning(
+                "Found matching titles with incorrect SKU: %s", match_title)
+            for _title, url in match_title.items():
+                    _LOGGER.warning("Using matching title: %s", _title)
+                    cover_art = url
+                    return _title, cover_art
+        return None, None
 
 
 class Credentials:
@@ -358,11 +434,14 @@ class Credentials:
                 self.DDP_PORT, error)
             return
 
-    def listen(self):
+    def listen(self, timeout=120):
         """Listen and respond to requests."""
+        start_time = time.time()
         sock = self.sock
         pings = 0
         while pings < 10:
+            if timeout < time.time() - start_time:
+                return
             try:
                 response = sock.recvfrom(1024)
             except socket.error:
