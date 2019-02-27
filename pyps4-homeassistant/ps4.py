@@ -144,6 +144,8 @@ class Ps4(object):
 
     def standby(self):
         """Standby."""
+        if self._connected is True:
+            self.close()
         self.open()
         self._connection.standby()
         self.close()
