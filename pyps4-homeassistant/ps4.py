@@ -76,7 +76,7 @@ class Ps4(object):
         self._credential = None
         self._connected = False
         self._status_timer = None
-        self._keep_alive = False
+        self.keep_alive = False
 
         if credential:
             self._credential = credential
@@ -99,7 +99,7 @@ class Ps4(object):
             login = self._connection.login()
             if login is True:
                 self._connected = True
-                if self._keep_alive is True:
+                if self.keep_alive is True:
                     _LOGGER.debug("Keep Alive feature enabled")
                     self._status_timer = StatusTimer(30, self.send_status)
                     self._status_timer.start()
@@ -108,14 +108,14 @@ class Ps4(object):
         """Close the connection to the PS4."""
         self._connection.disconnect()
         self._connected = False
-        self._keep_alive = False
+        self.keep_alive = False
         if self._status_timer is not None:
             self._status_timer.cancel()
             self._status_timer = None
 
     def is_keepalive(self):
         """Check if keep alive should be sent."""
-        if self._keep_alive is False:
+        if self.keep_alive is False:
             self.close()
 
     def get_status(self):
