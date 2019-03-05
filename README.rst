@@ -12,8 +12,8 @@ Integration with Home-Assistant.
 Compatibility
 ----------
 Tested on:
-Python 3.5
-Home-Assistant/Hass.IO 0.87
+Python 3.5/3.6/3.7
+Home-Assistant/Hass.IO 0.89
 
 
 **This package can be used as a standalone api. It does not require the use of Home Assistant.
@@ -32,8 +32,6 @@ Must run command on python path if no access:
 To Do List:
 ----------
 - Port TCP and UDP functions to Asyncio.
-- Keep alive TCP login.
-- Support multiple PS4s.
 
 
 
