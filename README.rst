@@ -29,6 +29,10 @@ Must run command on python path if no access:
 
 "sudo setcap 'cap_net_bind_service=+ep' /usr/bin/python3.5"
 
+Cover Art Issues
+----------
+If you find that media art cannot be found. Please post an issue with your Region, Country, Title of game, an ID of game.
+
 To Do List:
 ----------
 - Port TCP and UDP functions to Asyncio.
