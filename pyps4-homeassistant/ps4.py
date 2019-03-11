@@ -311,10 +311,20 @@ class Ps4(object):
 
                 # Set each item as Game object
                 game = self._game(item)
-                if self._is_game_type(game, game_type):
+
+                # Get Parent attr
+                if 'parent' in game:
                     if game['parent'] is not None:
                         has_parent = True
-                    parse_id = self._parse_id(game)
+                        parent = game['parent']
+                        parent_id = self._parse_id(parent['id'])
+                        parent_title = parent['name']
+                        parent_art = parent['url']
+                        if parent_id == title_id:
+                            return parent_title, parent_art
+
+                if self._is_game_type(game, game_type):
+                    parse_id = self._parse_id(game['default-sku-id'])
                     title_parse = game['name']
 
                     # If passed SKU matches object SKU
@@ -352,9 +362,9 @@ class Ps4(object):
             if 'default-sku-id' in game:
                 return True
 
-    def _parse_id(self, game):
+    def _parse_id(self, _id):
         """Parse SKU to simplified ID."""
-        full_id = game['default-sku-id']
+        full_id = _id
         full_id = full_id.split("-")
         full_id = full_id[1]
         full_id = full_id.split("_")
