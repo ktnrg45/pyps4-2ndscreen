@@ -257,6 +257,7 @@ class Ps4(object):
     def get_ps_store_url(self, title, region):
         """Get URL for title search in PS Store."""
         import urllib
+        import re
 
         regions = {'R1': 'US', 'R2': 'GB', 'R3': 'HK', 'R4': 'AU', 'R5': 'IN'}
 
@@ -274,6 +275,7 @@ class Ps4(object):
         }
 
         if title is not None:
+            title = re.sub('[^A-Za-z0-9]+', ' ', title)
             title = urllib.parse.quote(title.encode('utf-8'))
             _url = 'https://store.playstation.com/'\
                 'valkyrie-api/en/{0}/19/faceted-search/'\
@@ -285,12 +287,14 @@ class Ps4(object):
     def get_ps_store_data(self, title, title_id, region, url=None):
         """Store cover art from PS store in games map."""
         import requests
+        import re
 
         if url is None:
             url = self.get_ps_store_url(title, region)
         req = None
         match_id = {}
         match_title = {}
+        title = re.sub('[^A-Za-z0-9]+', ' ', title)
         type_list = ['Full Game', 'Game', 'PSN Game', 'Bundle', 'App']
         try:
             req = requests.get(url[0], headers=url[1])
