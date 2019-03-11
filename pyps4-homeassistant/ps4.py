@@ -341,11 +341,11 @@ class Ps4(object):
                                 match_id.update({title_parse: cover_art})
 
                             # Most likely the intended item so return
-                            if title.upper() == title_parse.upper():
+                            if title.upper() == self._format_title(title_parse):
                                 return title_parse, cover_art
 
                     # Last resort filter if SKU wrong, but title matches.
-                    elif title.upper() == title_parse.upper():
+                    elif title.upper() == self._format_title(title_parse):
                         cover_art = self._get_cover(game)
                         if cover_art is not None:
                             if has_parent is False:
@@ -375,6 +375,14 @@ class Ps4(object):
         parse_id = full_id[0]
         return parse_id
 
+    def _format_title(self, title):
+        """Format Title."""
+        import re
+
+        title = re.sub('[^A-Za-z0-9]+', ' ', title)
+        title = title.upper()
+        return title
+
     def _get_cover(self, game):
         """Get cover art."""
         if 'thumbnail-url-base' in game:
@@ -388,7 +396,7 @@ class Ps4(object):
         if match_id:
             _LOGGER.info("Found similar titles: %s", match_id)
             for _title, url in match_id.items():
-                if title.upper() in _title.upper():
+                if title.upper() in self._format_title(_title):
                     _LOGGER.info("Using similar title: %s", _title)
                     cover_art = url
                     return _title, cover_art
