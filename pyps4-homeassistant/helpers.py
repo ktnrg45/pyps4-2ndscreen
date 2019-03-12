@@ -13,13 +13,13 @@ class Helper:
         """Init Class."""
         pass
 
-    def has_devices(self):
+    def has_devices(self, host=None):
         """Return if there are devices that can be discovered."""
         from pyps4_homeassistant import ddp
 
         _LOGGER.debug("Searching for PS4 Devices")
         discover = ddp.Discovery()
-        devices = discover.search()
+        devices = discover.search(host)
         for device in devices:
             _LOGGER.debug("Found PS4 at: %s", device['host-ip'])
         return devices
