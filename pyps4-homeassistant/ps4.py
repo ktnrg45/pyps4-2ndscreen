@@ -299,6 +299,9 @@ class Ps4(object):
         try:
             req = requests.get(url[0], headers=url[1])
             result = req.json()['included']
+            if not result:
+                title = title.split(' ')
+                return self.get_ps_store_data(title[0], title_id, region, url=None)
         except requests.exceptions.HTTPError as warning:
             _LOGGER.warning("PS cover art HTTP error, %s", warning)
             return
