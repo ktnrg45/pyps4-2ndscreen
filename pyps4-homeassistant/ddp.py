@@ -132,7 +132,7 @@ class Discovery:
     def __init__(self):
         """Init."""
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.settimeout(3.0)
+        self.sock.settimeout(6.0)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         self.msg = get_ddp_search_message()
         self.host = '255.255.255.255'
@@ -154,9 +154,11 @@ class Discovery:
             except (socket.error, socket.timeout):
                 return self.ps_list
 
-    def send(self):
+    def send(self, host=None):
         """Broadcast Message."""
-        self.sock.sendto(self.msg.encode('utf-8'), (self.host, DDP_PORT))
+        if host is None:
+            host = self.host
+        self.sock.sendto(self.msg.encode('utf-8'), (host, DDP_PORT))
 
     def receive(self):
         """Receive Message."""
