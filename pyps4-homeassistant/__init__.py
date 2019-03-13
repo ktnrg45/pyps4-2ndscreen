@@ -3,3 +3,4 @@ from .connection import *
 from .ddp import *
 from .errors import *
 from .ps4 import *
+from .media_art import *
