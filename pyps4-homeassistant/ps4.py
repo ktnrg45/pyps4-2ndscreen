@@ -254,16 +254,14 @@ class Ps4(object):
         """Return the name of the running application."""
         return self.get_status()['running-app-name']
 
-    def get_ps_store_url(self, title, region, sub_region='en'):
+    def get_ps_store_url(self, title, region):
         """Get URL for title search in PS Store."""
         import urllib
         import re
 
         regions = {'R1': 'US', 'R2': 'GB', 'R3': 'HK', 'R4': 'AU', 'R5': 'IN'}
 
-        if sub_region == 'ru':
-            region = 'ru'
-        elif region not in regions:
+        if region not in regions:
             _LOGGER.error('Region: %s is not valid', region)
             return
         else:
@@ -280,19 +278,19 @@ class Ps4(object):
             title = re.sub('[^A-Za-z0-9]+', ' ', title)
             title = urllib.parse.quote(title.encode('utf-8'))
             _url = 'https://store.playstation.com/'\
-                'valkyrie-api/{2}/{0}/19/faceted-search/'\
-                '{1}?query={1}&platform=ps4'.format(region, title, sub_region)
+                'valkyrie-api/en/{0}/19/faceted-search/'\
+                '{1}?query={1}&platform=ps4'.format(region, title)
 
         url = [_url, headers]
         return url
 
-    def get_ps_store_data(self, title, title_id, region, url=None, sub_region='en'):
+    def get_ps_store_data(self, title, title_id, region, url=None):
         """Store cover art from PS store in games map."""
         import requests
         import re
 
         if url is None:
-            url = self.get_ps_store_url(title, region, sub_region)
+            url = self.get_ps_store_url(title, region)
         req = None
         match_id = {}
         match_title = {}
@@ -356,11 +354,7 @@ class Ps4(object):
                             if has_parent is False:
                                 match_title.update({title_parse: cover_art})
 
-        s_title, s_art = self._get_similar(title, match_id, match_title)
-        if s_title or s_art is None:
-            if region == 'R5':
-                return self.get_ps_store_data(title, title_id, region, url=None, sub_region='ru')
-        return s_title, s_art
+        return self._get_similar(title, match_id, match_title)
 
     def _game(self, item):
         """Create game object."""
