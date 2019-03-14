@@ -148,7 +148,7 @@ def get_ps_store_data(title, title_id, region, url=None, reformat=False):
     s_title, s_art = _get_similar(title, match_id, match_title, reformat)
     if s_title is None or s_art is None:
         if reformat is False:
-            return get_ps_store_data(TITLE, TITLE_ID, region, reformat=True)
+            return get_ps_store_data(title, title_id, region, reformat=True)
     return s_title, s_art
 
 
