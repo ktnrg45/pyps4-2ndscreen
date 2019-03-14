@@ -10,6 +10,7 @@ from .connection import Connection
 from .ddp import get_status, launch, wakeup
 from .errors import NotReady, UnknownButton, LoginFailed
 from .media_art import get_ps_store_data as ps_data
+from .media_art import search_all
 
 _LOGGER = logging.getLogger(__name__)
 
