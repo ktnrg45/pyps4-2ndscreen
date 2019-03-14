@@ -28,12 +28,13 @@ COUNTRIES = {"Argentina": "en/ar", "Australia": "en/au", "Austria": "de/at",
              "United Arab Emirates": "en/ae", "United States": "en/us",
              "United Kingdom": "en/gb"}
 
-def search_all():
+def search_all(title, title_id):
+    """Search all databases."""
     for x in COUNTRIES:
         region = COUNTRIES[x]
-        (title, art) = get_ps_store_data(TITLE, TITLE_ID, region)
-        if title and art:
-            return title, art
+        (_title, art) = get_ps_store_data(title, title_id, region)
+        if _title and art:
+            return _title, art
 
 
 def get_ps_store_url(title, region, reformat=False):
