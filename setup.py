@@ -2,10 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from setuptools import setup, find_packages
-import os
-import re
-import subprocess
-import .const as const
+from .const import *
 
 name = 'pyps4_homeassistant'
 
