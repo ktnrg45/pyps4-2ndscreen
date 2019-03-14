@@ -107,15 +107,15 @@ def get_ps_store_data(title, title_id, region, url=None, reformat=False):
                     parent = game['parent']
                     parent_id = _parse_id(parent['id'])
                     parent_title = parent['name']
-                    parent_title = _format_title(parent_title, reformat)
+                    parent_title_f = _format_title(parent_title, reformat)
                     parent_art = parent['url']
                     if parent_id == title_id:
                         _LOGGER.debug("Parent ID Match")
                         return parent_title, parent_art
-                    if title.upper() == parent_title:
+                    if title.upper() == parent_title_f:
                         _LOGGER.debug("Parent Title Match")
                         return parent_title, parent_art
-                    if title.upper() in parent_title:
+                    if title.upper() in parent_title_f:
                         _LOGGER.debug("Parent Similar Title Match")
                         return parent_title, parent_art
 
