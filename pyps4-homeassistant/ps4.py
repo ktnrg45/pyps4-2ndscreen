@@ -265,12 +265,13 @@ class Ps4(object):
             return
         else:
             region = regions[region]
-        (_title, art) = ps_data(self, title, title_id, region, url=None)
-        if _title and art:
+        try:
+            _title, art = ps_data(self, title, title_id, region, url=None)
+        except TypeError:
+            _LOGGER.debug("Could not find title in default database.")
+            _title, art = search_all(title, title_id)
+        finally:
             return _title, art
-        _LOGGER.debug("Could not find title in default database.")
-        (_title, art) = search_all(title, title_id)
-        return _title, art
 
 
 class Credentials:
