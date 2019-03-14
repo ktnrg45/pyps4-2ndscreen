@@ -28,6 +28,7 @@ COUNTRIES = {"Argentina": "en/ar", "Australia": "en/au", "Austria": "de/at",
              "United Arab Emirates": "en/ae", "United States": "en/us",
              "United Kingdom": "en/gb"}
 
+
 def search_all(title, title_id):
     """Search all databases."""
     for x in COUNTRIES:
