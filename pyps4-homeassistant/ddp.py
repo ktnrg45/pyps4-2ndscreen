@@ -138,11 +138,13 @@ class Discovery:
         self.host = '255.255.255.255'
         self.ps_list = []
 
-    def search(self):
+    def search(self, host):
         """Search for Devices."""
+        if host is None:
+            host = self.host
         finished = False
         try:
-            self.send()
+            self.send(host)
         except (socket.error, socket.timeout):
             self.sock.close
             return
@@ -154,10 +156,8 @@ class Discovery:
             except (socket.error, socket.timeout):
                 return self.ps_list
 
-    def send(self, host=None):
+    def send(self, host):
         """Broadcast Message."""
-        if host is None:
-            host = self.host
         self.sock.sendto(self.msg.encode('utf-8'), (host, DDP_PORT))
 
     def receive(self):
