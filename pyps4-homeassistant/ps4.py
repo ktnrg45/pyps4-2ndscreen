@@ -256,15 +256,21 @@ class Ps4(object):
         return self.get_status()['running-app-name']
 
     def get_ps_store_data(self, title, title_id, region, url=None):
-        """Returns Title and Cover data."""
-        regions = {'R1': 'en/US', 'R2': 'en/GB', 'R3': 'en/HK', 'R4': 'en/AU', 'R5': 'en/IN'}
+        """Return Title and Cover data."""
+        regions = {'R1': 'en/US', 'R2': 'en/GB',
+                   'R3': 'en/HK', 'R4': 'en/AU', 'R5': 'en/IN'}
 
         if region not in regions:
             _LOGGER.error('Region: %s is not valid', region)
             return
         else:
             region = regions[region]
-        return ps_data(self, title, title_id, region, url=None)
+        (_title, art) = ps_data(self, title, title_id, region, url=None)
+        if _title and art:
+            return _title, art
+        _LOGGER.debug("Could not find title in default database.")
+        (_title, art) = search_all(title, title_id)
+        return _title, art
 
 
 class Credentials:
