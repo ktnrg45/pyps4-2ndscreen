@@ -4,6 +4,37 @@ import logging
 
 _LOGGER = logging.getLogger(__name__)
 
+COUNTRIES = {"Argentina": "en/ar", "Australia": "en/au", "Austria": "de/at",
+             "Bahrain": "en/ae", "Belgium": "fr/be", "Brazil": "en/br",
+             "Bulgaria": "en/bg", "Canada": "en/ca", "Chile": "en/cl",
+             "Columbia": "en/co", "Costa Rica": "es/cr", "Croatia": "en/hr",
+             "Cyprus": "en/cy", "Czech Republic": "en/cz", "Denmark": "en/dk",
+             "Ecuador": "es/ec", "El Salvador": "es/sv", "Finland": "en/fi",
+             "France": "fr/fr", "Germany": "de/de", "Greece": "en/gr",
+             "Guatemala": "es/gt", "Honduras": "es/hn", "Hong Kong": "en/hk",
+             "Hungary": "en/hu", "Iceland": "en/is", "India": "en/in",
+             "Indonesia": "en/id", "Ireland": "en/ie", "Israel": "en/il",
+             "Italy": "it/it", "Korea": "ko/kr", "Kuwait": "en/ae",
+             "Lebanon": "en/ae", "Luxembourg": "de/lu", "Maylasia": "en/my",
+             "Malta": "en/mt", "Mexico": "en/mx", "Middle East": "en/ae",
+             "Nederland": "nl/nl", "New Zealand": "en/nz",
+             "Nicaragua": "es/ni", "Norway": "en/no", "Oman": "en/ae",
+             "Panama": "es/pa", "Peru": "en/pe", "Poland": "en/pl",
+             "Portugal": "pt/pt", "Qatar": "en/ae", "Romania": "en/ro",
+             "Russia": "ru/ru", "Saudi Arabia": "en/sa", "Singapore": "en/sg",
+             "Slovenia": "en/si", "Slovakia": "en/sk", "South Africa": "en/za",
+             "Spain": "es/es", "Sweden": "en/se", "Switzerland": "de/ch",
+             "Taiwan": "en/tw", "Thailand": "en/th", "Turkey": "en/tr",
+             "United Arab Emirates": "en/ae", "United States": "en/us",
+             "United Kingdom": "en/gb"}
+
+def search_all():
+    for x in COUNTRIES:
+        region = COUNTRIES[x]
+        (title, art) = get_ps_store_data(TITLE, TITLE_ID, region)
+        if title and art:
+            return title, art
+
 
 def get_ps_store_url(title, region, reformat=False):
     """Get URL for title search in PS Store."""
