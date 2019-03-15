@@ -47,7 +47,8 @@ References
 
 .. _ps4-waker: https://github.com/dhleong/ps4-waker
 
-
+.. |BuildStatus| image:: https://travis-ci.org/ktnrg45/pyps4-homeassistant.png?branch=master
+                 :target: https://travis-ci.org/ktnrg45/pyps4-homeassistant
 .. |PyPiVersion| image:: https://badge.fury.io/py/pyps4-homeassistant.svg
                  :target: http://badge.fury.io/py/pyps4-homeassistant
 .. |PyPiPythonVersions| image:: https://img.shields.io/pypi/pyversions/pyps4-homeassistant.svg
