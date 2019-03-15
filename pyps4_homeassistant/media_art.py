@@ -110,7 +110,7 @@ def get_ps_store_data(title, title_id, region, url=None, reformat=False):
                     parent_id = _parse_id(parent['id'])
                     parent_title = parent['name']
                     parent_title_f = _format_title(parent_title, reformat)
-                    parent_art = str.format(parent['url'], '/image')
+                    parent_art = "{}/image".format(parent['url'])
                     if parent_id == title_id:
                         _LOGGER.debug("Parent ID Match")
                         return parent_title, parent_art
