@@ -1,0 +1,2 @@
+construct>=2.9.45
+pycryptodomex>=3.7.2
