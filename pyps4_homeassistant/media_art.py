@@ -4,6 +4,7 @@ import logging
 
 _LOGGER = logging.getLogger(__name__)
 
+# Excluded {China, Japan, Phillipines, Serbia, Ukraine, Vietnam}
 COUNTRIES = {"Argentina": "en/ar", "Australia": "en/au", "Austria": "de/at",
              "Bahrain": "en/ae", "Belgium": "fr/be", "Brazil": "en/br",
              "Bulgaria": "en/bg", "Canada": "en/ca", "Chile": "en/cl",
@@ -60,6 +61,7 @@ def get_ps_store_url(title, region, reformat=False):
 
     url = [_url, headers]
     return url
+
 
 def get_ps_store_data(title, title_id, region, url=None, reformat=False):
     """Get cover art from database."""
