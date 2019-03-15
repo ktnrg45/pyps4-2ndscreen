@@ -1,5 +1,4 @@
-pyps4-homeassistant
-
+Python Control for PlayStation 4 consoles.
 ============================
 
 |PypiVersion| |PyPiPythonVersions|
