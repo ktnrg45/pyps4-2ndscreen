@@ -62,7 +62,7 @@ def get_ps_store_url(title, region, reformat=False):
     return url
 
 def get_ps_store_data(title, title_id, region, url=None, reformat=False):
-    """Store cover art from PS store in games map."""
+    """Get cover art from database."""
     import requests
     import re
 
