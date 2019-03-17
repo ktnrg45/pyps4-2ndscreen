@@ -258,9 +258,13 @@ class Ps4(object):
 
     def get_ps_store_data(self, title, title_id, region, url=None):
         """Return Title and Cover data."""
-        regions = {'R1': 'en/US', 'R2': 'en/GB',
+        """Deprecated."""
+        deprecated_regions = {'R1': 'en/US', 'R2': 'en/GB',
                    'R3': 'en/HK', 'R4': 'en/AU', 'R5': 'en/IN'}
 
+        if region in deprecated_regions:
+            _LOGGER.warning('Region with code: %s is deprecated. \
+            Please update with the new codes', region)
         if region not in regions:
             _LOGGER.error('Region: %s is not valid', region)
             return
