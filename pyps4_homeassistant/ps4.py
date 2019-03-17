@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+"""Methods for PS4 Object."""
 from __future__ import print_function
 from threading import Timer
 import json
