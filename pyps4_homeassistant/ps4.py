@@ -180,31 +180,25 @@ class Ps4(object):
            Doing this after a long-press of PS just breaks it,
            however.
         """
-        buttons = []
-        buttons.append(button_name)
+        buttons = {'up': 1,
+                   'down': 2,
+                   'right': 4,
+                   'left': 8,
+                   'enter': 16,
+                   'back': 32,
+                   'option': 64,
+                   'ps': 128,
+                   'key_off': 256,
+                   'cancel': 512,
+                   'open_rc': 1024,
+                   'close_rc': 2048}
 
+        if button_name not in buttons.keys():
+            raise UnknownButton
+        else:
+            operation = buttons[button_name]
         self.open()
-
-        for button in buttons:
-            try:
-                operation = {
-                    'up': 1,
-                    'down': 2,
-                    'right': 4,
-                    'left': 8,
-                    'enter': 16,
-                    'back': 32,
-                    'option': 64,
-                    'ps': 128,
-                    'key_off': 256,
-                    'cancel': 512,
-                    'open_rc': 1024,
-                    'close_rc': 2048,
-                }[button.lower()]
-            except KeyError:
-                raise UnknownButton
-
-            self._connection.remote_control(operation, hold_time)
+        self._connection.remote_control(operation, hold_time)
         self.is_keepalive()
 
     def send_status(self):
