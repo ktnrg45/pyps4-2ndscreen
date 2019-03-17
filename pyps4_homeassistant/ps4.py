@@ -11,7 +11,7 @@ from .connection import Connection
 from .ddp import get_status, launch, wakeup
 from .errors import NotReady, UnknownButton, LoginFailed
 from .media_art import get_ps_store_data as ps_data
-from .media_art import search_all
+from .media_art import COUNTRIES, search_all
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -194,7 +194,7 @@ class Ps4(object):
                    'open_rc': 1024,
                    'close_rc': 2048}
 
-        if button_name not in buttons.keys():
+        if button_name.lower() not in buttons.keys():
             raise UnknownButton
         else:
             operation = buttons[button_name]
@@ -256,6 +256,9 @@ class Ps4(object):
         """Deprecated."""
         deprecated_regions = {'R1': 'en/US', 'R2': 'en/GB',
                    'R3': 'en/HK', 'R4': 'en/AU', 'R5': 'en/IN'}
+
+        regions = COUNTRIES.keys().lower()
+        region = region.lower()
 
         if region in deprecated_regions:
             _LOGGER.warning('Region with code: %s is deprecated. \
