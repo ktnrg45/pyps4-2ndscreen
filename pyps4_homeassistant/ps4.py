@@ -260,12 +260,13 @@ class Ps4(object):
         regions = COUNTRIES.keys().lower()
         region = region.lower()
 
-        if region in deprecated_regions:
+        if region not in regions:
+            if region in deprecated_regions:
             _LOGGER.warning('Region with code: %s is deprecated. \
             Please update with the new codes', region)
-        if region not in regions:
-            _LOGGER.error('Region: %s is not valid', region)
-            return
+            else:
+                _LOGGER.error('Region: %s is not valid', region)
+                return
         else:
             region = regions[region]
         try:
