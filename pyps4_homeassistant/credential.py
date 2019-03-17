@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+"""Credential fetcher for 2nd Screen app."""
 class Credentials:
     """The PS4 Credentials object. Masquerades as a PS4 to get credentials."""
 
