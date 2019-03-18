@@ -11,7 +11,7 @@ from .connection import Connection
 from .ddp import get_status, launch, wakeup
 from .errors import NotReady, UnknownButton, LoginFailed
 from .media_art import get_ps_store_data as ps_data
-from .media_art import COUNTRIES, search_all
+from .media_art import (search_all, COUNTRIES, DEPRECATED_REGIONS)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -193,8 +193,8 @@ class Ps4(object):
                    'cancel': 512,
                    'open_rc': 1024,
                    'close_rc': 2048}
-
-        if button_name.lower() not in buttons.keys():
+        button_name = button_name.lower()
+        if button_name not in buttons.keys():
             raise UnknownButton
         else:
             operation = buttons[button_name]
@@ -253,16 +253,13 @@ class Ps4(object):
 
     def get_ps_store_data(self, title, title_id, region, url=None):
         """Return Title and Cover data."""
-        """Deprecated."""
-        deprecated_regions = {'R1': 'en/US', 'R2': 'en/GB',
-                   'R3': 'en/HK', 'R4': 'en/AU', 'R5': 'en/IN'}
-
-        regions = COUNTRIES.keys()
+        regions = COUNTRIES
+        d_regions = DEPRECATED_REGIONS
 
         if region not in regions:
-            if region in deprecated_regions:
-            _LOGGER.info('Region with code: %s is deprecated. \
-            Please update with the new codes', region)
+            if region in d_regions:
+                _LOGGER.warning('Region: %s is deprecated', region)
+                region = d_regions[region]
             else:
                 _LOGGER.error('Region: %s is not valid', region)
                 return
@@ -272,6 +269,11 @@ class Ps4(object):
             _title, art = ps_data(self, title, title_id, region, url=None)
         except TypeError:
             _LOGGER.debug("Could not find title in default database.")
-            _title, art = search_all(title, title_id)
+            try:
+                _title, art = search_all(title, title_id)
+            except TypeError:
+                _LOGGER.warning("Could not find cover art for: %s", title)
+                return None, None
         finally:
+            _LOGGER.debug("Found Title: %s, URL: %s", _title, art)
             return _title, art
