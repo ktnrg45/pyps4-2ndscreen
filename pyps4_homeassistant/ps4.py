@@ -257,12 +257,11 @@ class Ps4(object):
         deprecated_regions = {'R1': 'en/US', 'R2': 'en/GB',
                    'R3': 'en/HK', 'R4': 'en/AU', 'R5': 'en/IN'}
 
-        regions = COUNTRIES.keys().lower()
-        region = region.lower()
+        regions = COUNTRIES.keys()
 
         if region not in regions:
             if region in deprecated_regions:
-            _LOGGER.warning('Region with code: %s is deprecated. \
+            _LOGGER.info('Region with code: %s is deprecated. \
             Please update with the new codes', region)
             else:
                 _LOGGER.error('Region: %s is not valid', region)
