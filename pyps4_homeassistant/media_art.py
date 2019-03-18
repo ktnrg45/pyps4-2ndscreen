@@ -4,6 +4,10 @@ import logging
 
 _LOGGER = logging.getLogger(__name__)
 
+DEPRECATED_REGIONS = {'R1': 'en/US', 'R2': 'en/GB',
+                      'R3': 'en/HK', 'R4': 'en/AU',
+                      'R5': 'en/IN'}
+
 # Excluded {China, Japan, Phillipines, Serbia, Ukraine, Vietnam}
 COUNTRIES = {"Argentina": "en/ar", "Australia": "en/au", "Austria": "de/at",
              "Bahrain": "en/ae", "Belgium": "fr/be", "Brazil": "en/br",
