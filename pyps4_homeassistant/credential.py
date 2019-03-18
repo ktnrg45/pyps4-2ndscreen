@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 """Credential fetcher for 2nd Screen app."""
+import logging
+import socket
+import time
+
+_LOGGER = logging.getLogger(__name__)
+
+
 class Credentials:
     """The PS4 Credentials object. Masquerades as a PS4 to get credentials."""
 
