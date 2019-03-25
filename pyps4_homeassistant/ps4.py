@@ -159,11 +159,11 @@ class Ps4(object):
         `title_id`: title to start
         """
         self.open()
-        self._connection.start_title(title_id)
-        if running_id is not None:
-            self._connection.remote_control(16, 0)
-        elif running_id == title_id:
-            _LOGGER.warning("Title: %s already started", title_id)
+        if self._connection.start_title(title_id):
+            if running_id is not None:
+                self._connection.remote_control(16, 0)
+            elif running_id == title_id:
+                _LOGGER.warning("Title: %s already started", title_id)
         self.is_keepalive()
 
     def remote_control(self, button_name, hold_time=0):
