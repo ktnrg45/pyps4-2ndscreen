@@ -5,7 +5,6 @@ from threading import Timer
 import json
 import logging
 import time
-import socket
 
 from .connection import Connection
 from .ddp import get_status, launch, wakeup
@@ -161,7 +160,7 @@ class Ps4(object):
         self.open()
         if self._connection.start_title(title_id):
             if running_id is not None:
-                self._connection.remote_control(16, 0)
+                self.remote_control('enter')
             elif running_id == title_id:
                 _LOGGER.warning("Title: %s already started", title_id)
         self.is_keepalive()
