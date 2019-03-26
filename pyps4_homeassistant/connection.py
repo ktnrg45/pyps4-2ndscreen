@@ -4,7 +4,6 @@ from __future__ import print_function
 import binascii
 import logging
 import socket
-import time
 
 from construct import (Bytes, Const, Int32ul, Padding, Struct)
 from Cryptodome.Cipher import AES, PKCS1_OAEP
@@ -35,7 +34,7 @@ class Connection(object):
     def __init__(self, host, credential=None, port=997):
         """Init Class."""
         self._host = host
-        self._credential = credential
+        self._credential = credential.encode()
         self._port = port
         self._socket = None
         self._cipher = None
@@ -210,7 +209,7 @@ class Connection(object):
 
         config = {
             'app_label': b'PlayStation'.ljust(256, b'\x00'),
-            'account_id': self._credential.encode().ljust(64, b'\x00'),
+            'account_id': self._credential.ljust(64, b'\x00'),
             'os_version': b'4.4'.ljust(16, b'\x00'),
             'model': b'Home-Assistant'.ljust(16, b'\x00'),
             'pin_code': self.pin.ljust(16, b'\x00'),
@@ -250,26 +249,29 @@ class Connection(object):
             'hold_time' / Int32ul,
         )
         # Prebuild required remote messages."""
-        msg_open_rc = fmt.build({'op': 1024, 'hold_time': 0})
-        msg_key_off = fmt.build({'op': 256, 'hold_time': 0})
-        msg_close_rc = fmt.build({'op': 2048, 'hold_time': 0})
-        msg_command = fmt.build({'op': op, 'hold_time': hold_time})
+        msg = []
+        msg.append(fmt.build({'op': 1024, 'hold_time': 0}))  # Open RC
+        msg.append(fmt.build({'op': op, 'hold_time': hold_time}))  # Command
+        msg.append(fmt.build({'op': op, 'hold_time': hold_time}))  # Command
+        msg.append(fmt.build({'op': 256, 'hold_time': 0}))  # Key Off
 
         # Send Messages
-        self._send_msg(msg_open_rc, encrypted=True)
-        time.sleep(0.1)
-        self._send_msg(msg_command, encrypted=True)
-        self._send_msg(msg_key_off, encrypted=True)
-        time.sleep(0.4)
-        self._send_msg(msg_close_rc, encrypted=True)
-        time.sleep(0.1)
-
-        """recv_msg() is blocking. Is slow returning msg.
-        Needs async/thread to receive callback."""
-        # msg = self._recv_msg()
-        # msg = self._decipher.decrypt(msg)
-        # _LOGGER.debug('RX: %s %s', len(msg), binascii.hexlify(msg))
-        # return self._handle_response('remote_control', msg)
+        for message in msg:
+            try:
+                self._send_msg(message, encrypted=True)
+            except (socket.error, socket.timeout):
+                _LOGGER.debug("Failed to send Remote MSG")
+        r_msg = self._recv_msg()
+        r_msg = self._decipher.decrypt(r_msg)
+        _LOGGER.debug('RX: %s %s', len(r_msg), binascii.hexlify(r_msg))
+        response = self._handle_response('remote_control', r_msg)
+        if response is True:
+            _LOGGER.debug("RC request Successful")
+            msg = fmt.build({'op': 2048, 'hold_time': 0})  # Close RC/Initiate
+            try:
+                self._send_msg(msg, encrypted=True)
+            except (socket.error, socket.timeout):
+                _LOGGER.debug("Initiate RC Command Failed")
 
     def _send_status(self):
         fmt = Struct(
