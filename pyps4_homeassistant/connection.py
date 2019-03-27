@@ -4,6 +4,7 @@ from __future__ import print_function
 import binascii
 import logging
 import socket
+import time
 
 from construct import (Bytes, Const, Int32ul, Padding, Struct)
 from Cryptodome.Cipher import AES, PKCS1_OAEP
@@ -92,7 +93,7 @@ class Connection(object):
     def remote_control(self, op, hold_time=0):
         """Send remote control command."""
         _LOGGER.debug('Remote control: %s (%s)', op, hold_time)
-        self._send_remote_control_request(op, hold_time)
+        return self._send_remote_control_request(op, hold_time)
 
     def send_status(self):
         """Send client connection status."""
@@ -252,8 +253,9 @@ class Connection(object):
         msg = []
         msg.append(fmt.build({'op': 1024, 'hold_time': 0}))  # Open RC
         msg.append(fmt.build({'op': op, 'hold_time': hold_time}))  # Command
-        msg.append(fmt.build({'op': op, 'hold_time': hold_time}))  # Command
         msg.append(fmt.build({'op': 256, 'hold_time': 0}))  # Key Off
+        if op != 128:  # ps
+            msg.append(fmt.build({'op': 2048, 'hold_time': 0}))  # Close RC
 
         # Send Messages
         for message in msg:
@@ -261,17 +263,23 @@ class Connection(object):
                 self._send_msg(message, encrypted=True)
             except (socket.error, socket.timeout):
                 _LOGGER.debug("Failed to send Remote MSG")
-        r_msg = self._recv_msg()
-        r_msg = self._decipher.decrypt(r_msg)
-        _LOGGER.debug('RX: %s %s', len(r_msg), binascii.hexlify(r_msg))
-        response = self._handle_response('remote_control', r_msg)
-        if response is True:
-            _LOGGER.debug("RC request Successful")
-            msg = fmt.build({'op': 2048, 'hold_time': 0})  # Close RC/Initiate
-            try:
-                self._send_msg(msg, encrypted=True)
-            except (socket.error, socket.timeout):
-                _LOGGER.debug("Initiate RC Command Failed")
+                return False
+
+        # Delay Close RC for PS
+        if op == 128:
+            _LOGGER.debug("Delaying RC off for PS Command")
+            start_time = time.time()
+            msg = []
+            msg.append(fmt.build({'op': 2048, 'hold_time': 0}))  # Close RC
+            while (time.time() - start_time) < 1:
+                pass
+            for message in msg:
+                try:
+                    self._send_msg(message, encrypted=True)
+                except (socket.error, socket.timeout):
+                    _LOGGER.debug("Failed to send Remote MSG")
+                    return False
+        return True
 
     def _send_status(self):
         fmt = Struct(
