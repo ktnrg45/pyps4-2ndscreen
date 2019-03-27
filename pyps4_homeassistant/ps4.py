@@ -78,6 +78,7 @@ class Ps4(object):
         self._credential = None
         self._connected = False
         self._status_timer = None
+        self._rc_sending = False
         self.keep_alive = False
 
         if credential:
@@ -163,6 +164,8 @@ class Ps4(object):
                 self.remote_control('enter')
             elif running_id == title_id:
                 _LOGGER.warning("Title: %s already started", title_id)
+        else:
+            self.keep_alive = False
         self.is_keepalive()
 
     def remote_control(self, button_name, hold_time=0):
@@ -180,6 +183,10 @@ class Ps4(object):
            Doing this after a long-press of PS just breaks it,
            however.
         """
+        if self._rc_sending is True:
+            _LOGGER.debug("RC Command in progress")
+            return
+        self._rc_sending = True
         buttons = {'up': 1,
                    'down': 2,
                    'right': 4,
@@ -198,7 +205,9 @@ class Ps4(object):
         else:
             operation = buttons[button_name]
         self.open()
-        self._connection.remote_control(operation, hold_time)
+        if not self._connection.remote_control(operation, hold_time):
+            self.keep_alive = False
+        self._rc_sending = False
         self.is_keepalive()
 
     def send_status(self):
