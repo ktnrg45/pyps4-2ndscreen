@@ -97,7 +97,9 @@ class Ps4(object):
         if self._connected is False:
             self.wakeup()
             self.launch()
-            time.sleep(0.5)
+            start_time = time.time()
+            while time.time() - start_time < 0.5:
+                pass
             self._connection.connect()
             login = self._connection.login()
             if login is True:
