@@ -78,7 +78,7 @@ class Ps4(object):
         self._credential = None
         self._connected = False
         self._status_timer = None
-        self._rc_sending = False
+        self._msg_sending = False
         self.keep_alive = False
 
         if credential:
@@ -183,10 +183,10 @@ class Ps4(object):
            Doing this after a long-press of PS just breaks it,
            however.
         """
-        if self._rc_sending is True:
+        if self._msg_sending is True:
             _LOGGER.debug("RC Command in progress")
             return
-        self._rc_sending = True
+        self._msg_sending = True
         buttons = {'up': 1,
                    'down': 2,
                    'right': 4,
@@ -207,13 +207,17 @@ class Ps4(object):
         self.open()
         if not self._connection.remote_control(operation, hold_time):
             self.keep_alive = False
-        self._rc_sending = False
+        self._msg_sending = False
         self.is_keepalive()
 
     def send_status(self):
         """Send connection status to PS4."""
         if self._connected is True:
+            while self._msg_sending is True:
+                pass
+            self._msg_sending = True
             is_loggedin = self._connection.send_status()
+            self._msg_sending = False
             if is_loggedin is False:
                 self.close()
 
