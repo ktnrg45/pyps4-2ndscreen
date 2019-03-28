@@ -280,7 +280,7 @@ class Ps4(object):
         else:
             region = regions[region]
         try:
-            _title, art = ps_data(self, title, title_id, region, url=None)
+            _title, art = ps_data(title, title_id, region, url=None)
         except TypeError:
             _LOGGER.debug("Could not find title in default database.")
             try:
