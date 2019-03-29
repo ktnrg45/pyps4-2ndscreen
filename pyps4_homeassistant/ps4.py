@@ -20,6 +20,13 @@ def open_credential_file(filename):
     return json.load(open(filename))
 
 
+def delay(seconds):
+    """Delay in seconds."""
+    start_time = time.time()
+    while time.time() - start_time < 0.5:
+        pass
+
+
 class StatusTimer():
     """Status Thread Class."""
 
@@ -97,9 +104,7 @@ class Ps4(object):
         if self._connected is False:
             self.wakeup()
             self.launch()
-            start_time = time.time()
-            while time.time() - start_time < 0.5:
-                pass
+            delay(0.5)
             self._connection.connect()
             login = self._connection.login()
             if login is True:
@@ -160,9 +165,12 @@ class Ps4(object):
 
         `title_id`: title to start
         """
+        if self._connected is True:
+            self.close()
         self.open()
         if self._connection.start_title(title_id):
             if running_id is not None:
+                delay(1)
                 self.remote_control('enter')
             elif running_id == title_id:
                 _LOGGER.warning("Title: %s already started", title_id)
