@@ -114,10 +114,10 @@ class Connection(object):
     def _handle_response(self, command, msg):
         """Return Pass/Fail for sent message."""
         pass_response = {
-            'send_status': 18,
-            'remote_control': 18,
+            'send_status': [18],
+            'remote_control': [18],
             'start_title': [11, 18],
-            'standby': 27,
+            'standby': [27],
             'login': [0, 17]
         }
 
@@ -133,8 +133,7 @@ class Connection(object):
             response_byte = msg[4]
 
         _LOGGER.debug("RECV: %s for Command: %s", response_byte, command)
-        if response_byte not in pass_response[command] \
-                and pass_response[command] != response_byte:
+        if response_byte not in pass_response[command]:
             _LOGGER.warning("Command: %s Failed", command)
             return False
         return True
