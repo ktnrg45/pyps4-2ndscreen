@@ -23,7 +23,7 @@ def open_credential_file(filename):
 def delay(seconds):
     """Delay in seconds."""
     start_time = time.time()
-    while time.time() - start_time < 0.5:
+    while time.time() - start_time < seconds:
         pass
 
 
@@ -111,7 +111,7 @@ class Ps4(object):
                 self._connected = True
                 if self.keep_alive is True:
                     _LOGGER.debug("Keep Alive feature enabled")
-                    self._status_timer = StatusTimer(20, self.send_status)
+                    self._status_timer = StatusTimer(60, self.send_status)
                     self._status_timer.start()
 
     def close(self):
