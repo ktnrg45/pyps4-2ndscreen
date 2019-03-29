@@ -251,11 +251,15 @@ class Connection(object):
         )
         # Prebuild required remote messages."""
         msg = []
-        msg.append(fmt.build({'op': 1024, 'hold_time': 0}))  # Open RC
-        msg.append(fmt.build({'op': op, 'hold_time': hold_time}))  # Command
-        msg.append(fmt.build({'op': 256, 'hold_time': 0}))  # Key Off
-        if op != 128:  # ps
+        if op != 128:
+            msg.append(fmt.build({'op': 1024, 'hold_time': 0}))  # Open RC
+            msg.append(fmt.build({'op': op, 'hold_time': hold_time}))
+            msg.append(fmt.build({'op': 256, 'hold_time': 0}))  # Key Off
             msg.append(fmt.build({'op': 2048, 'hold_time': 0}))  # Close RC
+        else:  # PS
+            msg.append(fmt.build({'op': 1024, 'hold_time': 0}))  # Open RC
+            msg.append(fmt.build({'op': op, 'hold_time': hold_time}))
+            msg.append(fmt.build({'op': 256, 'hold_time': 0}))  # Key Off
 
         # Send Messages
         for message in msg:
@@ -269,16 +273,14 @@ class Connection(object):
         if op == 128:
             _LOGGER.debug("Delaying RC off for PS Command")
             start_time = time.time()
-            msg = []
-            msg.append(fmt.build({'op': 2048, 'hold_time': 0}))  # Close RC
+            message = fmt.build({'op': 2048, 'hold_time': 0})  # Close RC
             while (time.time() - start_time) < 1:
                 pass
-            for message in msg:
-                try:
-                    self._send_msg(message, encrypted=True)
-                except (socket.error, socket.timeout):
-                    _LOGGER.debug("Failed to send Remote MSG")
-                    return False
+            try:
+                self._send_msg(message, encrypted=True)
+            except (socket.error, socket.timeout):
+                _LOGGER.debug("Failed to send Remote MSG")
+                return False
         return True
 
     def _send_status(self):
