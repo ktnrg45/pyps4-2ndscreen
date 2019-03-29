@@ -29,6 +29,13 @@ def _get_public_key_rsa():
     return key.publickey()
 
 
+def delay(seconds):
+    """Delay in seconds."""
+    start_time = time.time()
+    while time.time() - start_time < seconds:
+        pass
+
+
 class Connection(object):
     """The TCP connection class."""
 
@@ -259,6 +266,7 @@ class Connection(object):
         else:  # PS
             msg.append(fmt.build({'op': 1024, 'hold_time': 0}))  # Open RC
             msg.append(fmt.build({'op': op, 'hold_time': hold_time}))
+            msg.append(fmt.build({'op': op, 'hold_time': 1}))
             msg.append(fmt.build({'op': 256, 'hold_time': 0}))  # Key Off
 
         # Send Messages
@@ -272,10 +280,8 @@ class Connection(object):
         # Delay Close RC for PS
         if op == 128:
             _LOGGER.debug("Delaying RC off for PS Command")
-            start_time = time.time()
             message = fmt.build({'op': 2048, 'hold_time': 0})  # Close RC
-            while (time.time() - start_time) < 1:
-                pass
+            delay(1)
             try:
                 self._send_msg(message, encrypted=True)
             except (socket.error, socket.timeout):
