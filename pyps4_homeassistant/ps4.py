@@ -111,7 +111,7 @@ class Ps4(object):
                 self._connected = True
                 if self.keep_alive is True:
                     _LOGGER.debug("Keep Alive feature enabled")
-                    self._status_timer = StatusTimer(30, self.send_status)
+                    self._status_timer = StatusTimer(20, self.send_status)
                     self._status_timer.start()
 
     def close(self):
