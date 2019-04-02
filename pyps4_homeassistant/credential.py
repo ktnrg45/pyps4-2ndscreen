@@ -4,6 +4,8 @@ import logging
 import socket
 import time
 
+from .errors import CredentialTimeout, UnknownDDPResponse
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -62,14 +64,16 @@ class Credentials:
         pings = 0
         while pings < 10:
             if timeout < time.time() - start_time:
-                return
+                return None
             try:
                 response = sock.recvfrom(1024)
+                data = response[0]
+                address = response[1]
             except socket.error:
                 sock.close()
                 pings += 1
-            data = response[0]
-            address = response[1]
+            except UnboundLocalError:
+                raise CredentialTimeout
             if not data:
                 pings += 1
                 break
@@ -87,7 +91,7 @@ class Credentials:
                 creds = get_creds(data)
                 sock.close()
                 return creds
-        return
+        return None
 
     def get_ddp_message(self, status, data=None):
         """Get DDP message."""
@@ -109,6 +113,7 @@ def parse_ddp_response(response, listen_type):
     elif listen_type == 'wakeup':
         if 'WAKEUP' in rsp:
             return 'wakeup'
+    raise UnknownDDPResponse
 
 
 def get_creds(response):
