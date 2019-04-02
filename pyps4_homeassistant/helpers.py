@@ -1,8 +1,9 @@
 """Helpers."""
 import logging
 
-from .credentials import Credentials
-from .ps4 import Discovery, Ps4
+from .credential import Credentials
+from .ddp import Discovery
+from .ps4 import Ps4
 from .errors import NotReady, LoginFailed
 
 _LOGGER = logging.getLogger(__name__)
