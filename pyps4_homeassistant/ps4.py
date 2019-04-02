@@ -27,6 +27,33 @@ def delay(seconds):
         pass
 
 
+def get_ps_store_data(title, title_id, region, url=None):
+    """Return Title and Cover data."""
+    regions = COUNTRIES
+    d_regions = DEPRECATED_REGIONS
+
+    if region not in regions:
+        if region in d_regions:
+            _LOGGER.warning('Region: %s is deprecated', region)
+            region = d_regions[region]
+        else:
+            _LOGGER.error('Region: %s is not valid', region)
+            return None, None
+    else:
+        region = regions[region]
+    try:
+        _title, art = ps_data(title, title_id, region, url)
+    except TypeError:
+        _LOGGER.debug("Could not find title in default database.")
+        try:
+            _title, art = search_all(title, title_id)
+        except TypeError:
+            _LOGGER.warning("Could not find cover art for: %s", title)
+            return None, None
+    _LOGGER.debug("Found Title: %s, URL: %s", _title, art)
+    return _title, art
+
+
 class StatusTimer():
     """Status Thread Class."""
 
@@ -63,7 +90,7 @@ class StatusTimer():
             self.thread.cancel()
 
 
-class Ps4(object):
+class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
     """The PS4 object."""
 
     STATUS_OK = 200
@@ -211,8 +238,7 @@ class Ps4(object):
         button_name = button_name.lower()
         if button_name not in buttons.keys():
             raise UnknownButton
-        else:
-            operation = buttons[button_name]
+        operation = buttons[button_name]
         self.open()
         if not self._connection.remote_control(operation, hold_time):
             self.keep_alive = False
@@ -229,33 +255,6 @@ class Ps4(object):
             self._msg_sending = False
             if is_loggedin is False:
                 self.close()
-
-    def get_ps_store_data(self, title, title_id, region, url=None):
-        """Return Title and Cover data."""
-        regions = COUNTRIES
-        d_regions = DEPRECATED_REGIONS
-
-        if region not in regions:
-            if region in d_regions:
-                _LOGGER.warning('Region: %s is deprecated', region)
-                region = d_regions[region]
-            else:
-                _LOGGER.error('Region: %s is not valid', region)
-                return
-        else:
-            region = regions[region]
-        try:
-            _title, art = ps_data(title, title_id, region, url=None)
-        except TypeError:
-            _LOGGER.debug("Could not find title in default database.")
-            try:
-                _title, art = search_all(title, title_id)
-            except TypeError:
-                _LOGGER.warning("Could not find cover art for: %s", title)
-                return None, None
-        finally:
-            _LOGGER.debug("Found Title: %s, URL: %s", _title, art)
-            return _title, art
 
     @property
     def is_running(self):
