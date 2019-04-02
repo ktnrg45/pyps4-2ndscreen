@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+"""Device Discovery Protocol for PS4."""
 from __future__ import print_function
 
 import re
