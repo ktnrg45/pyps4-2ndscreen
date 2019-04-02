@@ -262,13 +262,13 @@ class Connection():  # noqa: pylint: disable=too-many-instance-attributes
         msg = []
         if operation != 128:
             msg.append(fmt.build({'op': 1024, 'hold_time': 0}))  # Open RC
-            msg.append(fmt.build({'op': op, 'hold_time': hold_time}))
+            msg.append(fmt.build({'op': operation, 'hold_time': hold_time}))
             msg.append(fmt.build({'op': 256, 'hold_time': 0}))  # Key Off
             msg.append(fmt.build({'op': 2048, 'hold_time': 0}))  # Close RC
         else:  # PS
             msg.append(fmt.build({'op': 1024, 'hold_time': 0}))  # Open RC
-            msg.append(fmt.build({'op': op, 'hold_time': hold_time}))
-            msg.append(fmt.build({'op': op, 'hold_time': 1}))
+            msg.append(fmt.build({'op': operation, 'hold_time': hold_time}))
+            msg.append(fmt.build({'op': operation, 'hold_time': 1}))
             msg.append(fmt.build({'op': 256, 'hold_time': 0}))  # Key Off
 
         # Send Messages
