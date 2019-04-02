@@ -1,5 +1,9 @@
 """Exceptions Definitions."""
 
+class CredentialTimeout(Exception):
+    """Recieved no credentials or timed out."""
+
+
 class NotReady(Exception):
     """PS4 no connection."""
 
