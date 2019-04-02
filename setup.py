@@ -27,7 +27,7 @@ CLASSIFIERS = [
 with open('README.rst') as f:
     readme = f.read()
 
-setup(name='pyps4_homeassistant,
+setup(name='pyps4_homeassistant',
       version=version.__version__,
       description='PS4 Python Library for Home Assistant',
       long_description=readme,
