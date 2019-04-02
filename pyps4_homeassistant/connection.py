@@ -31,6 +31,32 @@ def _get_public_key_rsa():
     return key.publickey()
 
 
+def _handle_response(command, msg):
+    """Return Pass/Fail for sent message."""
+    pass_response = {
+        'send_status': [18],
+        'remote_control': [18],
+        'start_title': [11, 18],
+        'standby': [27],
+        'login': [0, 17]
+    }
+
+    if command == 'login':
+        response_byte = msg[8]
+        if response_byte in pass_response['login']:
+            _LOGGER.debug("Login Successful")
+            return True
+        _LOGGER.debug("Login Failed")
+        return False
+
+    response_byte = msg[4]
+    _LOGGER.debug("RECV: %s for Command: %s", response_byte, command)
+    if response_byte not in pass_response[command]:
+        _LOGGER.warning("Command: %s Failed", command)
+        return False
+    return True
+
+
 def delay(seconds):
     """Delay in seconds."""
     start_time = time.time()
@@ -80,7 +106,7 @@ class Connection():  # noqa: pylint: disable=too-many-instance-attributes
         msg = self._recv_msg()
         msg = self._decipher.decrypt(msg)
         _LOGGER.debug('RX: %s %s', len(msg), binascii.hexlify(msg))
-        return self._handle_response('login', msg)
+        return _handle_response('login', msg)
 
     def standby(self):
         """Request standby."""
@@ -89,7 +115,7 @@ class Connection():  # noqa: pylint: disable=too-many-instance-attributes
         msg = self._recv_msg()
         msg = self._decipher.decrypt(msg)
         _LOGGER.debug('RX: %s %s', len(msg), binascii.hexlify(msg))
-        return self._handle_response('standby', msg)
+        return _handle_response('standby', msg)
 
     def start_title(self, title_id):
         """Start an application/game title."""
@@ -98,7 +124,7 @@ class Connection():  # noqa: pylint: disable=too-many-instance-attributes
         msg = self._recv_msg()
         msg = self._decipher.decrypt(msg)
         _LOGGER.debug('RX: %s %s', len(msg), binascii.hexlify(msg))
-        return self._handle_response('start_title', msg)
+        return _handle_response('start_title', msg)
 
     def remote_control(self, operation, hold_time=0):
         """Send remote control command."""
@@ -112,33 +138,7 @@ class Connection():  # noqa: pylint: disable=too-many-instance-attributes
         msg = self._recv_msg()
         msg = self._decipher.decrypt(msg)
         _LOGGER.debug('RX: %s %s', len(msg), binascii.hexlify(msg))
-        return self._handle_response('send_status', msg)
-
-    def _handle_response(self, command, msg):
-        """Return Pass/Fail for sent message."""
-        pass_response = {
-            'send_status': [18],
-            'remote_control': [18],
-            'start_title': [11, 18],
-            'standby': [27],
-            'login': [0, 17]
-        }
-
-        if command == 'login':
-            response_byte = msg[8]
-            if response_byte in pass_response['login']:
-                _LOGGER.debug("Login Successful")
-                return True
-            _LOGGER.debug("Login Failed")
-            return False
-        else:
-            response_byte = msg[4]
-
-        _LOGGER.debug("RECV: %s for Command: %s", response_byte, command)
-        if response_byte not in pass_response[command]:
-            _LOGGER.warning("Command: %s Failed", command)
-            return False
-        return True
+        return _handle_response('send_status', msg)
 
     def _send_msg(self, msg, encrypted=False):
         _LOGGER.debug('TX: %s %s', len(msg), binascii.hexlify(msg))
@@ -146,7 +146,7 @@ class Connection():  # noqa: pylint: disable=too-many-instance-attributes
             msg = self._cipher.encrypt(msg)
         self._socket.send(msg)
 
-    def _recv_msg(self, encrypted=False):
+    def _recv_msg(self):
         msg = self._socket.recv(1024)
         return msg
 
