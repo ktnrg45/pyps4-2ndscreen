@@ -1,7 +1,9 @@
 """Helpers."""
 import logging
 
-import pyps4_homeassistant as pyps4
+from .credentials import Credentials
+from .ps4 import Discovery, Ps4
+from .errors import NotReady, LoginFailed
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -16,7 +18,7 @@ class Helper:
     def has_devices(self, host=None):
         """Return if there are devices that can be discovered."""
         _LOGGER.debug("Searching for PS4 Devices")
-        discover = pyps4.Discovery()
+        discover = Discovery()
         devices = discover.search(host)
         for device in devices:
             _LOGGER.debug("Found PS4 at: %s", device['host-ip'])
@@ -24,20 +26,20 @@ class Helper:
 
     def link(self, host, creds, pin):
         """Perform pairing with PS4."""
-        ps4 = pyps4.Ps4(host, creds)
+        ps4 = Ps4(host, creds)
         is_ready = True
         is_login = True
         try:
             ps4.login(pin)
-        except pyps4.errors.NotReady:
+        except NotReady:
             is_ready = False
-        except pyps4.errors.LoginFailed:
+        except LoginFailed:
             is_login = False
         return is_ready, is_login
 
     def get_creds(self):
         """Return Credentials."""
-        credentials = pyps4.Credentials()
+        credentials = Credentials()
         return credentials.listen()
 
     def port_bind(self, ports):
