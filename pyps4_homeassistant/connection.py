@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+"""TCP Handling for PS4."""
 from __future__ import print_function
 
 import binascii
@@ -25,6 +26,7 @@ PUBLIC_KEY = (
 
 
 def _get_public_key_rsa():
+    """Get RSA Key."""
     key = RSA.importKey(PUBLIC_KEY)
     return key.publickey()
 
@@ -36,7 +38,7 @@ def delay(seconds):
         pass
 
 
-class Connection(object):
+class Connection():  # noqa: pylint: disable=too-many-instance-attributes
     """The TCP connection class."""
 
     def __init__(self, host, credential=None, port=997):
@@ -48,6 +50,7 @@ class Connection(object):
         self._cipher = None
         self._decipher = None
         self._random_seed = None
+        self.pin = None
 
     def connect(self):
         """Open the connection."""
@@ -97,10 +100,10 @@ class Connection(object):
         _LOGGER.debug('RX: %s %s', len(msg), binascii.hexlify(msg))
         return self._handle_response('start_title', msg)
 
-    def remote_control(self, op, hold_time=0):
+    def remote_control(self, operation, hold_time=0):
         """Send remote control command."""
-        _LOGGER.debug('Remote control: %s (%s)', op, hold_time)
-        return self._send_remote_control_request(op, hold_time)
+        _LOGGER.debug('Remote control: %s (%s)', operation, hold_time)
+        return self._send_remote_control_request(operation, hold_time)
 
     def send_status(self):
         """Send client connection status."""
@@ -126,9 +129,8 @@ class Connection(object):
             if response_byte in pass_response['login']:
                 _LOGGER.debug("Login Successful")
                 return True
-            else:
-                _LOGGER.debug("Login Failed")
-                return False
+            _LOGGER.debug("Login Failed")
+            return False
         else:
             response_byte = msg[4]
 
@@ -249,7 +251,7 @@ class Connection(object):
         msg = fmt.build({'title_id': title_id.encode().ljust(16, b'\x00')})
         self._send_msg(msg, encrypted=True)
 
-    def _send_remote_control_request(self, op, hold_time=0):
+    def _send_remote_control_request(self, operation, hold_time=0):
         fmt = Struct(
             'length' / Const(b'\x10\x00\x00\x00'),
             'type' / Const(b'\x1c\x00\x00\x00'),
@@ -258,7 +260,7 @@ class Connection(object):
         )
         # Prebuild required remote messages."""
         msg = []
-        if op != 128:
+        if operation != 128:
             msg.append(fmt.build({'op': 1024, 'hold_time': 0}))  # Open RC
             msg.append(fmt.build({'op': op, 'hold_time': hold_time}))
             msg.append(fmt.build({'op': 256, 'hold_time': 0}))  # Key Off
@@ -278,7 +280,7 @@ class Connection(object):
                 return False
 
         # Delay Close RC for PS
-        if op == 128:
+        if operation == 128:
             _LOGGER.debug("Delaying RC off for PS Command")
             message = fmt.build({'op': 2048, 'hold_time': 0})  # Close RC
             delay(1)
