@@ -3,9 +3,9 @@
 """Setup for pyps4-homeassistant."""
 
 from setuptools import setup, find_packages
-import pyps4_homeassistant.const as pyps4_const
+import .__version__ as version
 
-MIN_PY_VERSION = '.'.join(map(str, pyps4_const.REQUIRED_PYTHON_VER))
+MIN_PY_VERSION = '.'.join(map(str, version.REQUIRED_PYTHON_VER))
 
 REQUIRES = [
     'construct>=2.9.45',
@@ -27,8 +27,8 @@ CLASSIFIERS = [
 with open('README.rst') as f:
     readme = f.read()
 
-setup(name=pyps4_const.__name__,
-      version=pyps4_const.__version__,
+setup(name='pyps4_homeassistant,
+      version=version.__version__,
       description='PS4 Python Library for Home Assistant',
       long_description=readme,
       author='ktnrg45',
