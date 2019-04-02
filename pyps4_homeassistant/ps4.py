@@ -87,6 +87,7 @@ class Ps4(object):
         self._status_timer = None
         self._msg_sending = False
         self.keep_alive = False
+        self.status = None
 
         if credential:
             self._credential = credential
@@ -98,7 +99,7 @@ class Ps4(object):
 
     def open(self):
         """Open a connection to the PS4."""
-        if self.is_standby():
+        if self.is_standby:
             raise NotReady
 
         if self._connected is False:
@@ -129,11 +130,9 @@ class Ps4(object):
             self.close()
 
     def get_status(self):
-        """Get current status info.
-
-        Return a dictionary with status information.
-        """
-        return get_status(self._host)
+        """Get current status info."""
+        self.status = get_status(self._host)
+        return self.status
 
     def launch(self):
         """Launch."""
@@ -231,48 +230,6 @@ class Ps4(object):
             if is_loggedin is False:
                 self.close()
 
-    def get_host_status(self):
-        """Get PS4 status code.
-
-        STATUS_OK: 200
-        STATUS_STANDBY: 620
-        """
-        return self.get_status()['status_code']
-
-    def is_running(self):
-        """Return if the PS4 is running.
-
-        Returns True or False.
-        """
-        return True if self.get_host_status() == self.STATUS_OK else False
-
-    def is_standby(self):
-        """Return if the PS4 is in standby.
-
-        Returns True or False.
-        """
-        return True if self.get_host_status() == self.STATUS_STANDBY else False
-
-    def get_system_version(self):
-        """Get the system version."""
-        return self.get_status()['system-version']
-
-    def get_host_id(self):
-        """Get the host id."""
-        return self.get_status()['host-id']
-
-    def get_host_name(self):
-        """Get the host name."""
-        return self.get_status()['host-name']
-
-    def get_running_app_titleid(self):
-        """Return the title Id of the running application."""
-        return self.get_status()['running-app-titleid']
-
-    def get_running_app_name(self):
-        """Return the name of the running application."""
-        return self.get_status()['running-app-name']
-
     def get_ps_store_data(self, title, title_id, region, url=None):
         """Return Title and Cover data."""
         regions = COUNTRIES
@@ -299,3 +256,42 @@ class Ps4(object):
         finally:
             _LOGGER.debug("Found Title: %s, URL: %s", _title, art)
             return _title, art
+
+    @property
+    def is_running(self):
+        """Return if the PS4 is running."""
+        if self.status['status_code'] == self.STATUS_OK:
+            return True
+        return False
+
+    @property
+    def is_standby(self):
+        """Return if the PS4 is in standby."""
+        if self.status['status_code'] == self.STATUS_STANDBY:
+            return True
+        return False
+
+    @property
+    def system_version(self):
+        """Get the system version."""
+        return self.status['system-version']
+
+    @property
+    def host_id(self):
+        """Get the host id."""
+        return self.status['host-id']
+
+    @property
+    def host_name(self):
+        """Get the host name."""
+        return self.status['host-name']
+
+    @property
+    def running_app_titleid(self):
+        """Return the title Id of the running application."""
+        return self.status['running-app-titleid']
+
+    @property
+    def running_app_name(self):
+        """Return the name of the running application."""
+        return self.status['running-app-name']
