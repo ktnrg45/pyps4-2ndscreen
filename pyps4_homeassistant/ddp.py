@@ -159,6 +159,7 @@ class Discovery:
             except (socket.error, socket.timeout):
                 self.sock.close()
                 return self.ps_list
+            return self.ps_list
 
     def send(self, host):
         """Broadcast Message."""
