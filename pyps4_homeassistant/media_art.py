@@ -36,11 +36,12 @@ COUNTRIES = {"Argentina": "en/ar", "Australia": "en/au", "Austria": "de/at",
 
 def search_all(title, title_id):
     """Search all databases."""
-    for x in COUNTRIES:
-        region = COUNTRIES[x]
+    for country in COUNTRIES:
+        region = COUNTRIES[country]
         (_title, art) = get_ps_store_data(title, title_id, region)
         if _title and art:
             return _title, art
+    return None, None
 
 
 def get_ps_store_url(title, region, reformat=False):
@@ -67,7 +68,8 @@ def get_ps_store_url(title, region, reformat=False):
     return url
 
 
-def get_ps_store_data(title, title_id, region, url=None, reformat=False):
+def get_ps_store_data(    # noqa: pylint: disable=too-many-locals
+        title, title_id, region, url=None, reformat=False):
     """Get cover art from database."""
     import requests
     import re
@@ -91,10 +93,10 @@ def get_ps_store_data(title, title_id, region, url=None, reformat=False):
             result = req.json()['included']
     except requests.exceptions.HTTPError as warning:
         _LOGGER.warning("PS cover art HTTP error, %s", warning)
-        return
+        return None, None
     except requests.exceptions.RequestException as warning:
         _LOGGER.warning("PS cover art request failed, %s", warning)
-        return
+        return None, None
 
     # Filter through each item in search request
 
@@ -145,7 +147,7 @@ def get_ps_store_data(title, title_id, region, url=None, reformat=False):
                             return title_parse, cover_art
 
                 # Last resort filter if SKU wrong, but title matches.
-                elif title.upper() == _format_title(title_parse, reformat):
+                if title.upper() == _format_title(title_parse, reformat):
                     cover_art = _get_cover(game)
                     if cover_art is not None:
                         if has_parent is False:
@@ -163,6 +165,7 @@ def _game(item):
     if 'attributes' in item:
         game = item['attributes']
         return game
+    return None
 
 
 def _is_game_type(game, game_type):
@@ -171,6 +174,7 @@ def _is_game_type(game, game_type):
        game['game-content-type'] == game_type:
         if 'default-sku-id' in game:
             return True
+    return None
 
 
 def _parse_id(_id):
@@ -182,7 +186,7 @@ def _parse_id(_id):
         full_id = full_id.split("_")
         parse_id = full_id[0]
     except IndexError:
-        parse_id = "None"
+        parse_id = None
     return parse_id
 
 
@@ -202,7 +206,7 @@ def _get_cover(game):
         cover = 'thumbnail-url-base'
         cover_art = game[cover]
         return cover_art
-    return
+    return None
 
 
 def _get_similar(title, match_id, match_title, reformat):
@@ -215,7 +219,7 @@ def _get_similar(title, match_id, match_title, reformat):
                 return _title, cover_art
     elif match_title:
         for _title, url in match_title.items():
-                cover_art = url
-                _LOGGER.debug("Wrong ID Match")
-                return _title, cover_art
+            cover_art = url
+            _LOGGER.debug("Wrong ID Match")
+            return _title, cover_art
     return None, None
