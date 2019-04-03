@@ -90,6 +90,7 @@ def _send_recv_msg(host, broadcast, msg, receive=True):
 
     if receive:
         return sock.recvfrom(1024)
+    return None
 
 
 def _send_msg(host, broadcast, msg):
@@ -107,6 +108,7 @@ def search(host=None, broadcast=True):
         data[u'host-ip'] = addr[0]
         ps_list.append(data)
         return ps_list
+    return None
 
 
 def get_status(host):
@@ -147,14 +149,15 @@ class Discovery:
         try:
             self.send(host)
         except (socket.error, socket.timeout):
-            self.sock.close
-            return
+            self.sock.close()
+            return self.ps_list
         while finished is False:
             try:
                 device = self.receive()
                 if device not in self.ps_list:
                     self.ps_list.append(device)
             except (socket.error, socket.timeout):
+                self.sock.close()
                 return self.ps_list
 
     def send(self, host):
@@ -168,3 +171,4 @@ class Discovery:
             data = parse_ddp_response(data.decode('utf-8'))
             data[u'host-ip'] = addr[0]
             return data
+        return None
