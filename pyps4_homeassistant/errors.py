@@ -1,5 +1,6 @@
 """Exceptions Definitions."""
 
+
 class CredentialTimeout(Exception):
     """Recieved no credentials or timed out."""
 
@@ -14,6 +15,7 @@ class LoginFailed(Exception):
 
 class UnknownButton(Exception):
     """Button not valid."""
+
 
 class UnknownDDPResponse(Exception):
     """DDP Response is Unknown."""
