@@ -14,9 +14,8 @@ class Helper:
 
     def __init__(self):
         """Init Class."""
-        pass
 
-    def has_devices(self, host=None):
+    def has_devices(self, host=None):  # noqa: pylint: disable=no-self-use
         """Return if there are devices that can be discovered."""
         _LOGGER.debug("Searching for PS4 Devices")
         discover = Discovery()
@@ -25,7 +24,7 @@ class Helper:
             _LOGGER.debug("Found PS4 at: %s", device['host-ip'])
         return devices
 
-    def link(self, host, creds, pin):
+    def link(self, host, creds, pin):  # noqa: pylint: disable=no-self-use
         """Perform pairing with PS4."""
         ps4 = Ps4(host, creds)
         is_ready = True
@@ -38,12 +37,12 @@ class Helper:
             is_login = False
         return is_ready, is_login
 
-    def get_creds(self):
+    def get_creds(self):  # noqa: pylint: disable=no-self-use
         """Return Credentials."""
         credentials = Credentials()
         return credentials.listen()
 
-    def port_bind(self, ports):
+    def port_bind(self, ports):  # noqa: pylint: disable=no-self-use
         """Try binding to ports."""
         import socket
         for port in ports:
@@ -55,4 +54,4 @@ class Helper:
             except socket.error:
                 sock.close()
                 return int(port)
-        return
+            return None
