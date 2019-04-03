@@ -77,11 +77,9 @@ def get_ps_store_data(    # noqa: pylint: disable=too-many-locals
     if url is None:
         url = get_ps_store_url(title, region)
     req = None
-    match_id = {}
-    match_title = {}
+
     if reformat is True:
         title = re.sub('[^A-Za-z0-9]+', ' ', title)
-    type_list = ['Full Game', 'Game', 'PSN Game', 'Bundle', 'App']
     try:
         req = requests.get(url[0], headers=url[1])
         result = req.json()['included']
@@ -97,8 +95,14 @@ def get_ps_store_data(    # noqa: pylint: disable=too-many-locals
     except requests.exceptions.RequestException as warning:
         _LOGGER.warning("PS cover art request failed, %s", warning)
         return None, None
+    return parse_data(result, title, title_id, region, reformat)
 
-    # Filter through each item in search request
+
+def parse_data(result, title, title_id, region, reformat):
+    """Filter through each item in search request."""
+    match_id = {}
+    match_title = {}
+    type_list = ['Full Game', 'Game', 'PSN Game', 'Bundle', 'App']
 
     # Filter each item by prioritized type
     for game_type in type_list:
