@@ -7,10 +7,7 @@ import .__version__ as version
 
 MIN_PY_VERSION = '.'.join(map(str, version.REQUIRED_PYTHON_VER))
 
-REQUIRES = [
-    'construct>=2.9.45',
-    'pycryptodomex>=3.7.2',
-]
+REQUIRES = list(open('requirements.txt'))
 
 CLASSIFIERS = [
     'Development Status :: 3 - Alpha',
