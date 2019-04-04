@@ -141,7 +141,7 @@ class Discovery:
         self.host = '255.255.255.255'
         self.ps_list = []
 
-    def search(self, host):
+    def search(self, host):  # noqa: pylint: disable=inconsistent-return-statements
         """Search for Devices."""
         if host is None:
             host = self.host
@@ -159,7 +159,6 @@ class Discovery:
             except (socket.error, socket.timeout):
                 self.sock.close()
                 return self.ps_list
-            return self.ps_list
 
     def send(self, host):
         """Broadcast Message."""
