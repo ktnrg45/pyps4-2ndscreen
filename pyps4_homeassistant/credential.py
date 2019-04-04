@@ -113,7 +113,8 @@ def parse_ddp_response(response, listen_type):
     elif listen_type == 'wakeup':
         if 'WAKEUP' in rsp:
             return 'wakeup'
-    raise UnknownDDPResponse
+    else:
+        raise UnknownDDPResponse
 
 
 def get_creds(response):
