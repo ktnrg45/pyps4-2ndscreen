@@ -115,6 +115,7 @@ def parse_ddp_response(response, listen_type):
             return 'wakeup'
     else:
         raise UnknownDDPResponse
+        return None
 
 
 def get_creds(response):
