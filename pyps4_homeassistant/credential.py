@@ -104,7 +104,7 @@ class Credentials:
         return msg
 
 
-def parse_ddp_response(response, listen_type):
+def parse_ddp_response(response, listen_type):  # noqa: pylint: disable=inconsistent-return-statements
     """Parse the response."""
     rsp = response.decode('utf-8')
     if listen_type == 'search':
@@ -115,7 +115,6 @@ def parse_ddp_response(response, listen_type):
             return 'wakeup'
     else:
         raise UnknownDDPResponse
-        return None
 
 
 def get_creds(response):
