@@ -68,8 +68,7 @@ def get_ps_store_url(title, region, reformat=False):
     return url
 
 
-def get_ps_store_data(    # noqa: pylint: disable=too-many-locals
-        title, title_id, region, url=None, reformat=False):
+def get_ps_store_data(title, title_id, region, url=None, reformat=False):
     """Get cover art from database."""
     import requests
     import re
@@ -107,69 +106,45 @@ def parse_data(result, title, title_id, region, reformat):
     # Filter each item by prioritized type
     for game_type in type_list:
         for item in result:
-            has_parent = False
 
             # Set each item as Game object
-            game = _game(item)
+            game = Game(item, reformat)
+            game.title_id = _parse_id(game.game['default-sku-id'])
+            game.title = game.game['name']
 
-            # Get Parent attr
-            if 'parent' in game:
-                if game['parent'] is not None:
-                    has_parent = True
-                    parent = game['parent']
-                    parent_id = _parse_id(parent['id'])
-                    parent_title = parent['name']
-                    parent_title_f = _format_title(parent_title, reformat)
-                    parent_art = "{}/image".format(parent['url'])
-                    if parent_id == title_id:
-                        _LOGGER.debug("Parent ID Match")
-                        return parent_title, parent_art
-                    if title.upper() == parent_title_f:
-                        _LOGGER.debug("Parent Title Match")
-                        return parent_title, parent_art
-                    if title.upper() in parent_title_f:
-                        _LOGGER.debug("Parent Similar Title Match")
-                        return parent_title, parent_art
+            parent_match = _filter_parent(game, title_id, title)
+            if parent_match is not None:
+                return parent_match
 
-            if _is_game_type(game, game_type):
-                parse_id = _parse_id(game['default-sku-id'])
-                title_parse = game['name']
+            game.cover_art = _get_cover(game.game)
+            if game.cover_art is None:
+                break
 
-                # If passed SKU matches object SKU
-                if parse_id == title_id:
-                    cover_art = _get_cover(game)
-                    if cover_art is not None:
+            # Direct Match Filter
+            if _is_game_type(game.game, game_type):
+                game.type = game_type
 
-                        # If true likely a bundle, dlc, deluxe edition
-                        if has_parent is False:
-                            match_id.update({title_parse: cover_art})
+                # Check if item has no parent.
+                if not game.parent:
 
-                        # Most likely the intended item so return
-                        if title.upper() == _format_title(title_parse,
-                                                          reformat):
-                            _LOGGER.debug("Direct Match")
-                            return title_parse, cover_art
+                    # If title matches and has no parent.
+                    if title.upper() == _format_title(game.title, reformat):
+                        match_title.update({game.title: game.cover_art})
 
-                # Last resort filter if SKU wrong, but title matches.
-                if title.upper() == _format_title(title_parse, reformat):
-                    cover_art = _get_cover(game)
-                    if cover_art is not None:
-                        if has_parent is False:
-                            match_title.update({title_parse: cover_art})
+                    # If passed SKU matches object SKU.
+                    if game.title_id == title_id:
+                        match_id.update({game.title: game.cover_art})
+
+                if game.title in match_title and match_id:
+                    # Most likely the intended item so return
+                    _LOGGER.debug("Direct Match")
+                    return game.title, game.cover_art
 
     s_title, s_art = _get_similar(title, match_id, match_title, reformat)
     if s_title is None or s_art is None:
         if reformat is False:
             return get_ps_store_data(title, title_id, region, reformat=True)
     return s_title, s_art
-
-
-def _game(item):
-    """Create game object."""
-    if 'attributes' in item:
-        game = item['attributes']
-        return game
-    return None
 
 
 def _is_game_type(game, game_type):
@@ -227,3 +202,55 @@ def _get_similar(title, match_id, match_title, reformat):
             _LOGGER.debug("Wrong ID Match")
             return _title, cover_art
     return None, None
+
+
+def _filter_parent(game, title_id, title):
+    # Filter with Parent
+    if game.parent:
+        parent_match = False
+        if game.parent['id'] == title_id:
+            _LOGGER.debug("Parent ID Match")
+            parent_match = True
+        if title.upper() == game.parent['title_format']:
+            _LOGGER.debug("Parent Title Match")
+            parent_match = True
+        if title.upper() in game.parent['title_format']:
+            _LOGGER.debug("Parent Similar Title Match")
+            parent_match = True
+
+        if parent_match is True:
+            return game.parent['title'], game.parent['art']
+    return None
+
+
+class Game():
+    """Game object."""
+
+    def __init__(self, data, reformat):
+        """Init."""
+        self.data = data
+        self.game = None
+        self.title = None
+        self.title_id = None
+        self.cover_art = None
+        self.type = None
+        self.parent = {}
+
+        self.get_game()
+        self.get_parent(reformat)
+
+    def get_game(self):
+        """Create game object."""
+        if 'attributes' in self.data:
+            self.game = self.data['attributes']
+
+    def get_parent(self, reformat):
+        """Get Parent attr."""
+        if 'parent' in self.game:
+            if self.game['parent'] is not None:
+                parent = self.game['parent']
+                self.parent['id'] = _parse_id(parent['id'])
+                self.parent['title'] = parent['name']
+                self.parent['art'] = "{}/image".format(parent['url'])
+                self.parent['title_format'] = _format_title(
+                    self.parent['title'], reformat)
