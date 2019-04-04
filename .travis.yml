@@ -8,5 +8,5 @@ install:
   - pip install -r requirements.txt
   - pip install flake8==3.3.0 pylint==1.8.1
 script:
-  - flake8 pyps4_homeassistant
+  - flake8 --exclude __init__.py pyps4_homeassistant
   - pylint pyps4_homeassistant
