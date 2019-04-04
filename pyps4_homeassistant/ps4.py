@@ -276,11 +276,11 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
             _LOGGER.debug("Could not find title in default database.")
             try:
                 _title, art = search_all(title, title_id)
-                _LOGGER.debug("Found Title: %s, URL: %s", _title, art)
-                return _title, art
             except TypeError:
                 _LOGGER.warning("Could not find cover art for: %s", title)
                 return None, None
+        _LOGGER.debug("Found Title: %s, URL: %s", _title, art)
+        return _title, art
 
     @property
     def is_running(self):
