@@ -99,6 +99,7 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
 
     def open(self):
         """Open a connection to the PS4."""
+        self.get_status()
         if self.is_standby:
             raise NotReady
 
