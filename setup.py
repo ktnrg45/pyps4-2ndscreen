@@ -3,7 +3,7 @@
 """Setup for pyps4-homeassistant."""
 
 from setuptools import setup, find_packages
-import .__version__ as version
+import pyps4_homeassistant.__version__ as version
 
 MIN_PY_VERSION = '.'.join(map(str, version.REQUIRED_PYTHON_VER))
 
