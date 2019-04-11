@@ -2,7 +2,6 @@
 """Credential fetcher for 2nd Screen app."""
 import logging
 import socket
-import time
 
 from .errors import CredentialTimeout, UnknownDDPResponse
 
@@ -46,7 +45,7 @@ class Credentials:
         except socket.error:
             _LOGGER.error("Failed to create socket")
             return
-        sock.settimeout(30)
+        sock.settimeout(3)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
             sock.bind((self.UDP_IP, self.DDP_PORT))
@@ -59,37 +58,37 @@ class Credentials:
 
     def listen(self, timeout=120):
         """Listen and respond to requests."""
-        start_time = time.time()
-        sock = self.sock
+        self.sock.settimeout(timeout)
         data = None
         address = None
         response = None
-        pings = 0
-        while pings < 10:
-            if timeout < time.time() - start_time:
-                return None
+        while 1:
             try:
-                response = sock.recvfrom(1024)
+                _LOGGER.info(
+                    "Starting Credential Service with Timeout of %s seconds.",
+                    timeout)
+                response = self.sock.recvfrom(1024)
             except socket.error:
-                sock.close()
-                pings += 1
+                self.sock.close()
             if not response:
+                _LOGGER.info(
+                    "Credential service has timed out with no response.")
                 raise CredentialTimeout
             data = response[0]
             address = response[1]
             if parse_ddp_response(data, 'search') == 'search':
                 _LOGGER.debug("Search from: %s", address)
                 msg = self.get_ddp_message(self.standby, self.response)
-                sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+                self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
                 try:
-                    sock.sendto(msg.encode('utf-8'), address)
+                    self.sock.sendto(msg.encode('utf-8'), address)
                 except socket.error:
-                    sock.close()
+                    self.sock.close()
             if parse_ddp_response(data, 'wakeup') == 'wakeup':
                 self.iswakeup = True
                 _LOGGER.debug("Wakeup from: %s", address)
                 creds = get_creds(data)
-                sock.close()
+                self.sock.close()
                 return creds
         return None
 
