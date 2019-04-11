@@ -63,19 +63,20 @@ class Credentials:
         sock = self.sock
         data = None
         address = None
+        response = None
         pings = 0
         while pings < 10:
             if timeout < time.time() - start_time:
                 return None
             try:
                 response = sock.recvfrom(1024)
-                data = response[0]
-                address = response[1]
             except socket.error:
                 sock.close()
                 pings += 1
-            if not data:
+            if not response:
                 raise CredentialTimeout
+            data = response[0]
+            address = response[1]
             if parse_ddp_response(data, 'search') == 'search':
                 _LOGGER.debug("Search from: %s", address)
                 msg = self.get_ddp_message(self.standby, self.response)
