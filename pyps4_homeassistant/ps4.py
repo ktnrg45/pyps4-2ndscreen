@@ -8,7 +8,7 @@ import time
 
 from .connection import Connection
 from .ddp import get_status, launch, wakeup
-from .errors import NotReady, UnknownButton, LoginFailed
+from .errors import NotReady, UnknownButton, LoginFailed, DataNotFound
 from .media_art import get_ps_store_data as ps_data
 from .media_art import (search_all, COUNTRIES, DEPRECATED_REGIONS)
 
@@ -83,11 +83,11 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
         self._broadcast = broadcast
         self._socket = None
         self._credential = None
-        self._connected = False
         self._status_timer = None
         self._msg_sending = False
         self.keep_alive = False
         self.status = None
+        self.connected = False
 
         if credential:
             self._credential = credential
@@ -103,14 +103,14 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
         if self.is_standby:
             raise NotReady
 
-        if self._connected is False:
+        if self.connected is False:
             self.wakeup()
             self.launch()
             delay(0.5)
             self._connection.connect()
             login = self._connection.login()
             if login is True:
-                self._connected = True
+                self.connected = True
                 if self.keep_alive is True:
                     _LOGGER.debug("Keep Alive feature enabled")
                     self._status_timer = StatusTimer(60, self.send_status)
@@ -119,7 +119,7 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
     def close(self):
         """Close the connection to the PS4."""
         self._connection.disconnect()
-        self._connected = False
+        self.connected = False
         self.keep_alive = False
         if self._status_timer is not None:
             self._status_timer.cancel()
@@ -154,7 +154,7 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
 
     def standby(self):
         """Standby."""
-        if self._connected is True:
+        if self.connected is True:
             self.close()
         self.open()
         self._connection.standby()
@@ -165,7 +165,7 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
 
         `title_id`: title to start
         """
-        if self._connected is True:
+        if self.connected is True:
             self.close()
         self.open()
         if self._connection.start_title(title_id):
@@ -221,7 +221,7 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
 
     def send_status(self):
         """Send connection status to PS4."""
-        if self._connected is True:
+        if self.connected is True:
             while self._msg_sending is True:
                 pass
             self._msg_sending = True
@@ -246,7 +246,9 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
             region = regions[region]
         try:
             _title, art = ps_data(title, title_id, region, url)
-        except TypeError:
+            if _title is None or art is None:
+                raise DataNotFound
+        except (TypeError, DataNotFound):
             _LOGGER.debug("Could not find title in default database.")
             try:
                 _title, art = search_all(title, title_id)
