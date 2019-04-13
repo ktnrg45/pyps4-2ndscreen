@@ -39,12 +39,13 @@ def search_all(title, title_id):
     for country in COUNTRIES:
         region = COUNTRIES[country]
         (_title, art) = get_ps_store_data(title, title_id, region)
-        if _title and art:
+        _LOGGER.debug(_title)
+        if _title is not None:
             return _title, art
     return None, None
 
 
-def get_ps_store_url(title, region, reformat=False):
+def get_ps_store_url(title, region, reformat=None):
     """Get URL for title search in PS Store."""
     import urllib
     import re
@@ -68,7 +69,7 @@ def get_ps_store_url(title, region, reformat=False):
     return url
 
 
-def get_ps_store_data(title, title_id, region, url=None, reformat=False):
+def get_ps_store_data(title, title_id, region, url=None, reformat=None):
     """Get cover art from database."""
     import requests
     import re
@@ -77,7 +78,7 @@ def get_ps_store_data(title, title_id, region, url=None, reformat=False):
         url = get_ps_store_url(title, region)
     req = None
 
-    if reformat is True:
+    if reformat is 'chars':
         title = re.sub('[^A-Za-z0-9]+', ' ', title)
     try:
         req = requests.get(url[0], headers=url[1])
@@ -109,8 +110,10 @@ def parse_data(result, title, title_id, region, reformat):
 
             # Set each item as Game object
             game = Game(item, reformat)
-            game.title_id = _parse_id(game.game['default-sku-id'])
+            if 'default-sku-id' in game.game:
+                game.title_id = _parse_id(game.game['default-sku-id'])
             game.title = game.game['name']
+            _LOGGER.debug('Item: %s', game.title)
 
             parent_match = _filter_parent(game, title_id, title)
             if parent_match is not None:
@@ -142,8 +145,15 @@ def parse_data(result, title, title_id, region, reformat):
 
     s_title, s_art = _get_similar(title, match_id, match_title, reformat)
     if s_title is None or s_art is None:
-        if reformat is False:
-            return get_ps_store_data(title, title_id, region, reformat=True)
+        if reformat is None:
+            _LOGGER.debug("Retrying with no special chars")
+            return get_ps_store_data(title, title_id, region, reformat='chars')
+        if reformat is 'chars':
+            _LOGGER.debug("Retrying with partial title")
+            title = title.split(' ')
+            title = title[0]
+            return get_ps_store_data(
+                title, title_id, region, reformat='partial')
     return s_title, s_art
 
 
@@ -173,7 +183,7 @@ def _format_title(title, reformat):
     """Format Title."""
     import re
 
-    if reformat is True:
+    if reformat is None:
         title = re.sub('[^A-Za-z0-9]+', ' ', title)
     title = title.upper()
     return title
