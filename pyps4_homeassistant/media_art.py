@@ -112,8 +112,8 @@ def parse_data(result, title, title_id, region, reformat):
             game = Game(item, reformat)
             if 'default-sku-id' in game.game:
                 game.title_id = _parse_id(game.game['default-sku-id'])
-            game.title = game.game['name']
-            _LOGGER.debug('Item: %s', game.title)
+                game.title = game.game['name']
+                _LOGGER.debug('Item: %s', game.title)
 
             parent_match = _filter_parent(game, title_id, title)
             if parent_match is not None:
