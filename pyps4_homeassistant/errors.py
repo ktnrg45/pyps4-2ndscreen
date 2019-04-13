@@ -5,6 +5,10 @@ class CredentialTimeout(Exception):
     """Recieved no credentials or timed out."""
 
 
+class DataNotFound(Exception):
+    """PS Store Data Not Found."""
+
+
 class NotReady(Exception):
     """PS4 no connection."""
 
