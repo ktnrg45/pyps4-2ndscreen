@@ -230,7 +230,7 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
             if is_loggedin is False:
                 self.close()
 
-    def get_ps_store_data(self, title, title_id, region, url=None):  # noqa: pylint: disable=no-self-use
+    def get_ps_store_data(self, title, title_id, region, url=None, search_all=True):  # noqa: pylint: disable=no-self-use
         """Return Title and Cover data."""
         regions = COUNTRIES
         d_regions = DEPRECATED_REGIONS
@@ -250,11 +250,12 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
                 raise DataNotFound
         except (TypeError, DataNotFound):
             _LOGGER.debug("Could not find title in default database.")
-            try:
-                _title, art = search_all(title, title_id)
-            except TypeError:
-                _LOGGER.warning("Could not find cover art for: %s", title)
-                return None, None
+            if search_all is True:
+                try:
+                    _title, art = search_all(title, title_id)
+                except TypeError:
+                    _LOGGER.warning("Could not find cover art for: %s", title)
+                    return None, None
         _LOGGER.debug("Found Title: %s, URL: %s", _title, art)
         return _title, art
 
