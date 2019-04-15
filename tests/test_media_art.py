@@ -1,19 +1,20 @@
-"""Tests for media_art."""
+"""Tests for media_art. Uses actual HTTP response."""
 import logging
 import pyps4_homeassistant.ps4 as ps4
 
 TEST_LIST = [  # title, titleid, region
-    ["Marvel's Spider-Man", 'CUSA11995', 'R5'],
-    ["For Honor", 'CUSA05265', 'R5'],
-    ["Overwatch: Origins Edition", 'CUSA03975', 'R5'],
-    ["inFAMOUS First Light™", 'CUSA00575', 'R1'],
-    ["God of War® III Remastered", 'CUSA01623', 'R1'],
-    ["WATCH_DOGS® 2", 'CUSA04459', 'R1'],
-    ["Gran TurismoSPORT", 'CUSA03220', 'R1'],
-    ["Marvel's Spider-Man", 'CUSA11993', 'R2'],
-    ["Ratchet & Clank™", 'CUSA01073', 'R2'],
-    ["Ratchet & Clank™", 'CUSA01073', 'R2'],
-    ["Metro Exodus", 'CUSA11407', 'R1'],
+    ["Marvel's Spider-Man", 'CUSA11995', 'Russia'],
+    ["For Honor", 'CUSA05265', 'Russia'],
+    ["Overwatch: Origins Edition", 'CUSA03975', 'Russia'],
+    ["inFAMOUS First Light™", 'CUSA00575', 'United States'],
+    ["God of War® III Remastered", 'CUSA01623', 'United States'],
+    ["WATCH_DOGS® 2", 'CUSA04459', 'United States'],
+    ["Gran TurismoSPORT", 'CUSA03220', 'United States'],
+    ["Metro Exodus", 'CUSA11407', 'United States'],
+    ["Marvel's Spider-Man", 'CUSA11993', 'Sweden'],
+    ["Ratchet & Clank™", 'CUSA01073', 'Sweden'],
+    ["Uncharted: The Nathan Drake Collection™", 'CUSA02320', 'United States'],
+    ["NHL™ 18", 'CUSA07580', 'France']
 ]
 
 logging.basicConfig(level=logging.INFO)
@@ -39,3 +40,5 @@ def test_sample_list():
             "Result %s: %s, %s",
             TEST_LIST.index(x), result_title, result_art)
         assert result_title is not None
+        
+test_sample_list()
