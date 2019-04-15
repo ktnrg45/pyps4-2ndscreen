@@ -78,7 +78,7 @@ def get_ps_store_data(title, title_id, region, url=None, reformat=None):
         url = get_ps_store_url(title, region)
     req = None
 
-    if reformat is 'chars':
+    if reformat == 'chars':
         title = re.sub('[^A-Za-z0-9]+', ' ', title)
     try:
         req = requests.get(url[0], headers=url[1])
@@ -129,16 +129,20 @@ def parse_data(result, title, title_id, region, reformat):
 
                 # Check if item has no parent.
                 if not game.parent:
+                    title_matched = False
+                    id_matched = False
 
                     # If title matches and has no parent.
                     if title.upper() == _format_title(game.title, reformat):
+                        title_matched = True
                         match_title.update({game.title: game.cover_art})
 
                     # If passed SKU matches object SKU.
                     if game.title_id == title_id:
+                        id_matched = True
                         match_id.update({game.title: game.cover_art})
 
-                if game.title in match_title and match_id:
+                if title_matched and id_matched:
                     # Most likely the intended item so return
                     _LOGGER.debug("Direct Match")
                     return game.title, game.cover_art
@@ -148,7 +152,7 @@ def parse_data(result, title, title_id, region, reformat):
         if reformat is None:
             _LOGGER.debug("Retrying with no special chars")
             return get_ps_store_data(title, title_id, region, reformat='chars')
-        if reformat is 'chars':
+        if reformat == 'chars':
             _LOGGER.debug("Retrying with partial title")
             title = title.split(' ')
             title = title[0]
