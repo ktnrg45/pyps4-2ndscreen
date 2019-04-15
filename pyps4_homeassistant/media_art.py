@@ -126,12 +126,11 @@ def parse_data(result, title, title_id, region, reformat):  # noqa: pylint: disa
             # Direct Match Filter
             if _is_game_type(game.game, game_type):
                 game.type = game_type
+                title_matched = False
+                id_matched = False
 
                 # Check if item has no parent.
                 if not game.parent:
-                    title_matched = False
-                    id_matched = False
-
                     # If title matches and has no parent.
                     if title.upper() == _format_title(game.title, reformat):
                         title_matched = True
