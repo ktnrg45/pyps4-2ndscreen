@@ -35,7 +35,7 @@ def test_sample_list():
         title_id = item[1]
         region = item[2]
         result_title, result_art = TEST_PS4.get_ps_store_data(
-            title, title_id, region)
+            title, title_id, region, search_all=False)
         _LOGGER.info(
             "Result %s: %s, %s",
             TEST_LIST.index(x), result_title, result_art)
