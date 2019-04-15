@@ -9,8 +9,8 @@ import time
 from .connection import Connection
 from .ddp import get_status, launch, wakeup
 from .errors import NotReady, UnknownButton, LoginFailed, DataNotFound
-from .media_art import get_ps_store_data as ps_data
-from .media_art import (search_all, COUNTRIES, DEPRECATED_REGIONS)
+from .media_art import get_ps_store_data as ps_data, search_all as _search_all
+from .media_art import COUNTRIES, DEPRECATED_REGIONS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -252,7 +252,7 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
             _LOGGER.debug("Could not find title in default database.")
             if search_all is True:
                 try:
-                    _title, art = search_all(title, title_id)
+                    _title, art = _search_all(title, title_id)
                 except TypeError:
                     _LOGGER.warning("Could not find cover art for: %s", title)
                     return None, None
