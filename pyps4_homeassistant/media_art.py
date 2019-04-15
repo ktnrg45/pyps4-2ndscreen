@@ -98,7 +98,7 @@ def get_ps_store_data(title, title_id, region, url=None, reformat=None):
     return parse_data(result, title, title_id, region, reformat)
 
 
-def parse_data(result, title, title_id, region, reformat):  # noqa: pylint: disable=(too-many-locals, too-many-branches)
+def parse_data(result, title, title_id, region, reformat):  # noqa: pylint: disable=too-many-locals, too-many-branches
     """Filter through each item in search request."""
     match_id = {}
     match_title = {}
