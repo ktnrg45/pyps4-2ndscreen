@@ -40,5 +40,6 @@ def test_sample_list():
             "Result %s: %s, %s",
             TEST_LIST.index(x), result_title, result_art)
         assert result_title is not None
-        
+
+
 test_sample_list()
