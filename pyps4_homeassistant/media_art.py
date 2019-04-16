@@ -58,8 +58,6 @@ def get_ps_store_url(title, region, reformat='chars'):
             '(KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36'
     }
 
-    region = COUNTRIES[region]
-
     if title is not None:
         if reformat == 'chars':
             title = re.sub('[^A-Za-z0-9\']+', ' ', title)
