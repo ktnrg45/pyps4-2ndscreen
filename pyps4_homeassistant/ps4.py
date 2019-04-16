@@ -244,20 +244,13 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
                 return None
         else:
             region = regions[region]
-        try:
-            _title, art = ps_data(title, title_id, region, url)
-            if _title is None or art is None:
-                raise DataNotFound
-        except (TypeError, DataNotFound):
-            _LOGGER.debug("Could not find title in default database.")
-            if search_all is True:
-                try:
-                    _title, art = _search_all(title, title_id)
-                except TypeError:
-                    _LOGGER.warning("Could not find cover art for: %s", title)
-                    return None, None
-        _LOGGER.debug("Found Title: %s, URL: %s", _title, art)
-        return _title, art
+
+        result_item = ps_data(title, title_id, region, url)
+        if result_item is not None:
+            _LOGGER.debug("Found Title: %s, URL: %s",
+                          result_item.name, result_item.cover_art)
+            return result_item
+        return None
 
     @property
     def is_running(self):
