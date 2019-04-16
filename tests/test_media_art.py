@@ -3,7 +3,13 @@ import logging
 import pyps4_homeassistant.ps4 as ps4
 
 TEST_LIST = [  # title, titleid, region
+    ["Marvel's Spider-Man", 'CUSA11993', 'Austria'],
+    ["Marvel's Spider-Man", 'CUSA11993', 'Nederland'],
+    ["Marvel's Spider-Man", 'CUSA11993', 'Italy'],
+    ["Marvel's Spider-Man", 'CUSA11994', 'Spain'],
+    ["Marvel's Spider-Man", 'CUSA11994', 'Portugal'],
     ["Marvel's Spider-Man", 'CUSA11995', 'Russia'],
+    ["Marvel's Spider-Man", 'CUSA09893', 'Korea'],
     ["For Honor", 'CUSA05265', 'Russia'],
     ["Overwatch: Origins Edition", 'CUSA03975', 'Russia'],
     ["inFAMOUS First Light™", 'CUSA00575', 'United States'],
@@ -34,12 +40,13 @@ def test_sample_list():
         title = item[0]
         title_id = item[1]
         region = item[2]
-        result_title, result_art = TEST_PS4.get_ps_store_data(
+        result_item = TEST_PS4.get_ps_store_data(
             title, title_id, region, search_all=False)
-        _LOGGER.info(
-            "Result %s: %s, %s",
-            TEST_LIST.index(x), result_title, result_art)
-        assert result_title is not None
+        if result_item:
+            _LOGGER.info(
+                "Result %s: %s",
+                TEST_LIST.index(x), vars(result_item))
+        assert result_item is not None
 
 
 test_sample_list()
