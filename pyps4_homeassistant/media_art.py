@@ -217,7 +217,7 @@ class ParentItem():
     @property
     def cover_art(self):
         """Parent Art."""
-        return self.data['parent']['url'] if not None else None
+        return self.data['url'] if not None else None
 
     @property
     def game_type(self):
