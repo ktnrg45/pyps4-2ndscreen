@@ -230,7 +230,7 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
             if is_loggedin is False:
                 self.close()
 
-    def get_ps_store_data(self, title, title_id, region, url=None, search_all=True):  # noqa: pylint: disable=no-self-use
+    def get_ps_store_data(self, title, title_id, region, url=None):  # noqa: pylint: disable=no-self-use, line-too-long
         """Return Title and Cover data."""
         regions = COUNTRIES
         d_regions = DEPRECATED_REGIONS
