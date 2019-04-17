@@ -113,7 +113,7 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
                 self.connected = True
                 if self.keep_alive is True:
                     _LOGGER.debug("Keep Alive feature enabled")
-                    self._status_timer = StatusTimer(60, self.send_status)
+                    self._status_timer = StatusTimer(30, self.send_status)
                     self._status_timer.start()
 
     def close(self):
