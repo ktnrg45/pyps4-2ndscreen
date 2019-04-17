@@ -11,4 +11,4 @@ script:
   - pylint pyps4_homeassistant
 branches:
   only:
-    - master
+  - master
