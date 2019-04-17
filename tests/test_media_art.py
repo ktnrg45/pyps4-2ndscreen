@@ -12,18 +12,22 @@ TEST_LIST = [  # title, titleid, region
     ["Marvel's Spider-Man", 'CUSA09893', 'Korea'],
     ["For Honor", 'CUSA05265', 'Russia'],
     ["Overwatch: Origins Edition", 'CUSA03975', 'Russia'],
+    ["Call of Duty®: WWII", 'CUSA05969', 'United States'],
+    ["UNCHARTED: The Lost Legacy", "CUSA07737", 'United States'],
+    ["Battlefield™ V", "CUSA08724", 'United States'],
+    ["Call of Duty®: Black Ops 4", "CUSA11100", 'United States'],
+    ["HITMAN™ 2", "CUSA12421", 'United States'],
     ["inFAMOUS First Light™", 'CUSA00575', 'United States'],
     ["God of War® III Remastered", 'CUSA01623', 'United States'],
     ["WATCH_DOGS® 2", 'CUSA04459', 'United States'],
     ["Gran TurismoSPORT", 'CUSA03220', 'United States'],
-    ["Metro Exodus", 'CUSA11407', 'United States'],
     ["Marvel's Spider-Man", 'CUSA11993', 'Sweden'],
     ["Ratchet & Clank™", 'CUSA01073', 'Sweden'],
     ["Uncharted: The Nathan Drake Collection™", 'CUSA02320', 'United States'],
     ["NHL™ 18", 'CUSA07580', 'France']
 ]
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 _LOGGER = logging.getLogger(__name__)
 
 TEST_HOST = "192.168.0.1"
@@ -45,7 +49,7 @@ def test_sample_list():
         if result_item:
             _LOGGER.info(
                 "Result %s: %s",
-                TEST_LIST.index(x), vars(result_item))
+                TEST_LIST.index(x), result_item.name)
         assert result_item is not None
 
 
