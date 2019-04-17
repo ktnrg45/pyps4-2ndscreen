@@ -169,7 +169,7 @@ class ResultItem():
     def __init__(self, data, type_list):
         """Init Class."""
         self.data = data['attributes']
-        self.type_list
+        self.type_list = type_list
 
     @property
     def name(self):
@@ -213,7 +213,7 @@ class ParentItem():
     def __init__(self, data, game_type):
         """Init Class."""
         self.data = data
-        self._type = game_type
+        self.game_type = game_type
 
     @property
     def name(self):
@@ -236,4 +236,4 @@ class ParentItem():
     @property
     def game_type(self):
         """Parent Game type."""
-        return self._type
+        return self.game_type
