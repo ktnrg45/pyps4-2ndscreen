@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """Constants for pyps4-homeassistant."""
 MAJOR_VERSION = 0
-MINOR_VERSION = 6
-PATCH_VERSION = 1
+MINOR_VERSION = 7
+PATCH_VERSION = 0
 REQUIRED_PYTHON_VER = (3, 5, 3)
 
 __short_version__ = '{}.{}'.format(MAJOR_VERSION, MINOR_VERSION)
