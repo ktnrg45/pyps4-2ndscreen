@@ -8,8 +8,8 @@ import time
 
 from .connection import Connection
 from .ddp import get_status, launch, wakeup
-from .errors import NotReady, UnknownButton, LoginFailed, DataNotFound
-from .media_art import get_ps_store_data as ps_data, search_all as _search_all
+from .errors import NotReady, UnknownButton, LoginFailed
+from .media_art import get_ps_store_data as ps_data
 from .media_art import COUNTRIES, DEPRECATED_REGIONS
 
 _LOGGER = logging.getLogger(__name__)
