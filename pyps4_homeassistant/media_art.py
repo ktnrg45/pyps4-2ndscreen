@@ -213,7 +213,7 @@ class ParentItem():
     def __init__(self, data, game_type):
         """Init Class."""
         self.data = data
-        self.game_type = game_type
+        self._game_type = game_type
 
     @property
     def name(self):
@@ -236,4 +236,4 @@ class ParentItem():
     @property
     def game_type(self):
         """Parent Game type."""
-        return self.game_type
+        return self._game_type
