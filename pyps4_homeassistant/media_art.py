@@ -50,7 +50,7 @@ def get_ps_store_url(title, region, reformat='chars', legacy=False):
     if reformat == 'chars':
         title = re.sub('[^A-Za-z0-9]+', ' ', title)
     elif reformat == 'chars+':  # ignore ' and -
-        title = re.sub('[^A-Za-z0-9\-\']+', ' ', title)
+        title = re.sub(r'[^A-Za-z0-9\-\']+', ' ', title)
     elif reformat == 'orig':
         pass
     elif reformat == 'tumbler':
@@ -102,7 +102,7 @@ def get_ps_store_data(title, title_id, region, url=None, legacy=False):
             _LOGGER.warning("PS cover art request failed, %s", warning)
             return None
 
-        data = parse_data(result, title, title_id, region, url[2])
+        data = parse_data(result, title_id, url[2])
         _LOGGER.debug(data)
         if data is not None:
             return data
@@ -111,7 +111,7 @@ def get_ps_store_data(title, title_id, region, url=None, legacy=False):
     return None
 
 
-def parse_data(result, title, title_id, region, lang):
+def parse_data(result, title_id, lang):
     """Filter through each item in search request."""
     type_list = {
         'de': ['Vollversion', 'Spiel', 'PSN-Spiel', 'Paket', 'App'],
@@ -133,12 +133,13 @@ def parse_data(result, title, title_id, region, lang):
 
     # Filter each item by prioritized type
     for g_type in type_list:
-        _LOGGER.debug("Searching type: {}".format(g_type))
+        _LOGGER.debug("Searching type: %s", g_type)
         for item in item_list:
             if item.game_type == g_type:
                 if item.sku_id == title_id:
-                    _LOGGER.debug("Item: {}, {}, {}".format(
-                        item.name, item.sku_id, vars(item.parent)))
+                    _LOGGER.debug(
+                        "Item: %s, %s, %s", item.name, item.sku_id,
+                        vars(item.parent))
                     if not item.parent or item.parent.data is None:
                         _LOGGER.info("Direct Match")
                         return item
@@ -157,8 +158,8 @@ def parse_id(sku_id):
     try:
         sku_id = sku_id.split("-")
         sku_id = sku_id[1].split("_")
-        parse_id = sku_id[0]
-        return parse_id
+        parsed_id = sku_id[0]
+        return parsed_id
     except IndexError:
         return None
 
@@ -184,6 +185,7 @@ class ResultItem():
             if game_type == self.type_list[4]:
                 return 'App'
             return game_type
+        return None
 
     @property
     def sku_id(self):
@@ -205,6 +207,7 @@ class ResultItem():
             return ParentItem(
                 self.data['parent'],
                 self.game_type) if not None else None
+        return None
 
 
 class ParentItem():
