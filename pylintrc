@@ -1,0 +1,21 @@
+[MESSAGES CONTROL]
+
+disable=wildcard-import,unused-import
+
+[REPORTS]
+
+# Tells whether to display a full report or only the messages
+reports=no
+
+[FORMAT]
+
+# Maximum number of characters on a single line.
+max-line-length=79
+
+[TYPECHECK]
+
+# List of module names for which member attributes should not be checked
+# (useful for modules/projects where namespaces are manipulated during runtime
+# and thus extisting member attributes cannot be deduced by static analysis
+ignored-modules=pytest
+

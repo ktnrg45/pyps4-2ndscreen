@@ -1,7 +1,10 @@
 """Helpers."""
 import logging
 
-import pyps4_homeassistant as pyps4
+from .credential import Credentials
+from .ddp import Discovery
+from .ps4 import Ps4
+from .errors import NotReady, LoginFailed
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -11,36 +14,35 @@ class Helper:
 
     def __init__(self):
         """Init Class."""
-        pass
 
-    def has_devices(self, host=None):
+    def has_devices(self, host=None):  # noqa: pylint: disable=no-self-use
         """Return if there are devices that can be discovered."""
         _LOGGER.debug("Searching for PS4 Devices")
-        discover = pyps4.Discovery()
+        discover = Discovery()
         devices = discover.search(host)
         for device in devices:
             _LOGGER.debug("Found PS4 at: %s", device['host-ip'])
         return devices
 
-    def link(self, host, creds, pin):
+    def link(self, host, creds, pin):  # noqa: pylint: disable=no-self-use
         """Perform pairing with PS4."""
-        ps4 = pyps4.Ps4(host, creds)
+        ps4 = Ps4(host, creds)
         is_ready = True
         is_login = True
         try:
             ps4.login(pin)
-        except pyps4.errors.NotReady:
+        except NotReady:
             is_ready = False
-        except pyps4.errors.LoginFailed:
+        except LoginFailed:
             is_login = False
         return is_ready, is_login
 
-    def get_creds(self):
+    def get_creds(self):  # noqa: pylint: disable=no-self-use
         """Return Credentials."""
-        credentials = pyps4.Credentials()
+        credentials = Credentials()
         return credentials.listen()
 
-    def port_bind(self, ports):
+    def port_bind(self, ports):  # noqa: pylint: disable=no-self-use
         """Try binding to ports."""
         import socket
         for port in ports:
@@ -52,4 +54,4 @@ class Helper:
             except socket.error:
                 sock.close()
                 return int(port)
-        return
+            return None

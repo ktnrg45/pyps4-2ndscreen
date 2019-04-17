@@ -5,13 +5,12 @@ from threading import Timer
 import json
 import logging
 import time
-import socket
 
 from .connection import Connection
 from .ddp import get_status, launch, wakeup
 from .errors import NotReady, UnknownButton, LoginFailed
 from .media_art import get_ps_store_data as ps_data
-from .media_art import (search_all, COUNTRIES, DEPRECATED_REGIONS)
+from .media_art import COUNTRIES, DEPRECATED_REGIONS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -19,6 +18,13 @@ _LOGGER = logging.getLogger(__name__)
 def open_credential_file(filename):
     """Open credential file."""
     return json.load(open(filename))
+
+
+def delay(seconds):
+    """Delay in seconds."""
+    start_time = time.time()
+    while time.time() - start_time < seconds:
+        pass
 
 
 class StatusTimer():
@@ -57,7 +63,7 @@ class StatusTimer():
             self.thread.cancel()
 
 
-class Ps4(object):
+class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
     """The PS4 object."""
 
     STATUS_OK = 200
@@ -77,9 +83,11 @@ class Ps4(object):
         self._broadcast = broadcast
         self._socket = None
         self._credential = None
-        self._connected = False
         self._status_timer = None
+        self._msg_sending = False
         self.keep_alive = False
+        self.status = None
+        self.connected = False
 
         if credential:
             self._credential = credential
@@ -91,17 +99,18 @@ class Ps4(object):
 
     def open(self):
         """Open a connection to the PS4."""
-        if self.is_standby():
+        self.get_status()
+        if self.is_standby:
             raise NotReady
 
-        if self._connected is False:
+        if self.connected is False:
             self.wakeup()
             self.launch()
-            time.sleep(0.5)
+            delay(0.5)
             self._connection.connect()
             login = self._connection.login()
             if login is True:
-                self._connected = True
+                self.connected = True
                 if self.keep_alive is True:
                     _LOGGER.debug("Keep Alive feature enabled")
                     self._status_timer = StatusTimer(30, self.send_status)
@@ -110,7 +119,7 @@ class Ps4(object):
     def close(self):
         """Close the connection to the PS4."""
         self._connection.disconnect()
-        self._connected = False
+        self.connected = False
         self.keep_alive = False
         if self._status_timer is not None:
             self._status_timer.cancel()
@@ -122,11 +131,9 @@ class Ps4(object):
             self.close()
 
     def get_status(self):
-        """Get current status info.
-
-        Return a dictionary with status information.
-        """
-        return get_status(self._host)
+        """Get current status info."""
+        self.status = get_status(self._host)
+        return self.status
 
     def launch(self):
         """Launch."""
@@ -147,7 +154,7 @@ class Ps4(object):
 
     def standby(self):
         """Standby."""
-        if self._connected is True:
+        if self.connected is True:
             self.close()
         self.open()
         self._connection.standby()
@@ -158,12 +165,17 @@ class Ps4(object):
 
         `title_id`: title to start
         """
+        if self.connected is True:
+            self.close()
         self.open()
-        self._connection.start_title(title_id)
-        if running_id is not None:
-            self._connection.remote_control(16, 0)
-        elif running_id == title_id:
-            _LOGGER.warning("Title: %s already started", title_id)
+        if self._connection.start_title(title_id):
+            if running_id is not None:
+                delay(1)
+                self.remote_control('enter')
+            elif running_id == title_id:
+                _LOGGER.warning("Title: %s already started", title_id)
+        else:
+            self.keep_alive = False
         self.is_keepalive()
 
     def remote_control(self, button_name, hold_time=0):
@@ -181,6 +193,10 @@ class Ps4(object):
            Doing this after a long-press of PS just breaks it,
            however.
         """
+        if self._msg_sending is True:
+            _LOGGER.debug("RC Command in progress")
+            return
+        self._msg_sending = True
         buttons = {'up': 1,
                    'down': 2,
                    'right': 4,
@@ -196,62 +212,25 @@ class Ps4(object):
         button_name = button_name.lower()
         if button_name not in buttons.keys():
             raise UnknownButton
-        else:
-            operation = buttons[button_name]
+        operation = buttons[button_name]
         self.open()
-        self._connection.remote_control(operation, hold_time)
+        if not self._connection.remote_control(operation, hold_time):
+            self.keep_alive = False
+        self._msg_sending = False
         self.is_keepalive()
 
     def send_status(self):
         """Send connection status to PS4."""
-        if self._connected is True:
+        if self.connected is True:
+            while self._msg_sending is True:
+                pass
+            self._msg_sending = True
             is_loggedin = self._connection.send_status()
+            self._msg_sending = False
             if is_loggedin is False:
                 self.close()
 
-    def get_host_status(self):
-        """Get PS4 status code.
-
-        STATUS_OK: 200
-        STATUS_STANDBY: 620
-        """
-        return self.get_status()['status_code']
-
-    def is_running(self):
-        """Return if the PS4 is running.
-
-        Returns True or False.
-        """
-        return True if self.get_host_status() == self.STATUS_OK else False
-
-    def is_standby(self):
-        """Return if the PS4 is in standby.
-
-        Returns True or False.
-        """
-        return True if self.get_host_status() == self.STATUS_STANDBY else False
-
-    def get_system_version(self):
-        """Get the system version."""
-        return self.get_status()['system-version']
-
-    def get_host_id(self):
-        """Get the host id."""
-        return self.get_status()['host-id']
-
-    def get_host_name(self):
-        """Get the host name."""
-        return self.get_status()['host-name']
-
-    def get_running_app_titleid(self):
-        """Return the title Id of the running application."""
-        return self.get_status()['running-app-titleid']
-
-    def get_running_app_name(self):
-        """Return the name of the running application."""
-        return self.get_status()['running-app-name']
-
-    def get_ps_store_data(self, title, title_id, region, url=None):
+    def get_ps_store_data(self, title, title_id, region, url=None):  # noqa: pylint: disable=no-self-use, line-too-long
         """Return Title and Cover data."""
         regions = COUNTRIES
         d_regions = DEPRECATED_REGIONS
@@ -262,18 +241,52 @@ class Ps4(object):
                 region = d_regions[region]
             else:
                 _LOGGER.error('Region: %s is not valid', region)
-                return
+                return None
         else:
             region = regions[region]
-        try:
-            _title, art = ps_data(self, title, title_id, region, url=None)
-        except TypeError:
-            _LOGGER.debug("Could not find title in default database.")
-            try:
-                _title, art = search_all(title, title_id)
-            except TypeError:
-                _LOGGER.warning("Could not find cover art for: %s", title)
-                return None, None
-        finally:
-            _LOGGER.debug("Found Title: %s, URL: %s", _title, art)
-            return _title, art
+
+        result_item = ps_data(title, title_id, region, url)
+        if result_item is not None:
+            _LOGGER.debug("Found Title: %s, URL: %s",
+                          result_item.name, result_item.cover_art)
+            return result_item
+        return None
+
+    @property
+    def is_running(self):
+        """Return if the PS4 is running."""
+        if self.status['status_code'] == self.STATUS_OK:
+            return True
+        return False
+
+    @property
+    def is_standby(self):
+        """Return if the PS4 is in standby."""
+        if self.status['status_code'] == self.STATUS_STANDBY:
+            return True
+        return False
+
+    @property
+    def system_version(self):
+        """Get the system version."""
+        return self.status['system-version']
+
+    @property
+    def host_id(self):
+        """Get the host id."""
+        return self.status['host-id']
+
+    @property
+    def host_name(self):
+        """Get the host name."""
+        return self.status['host-name']
+
+    @property
+    def running_app_titleid(self):
+        """Return the title Id of the running application."""
+        return self.status['running-app-titleid']
+
+    @property
+    def running_app_name(self):
+        """Return the name of the running application."""
+        return self.status['running-app-name']

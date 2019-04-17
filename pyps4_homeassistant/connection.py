@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+"""TCP Handling for PS4."""
 from __future__ import print_function
 
 import binascii
@@ -25,22 +26,57 @@ PUBLIC_KEY = (
 
 
 def _get_public_key_rsa():
+    """Get RSA Key."""
     key = RSA.importKey(PUBLIC_KEY)
     return key.publickey()
 
 
-class Connection(object):
+def _handle_response(command, msg):
+    """Return Pass/Fail for sent message."""
+    pass_response = {
+        'send_status': [18],
+        'remote_control': [18],
+        'start_title': [11, 18],
+        'standby': [27],
+        'login': [0, 17]
+    }
+
+    if command == 'login':
+        response_byte = msg[8]
+        if response_byte in pass_response['login']:
+            _LOGGER.debug("Login Successful")
+            return True
+        _LOGGER.debug("Login Failed")
+        return False
+
+    response_byte = msg[4]
+    _LOGGER.debug("RECV: %s for Command: %s", response_byte, command)
+    if response_byte not in pass_response[command]:
+        _LOGGER.warning("Command: %s Failed", command)
+        return False
+    return True
+
+
+def delay(seconds):
+    """Delay in seconds."""
+    start_time = time.time()
+    while time.time() - start_time < seconds:
+        pass
+
+
+class Connection():  # noqa: pylint: disable=too-many-instance-attributes
     """The TCP connection class."""
 
     def __init__(self, host, credential=None, port=997):
         """Init Class."""
         self._host = host
-        self._credential = credential
+        self._credential = credential.encode()
         self._port = port
         self._socket = None
         self._cipher = None
         self._decipher = None
         self._random_seed = None
+        self.pin = None
 
     def connect(self):
         """Open the connection."""
@@ -70,7 +106,7 @@ class Connection(object):
         msg = self._recv_msg()
         msg = self._decipher.decrypt(msg)
         _LOGGER.debug('RX: %s %s', len(msg), binascii.hexlify(msg))
-        return self._handle_response('login', msg)
+        return _handle_response('login', msg)
 
     def standby(self):
         """Request standby."""
@@ -79,7 +115,7 @@ class Connection(object):
         msg = self._recv_msg()
         msg = self._decipher.decrypt(msg)
         _LOGGER.debug('RX: %s %s', len(msg), binascii.hexlify(msg))
-        return self._handle_response('standby', msg)
+        return _handle_response('standby', msg)
 
     def start_title(self, title_id):
         """Start an application/game title."""
@@ -88,12 +124,12 @@ class Connection(object):
         msg = self._recv_msg()
         msg = self._decipher.decrypt(msg)
         _LOGGER.debug('RX: %s %s', len(msg), binascii.hexlify(msg))
-        return self._handle_response('start_title', msg)
+        return _handle_response('start_title', msg)
 
-    def remote_control(self, op, hold_time=0):
+    def remote_control(self, operation, hold_time=0):
         """Send remote control command."""
-        _LOGGER.debug('Remote control: %s (%s)', op, hold_time)
-        self._send_remote_control_request(op, hold_time)
+        _LOGGER.debug('Remote control: %s (%s)', operation, hold_time)
+        return self._send_remote_control_request(operation, hold_time)
 
     def send_status(self):
         """Send client connection status."""
@@ -102,34 +138,7 @@ class Connection(object):
         msg = self._recv_msg()
         msg = self._decipher.decrypt(msg)
         _LOGGER.debug('RX: %s %s', len(msg), binascii.hexlify(msg))
-        return self._handle_response('send_status', msg)
-
-    def _handle_response(self, command, msg):
-        """Return Pass/Fail for sent message."""
-        pass_response = {
-            'send_status': 18,
-            'remote_control': 18,
-            'start_title': 11,
-            'standby': 27,
-            'login': [0, 17]
-        }
-
-        if command == 'login':
-            response_byte = msg[8]
-            if response_byte in pass_response['login']:
-                _LOGGER.debug("Login Successful")
-                return True
-            else:
-                _LOGGER.debug("Login Failed")
-                return False
-        else:
-            response_byte = msg[4]
-
-        _LOGGER.debug("RECV: %s for Command: %s", response_byte, command)
-        if pass_response[command] != response_byte:
-            _LOGGER.warning("Command: %s Failed", command)
-            return False
-        return True
+        return _handle_response('send_status', msg)
 
     def _send_msg(self, msg, encrypted=False):
         _LOGGER.debug('TX: %s %s', len(msg), binascii.hexlify(msg))
@@ -137,7 +146,7 @@ class Connection(object):
             msg = self._cipher.encrypt(msg)
         self._socket.send(msg)
 
-    def _recv_msg(self, encrypted=False):
+    def _recv_msg(self):
         msg = self._socket.recv(1024)
         return msg
 
@@ -210,7 +219,7 @@ class Connection(object):
 
         config = {
             'app_label': b'PlayStation'.ljust(256, b'\x00'),
-            'account_id': self._credential.encode().ljust(64, b'\x00'),
+            'account_id': self._credential.ljust(64, b'\x00'),
             'os_version': b'4.4'.ljust(16, b'\x00'),
             'model': b'Home-Assistant'.ljust(16, b'\x00'),
             'pin_code': self.pin.ljust(16, b'\x00'),
@@ -242,7 +251,7 @@ class Connection(object):
         msg = fmt.build({'title_id': title_id.encode().ljust(16, b'\x00')})
         self._send_msg(msg, encrypted=True)
 
-    def _send_remote_control_request(self, op, hold_time=0):
+    def _send_remote_control_request(self, operation, hold_time=0):
         fmt = Struct(
             'length' / Const(b'\x10\x00\x00\x00'),
             'type' / Const(b'\x1c\x00\x00\x00'),
@@ -250,26 +259,37 @@ class Connection(object):
             'hold_time' / Int32ul,
         )
         # Prebuild required remote messages."""
-        msg_open_rc = fmt.build({'op': 1024, 'hold_time': 0})
-        msg_key_off = fmt.build({'op': 256, 'hold_time': 0})
-        msg_close_rc = fmt.build({'op': 2048, 'hold_time': 0})
-        msg_command = fmt.build({'op': op, 'hold_time': hold_time})
+        msg = []
+        if operation != 128:
+            msg.append(fmt.build({'op': 1024, 'hold_time': 0}))  # Open RC
+            msg.append(fmt.build({'op': operation, 'hold_time': hold_time}))
+            msg.append(fmt.build({'op': 256, 'hold_time': 0}))  # Key Off
+            msg.append(fmt.build({'op': 2048, 'hold_time': 0}))  # Close RC
+        else:  # PS
+            msg.append(fmt.build({'op': 1024, 'hold_time': 0}))  # Open RC
+            msg.append(fmt.build({'op': operation, 'hold_time': hold_time}))
+            msg.append(fmt.build({'op': operation, 'hold_time': 1}))
+            msg.append(fmt.build({'op': 256, 'hold_time': 0}))  # Key Off
 
         # Send Messages
-        self._send_msg(msg_open_rc, encrypted=True)
-        time.sleep(0.1)
-        self._send_msg(msg_command, encrypted=True)
-        self._send_msg(msg_key_off, encrypted=True)
-        time.sleep(0.4)
-        self._send_msg(msg_close_rc, encrypted=True)
-        time.sleep(0.1)
+        for message in msg:
+            try:
+                self._send_msg(message, encrypted=True)
+            except (socket.error, socket.timeout):
+                _LOGGER.debug("Failed to send Remote MSG")
+                return False
 
-        """recv_msg() is blocking. Is slow returning msg.
-        Needs async/thread to receive callback."""
-        # msg = self._recv_msg()
-        # msg = self._decipher.decrypt(msg)
-        # _LOGGER.debug('RX: %s %s', len(msg), binascii.hexlify(msg))
-        # return self._handle_response('remote_control', msg)
+        # Delay Close RC for PS
+        if operation == 128:
+            _LOGGER.debug("Delaying RC off for PS Command")
+            message = fmt.build({'op': 2048, 'hold_time': 0})  # Close RC
+            delay(1)
+            try:
+                self._send_msg(message, encrypted=True)
+            except (socket.error, socket.timeout):
+                _LOGGER.debug("Failed to send Remote MSG")
+                return False
+        return True
 
     def _send_status(self):
         fmt = Struct(

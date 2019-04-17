@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-from .connection import *
-from .ddp import *
-from .errors import *
+"""Init File for pyps4_homeassistant."""
 from .ps4 import *
+from .connection import *
 from .credential import *
 from .helpers import *
+from .ddp import *
 from .media_art import *
-from .const import *
+from .errors import *

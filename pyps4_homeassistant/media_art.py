@@ -34,17 +34,9 @@ COUNTRIES = {"Argentina": "en/ar", "Australia": "en/au", "Austria": "de/at",
              "United Kingdom": "en/gb"}
 
 
-def search_all(title, title_id):
-    """Search all databases."""
-    for x in COUNTRIES:
-        region = COUNTRIES[x]
-        (_title, art) = get_ps_store_data(title, title_id, region)
-        if _title and art:
-            return _title, art
-
-
-def get_ps_store_url(title, region, reformat=False):
+def get_ps_store_url(title, region, reformat='chars', legacy=False):
     """Get URL for title search in PS Store."""
+    import html
     import urllib
     import re
 
@@ -55,167 +47,196 @@ def get_ps_store_url(title, region, reformat=False):
             '(KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36'
     }
 
-    if title is not None:
-        if reformat is True:
-            title = re.sub('[^A-Za-z0-9]+', ' ', title)
-        title = urllib.parse.quote(title.encode('utf-8'))
+    if reformat == 'chars':
+        title = re.sub('[^A-Za-z0-9]+', ' ', title)
+    elif reformat == 'chars+':  # ignore ' and -
+        title = re.sub(r'[^A-Za-z0-9\-\']+', ' ', title)
+    elif reformat == 'orig':
+        pass
+    elif reformat == 'tumbler':
+        title = re.sub('[^A-Za-z0-9]+', ' ', title)
+        title = title.split(' ')[0]
+    title = html.escape(title)
+    title = urllib.parse.quote(title.encode('utf-8'))
+    if legacy is True:
         _url = 'https://store.playstation.com/'\
             'valkyrie-api/{0}/19/faceted-search/'\
             '{1}?query={1}&platform=ps4'.format(region, title)
+    else:
+        _url = 'https://store.playstation.com/valkyrie-api/{}/19/'\
+               'tumbler-search/{}?suggested_size=9&mode=game'\
+               '&platform=ps4'.format(region, title)
+    _LOGGER.debug(_url)
 
-    url = [_url, headers]
+    url = [_url, headers, region.split('/')[0]]
     return url
 
 
-def get_ps_store_data(title, title_id, region, url=None, reformat=False):
+def get_ps_store_data(title, title_id, region, url=None, legacy=False):
     """Get cover art from database."""
     import requests
-    import re
 
-    if url is None:
-        url = get_ps_store_url(title, region)
-    req = None
-    match_id = {}
-    match_title = {}
-    if reformat is True:
-        title = re.sub('[^A-Za-z0-9]+', ' ', title)
-    type_list = ['Full Game', 'Game', 'PSN Game', 'Bundle', 'App']
-    try:
-        req = requests.get(url[0], headers=url[1])
-        result = req.json()['included']
-        if not result:
-            title = title.split(' ')
-            title = title[0]
-            url = get_ps_store_url(title, region)
-            req = requests.get(url[0], headers=url[1])
-            result = req.json()['included']
-    except requests.exceptions.HTTPError as warning:
-        _LOGGER.warning("PS cover art HTTP error, %s", warning)
-        return
-    except requests.exceptions.RequestException as warning:
-        _LOGGER.warning("PS cover art request failed, %s", warning)
-        return
+    formats = ['chars', 'chars+', 'orig', 'tumbler']
+    f_index = 0
 
-    # Filter through each item in search request
+    while f_index != len(formats):
+
+        if url is None:
+            url = get_ps_store_url(
+                title, region, reformat=formats[f_index], legacy=legacy)
+        req = None
+
+        try:
+            req = requests.get(url[0], headers=url[1], timeout=3)
+            result = req.json()
+            if not result:
+                title = title.split(' ')
+                title = title[0]
+                url = get_ps_store_url(title, region)
+                req = requests.get(url[0], headers=url[1])
+                result = req.json()
+        except requests.exceptions.HTTPError as warning:
+            _LOGGER.warning("PS cover art HTTP error, %s", warning)
+            return None
+        except requests.exceptions.RequestException as warning:
+            _LOGGER.warning("PS cover art request failed, %s", warning)
+            return None
+
+        data = parse_data(result, title_id, url[2])
+        _LOGGER.debug(data)
+        if data is not None:
+            return data
+        url = None
+        f_index += 1
+    return None
+
+
+def parse_data(result, title_id, lang):
+    """Filter through each item in search request."""
+    type_list = {
+        'de': ['Vollversion', 'Spiel', 'PSN-Spiel', 'Paket', 'App'],
+        'en': ['Full Game', 'Game', 'PSN Game', 'Bundle', 'App'],
+        'es': ['Juego Completo', 'Juego', 'Juego de PSN', 'Paquete', 'App'],
+        'fr': ['Jeu complet', 'Jeu', 'Jeu PSN', 'Offre groupée', 'App'],
+        'it': ['Gioco completo', 'Gioco', 'Gioco PSN', 'Bundle', 'App'],
+        'ko': ['제품판', '게임', 'PSN 게임', '번들', '앱'],
+        'nl': ['Volledige game', 'game', 'PSN-game', 'Bundel', 'App'],
+        'pt': ['Jogo completo', 'jogo', 'Jogo da PSN', 'Pacote', 'App'],
+        'ru': ['Полная версия', 'Игра', 'Игра PSN', 'Комплект', 'Приложение'],
+    }
+    item_list = []
+    type_list = type_list[lang]
+    parent_list = []
+
+    for item in result['included']:
+        item_list.append(ResultItem(item, type_list))
 
     # Filter each item by prioritized type
-    for game_type in type_list:
-        for item in result:
-            has_parent = False
+    for g_type in type_list:
+        _LOGGER.debug("Searching type: %s", g_type)
+        for item in item_list:
+            if item.game_type == g_type:
+                if item.sku_id == title_id:
+                    _LOGGER.debug(
+                        "Item: %s, %s, %s", item.name, item.sku_id,
+                        vars(item.parent))
+                    if not item.parent or item.parent.data is None:
+                        _LOGGER.info("Direct Match")
+                        return item
+                    parent_list.append(item.parent)
 
-            # Set each item as Game object
-            game = _game(item)
-
-            # Get Parent attr
-            if 'parent' in game:
-                if game['parent'] is not None:
-                    has_parent = True
-                    parent = game['parent']
-                    parent_id = _parse_id(parent['id'])
-                    parent_title = parent['name']
-                    parent_title_f = _format_title(parent_title, reformat)
-                    parent_art = "{}/image".format(parent['url'])
-                    if parent_id == title_id:
-                        _LOGGER.debug("Parent ID Match")
-                        return parent_title, parent_art
-                    if title.upper() == parent_title_f:
-                        _LOGGER.debug("Parent Title Match")
-                        return parent_title, parent_art
-                    if title.upper() in parent_title_f:
-                        _LOGGER.debug("Parent Similar Title Match")
-                        return parent_title, parent_art
-
-            if _is_game_type(game, game_type):
-                parse_id = _parse_id(game['default-sku-id'])
-                title_parse = game['name']
-
-                # If passed SKU matches object SKU
-                if parse_id == title_id:
-                    cover_art = _get_cover(game)
-                    if cover_art is not None:
-
-                        # If true likely a bundle, dlc, deluxe edition
-                        if has_parent is False:
-                            match_id.update({title_parse: cover_art})
-
-                        # Most likely the intended item so return
-                        if title.upper() == _format_title(title_parse,
-                                                          reformat):
-                            _LOGGER.debug("Direct Match")
-                            return title_parse, cover_art
-
-                # Last resort filter if SKU wrong, but title matches.
-                elif title.upper() == _format_title(title_parse, reformat):
-                    cover_art = _get_cover(game)
-                    if cover_art is not None:
-                        if has_parent is False:
-                            match_title.update({title_parse: cover_art})
-
-    s_title, s_art = _get_similar(title, match_id, match_title, reformat)
-    if s_title is None or s_art is None:
-        if reformat is False:
-            return get_ps_store_data(title, title_id, region, reformat=True)
-    return s_title, s_art
+    for item in parent_list:
+        if item.data is not None:
+            if item.sku_id == title_id:
+                _LOGGER.info("Parent Match")
+                return item
+    return None
 
 
-def _game(item):
-    """Create game object."""
-    if 'attributes' in item:
-        game = item['attributes']
-        return game
-
-
-def _is_game_type(game, game_type):
-    """Check if item is a game and has SKU."""
-    if 'game-content-type' in game and \
-       game['game-content-type'] == game_type:
-        if 'default-sku-id' in game:
-            return True
-
-
-def _parse_id(_id):
-    """Parse SKU to simplified ID."""
+def parse_id(sku_id):
+    """Format SKU."""
     try:
-        full_id = _id
-        full_id = full_id.split("-")
-        full_id = full_id[1]
-        full_id = full_id.split("_")
-        parse_id = full_id[0]
+        sku_id = sku_id.split("-")
+        sku_id = sku_id[1].split("_")
+        parsed_id = sku_id[0]
+        return parsed_id
     except IndexError:
-        parse_id = "None"
-    return parse_id
+        return None
 
 
-def _format_title(title, reformat):
-    """Format Title."""
-    import re
+class ResultItem():
+    """Item object."""
 
-    if reformat is True:
-        title = re.sub('[^A-Za-z0-9]+', ' ', title)
-    title = title.upper()
-    return title
+    def __init__(self, data, type_list):
+        """Init Class."""
+        self.data = data['attributes']
+        self.type_list = type_list
+
+    @property
+    def name(self):
+        """Get Item Name."""
+        return self.data['name'] if not None else None
+
+    @property
+    def game_type(self):
+        """Get Game Type."""
+        game_type = self.data['game-content-type'] if not None else None
+        if game_type:
+            if game_type == self.type_list[4]:
+                return 'App'
+            return game_type
+        return None
+
+    @property
+    def sku_id(self):
+        """Get SKU."""
+        full_id = self.data['default-sku-id'] if not None else None
+        if full_id:
+            return parse_id(full_id)
+        return None
+
+    @property
+    def cover_art(self):
+        """Get Art URL."""
+        return self.data['thumbnail-url-base'] if not None else None
+
+    @property
+    def parent(self):
+        """Get Parents."""
+        if self.game_type:
+            return ParentItem(
+                self.data['parent'],
+                self.game_type) if not None else None
+        return None
 
 
-def _get_cover(game):
-    """Get cover art."""
-    if 'thumbnail-url-base' in game:
-        cover = 'thumbnail-url-base'
-        cover_art = game[cover]
-        return cover_art
-    return
+class ParentItem():
+    """Item object."""
 
+    def __init__(self, data, game_type):
+        """Init Class."""
+        self.data = data
+        self._game_type = game_type
 
-def _get_similar(title, match_id, match_title, reformat):
-    """Return similar title."""
-    if match_id:
-        for _title, url in match_id.items():
-            if title.upper() in _format_title(_title, reformat):
-                cover_art = url
-                _LOGGER.debug("Similar Title Match")
-                return _title, cover_art
-    elif match_title:
-        for _title, url in match_title.items():
-                cover_art = url
-                _LOGGER.debug("Wrong ID Match")
-                return _title, cover_art
-    return None, None
+    @property
+    def name(self):
+        """Parent Name."""
+        return self.data['name'] if not None else None
+
+    @property
+    def sku_id(self):
+        """Parent SKU."""
+        full_id = self.data['id'] if not None else None
+        if full_id:
+            return parse_id(full_id)
+        return None
+
+    @property
+    def cover_art(self):
+        """Parent Art."""
+        return self.data['url'] if not None else None
+
+    @property
+    def game_type(self):
+        """Parent Game type."""
+        return self._game_type
