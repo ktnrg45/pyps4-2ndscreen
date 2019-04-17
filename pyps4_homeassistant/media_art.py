@@ -87,7 +87,7 @@ def get_ps_store_data(title, title_id, region, url=None, legacy=False):
         req = None
 
         try:
-            req = requests.get(url[0], headers=url[1])
+            req = requests.get(url[0], headers=url[1], timeout=3)
             result = req.json()
             if not result:
                 title = title.split(' ')
