@@ -34,18 +34,7 @@ COUNTRIES = {"Argentina": "en/ar", "Australia": "en/au", "Austria": "de/at",
              "United Kingdom": "en/gb"}
 
 
-def search_all(title, title_id):
-    """Search all databases."""
-    for country in COUNTRIES:
-        region = COUNTRIES[country]
-        (_title, art) = get_ps_store_data(title, title_id, region)
-        _LOGGER.debug(_title)
-        if _title is not None:
-            return _title, art
-    return None, None
-
-
-def get_ps_store_url(title, region, reformat='chars'):
+def get_ps_store_url(title, region, reformat='chars', legacy=False):
     """Get URL for title search in PS Store."""
     import html
     import urllib
@@ -58,47 +47,68 @@ def get_ps_store_url(title, region, reformat='chars'):
             '(KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36'
     }
 
-    if title is not None:
-        if reformat == 'chars':
-            title = re.sub('[^A-Za-z0-9\']+', ' ', title)
-        title = html.escape(title)
-        title = urllib.parse.quote(title.encode('utf-8'))
+    if reformat == 'chars':
+        title = re.sub('[^A-Za-z0-9]+', ' ', title)
+    elif reformat == 'chars+':  # ignore ' and -
+        title = re.sub('[^A-Za-z0-9\-\']+', ' ', title)
+    elif reformat == 'orig':
+        pass
+    elif reformat == 'tumbler':
+        title = re.sub('[^A-Za-z0-9]+', ' ', title)
+        title = title.split(' ')[0]
+    title = html.escape(title)
+    title = urllib.parse.quote(title.encode('utf-8'))
+    if legacy is True:
+        _url = 'https://store.playstation.com/'\
+            'valkyrie-api/{0}/19/faceted-search/'\
+            '{1}?query={1}&platform=ps4'.format(region, title)
+    else:
         _url = 'https://store.playstation.com/valkyrie-api/{}/19/'\
-               'tumbler-search/{}?suggested_size=5&mode=game'\
+               'tumbler-search/{}?suggested_size=9&mode=game'\
                '&platform=ps4'.format(region, title)
-        print(_url)
+    _LOGGER.debug(_url)
 
     url = [_url, headers, region.split('/')[0]]
     return url
 
 
-def get_ps_store_data(title, title_id, region, url=None, reformat='chars'):
+def get_ps_store_data(title, title_id, region, url=None, legacy=False):
     """Get cover art from database."""
     import requests
-    import re
 
-    if url is None:
-        url = get_ps_store_url(title, region)
-    req = None
+    formats = ['chars', 'chars+', 'orig', 'tumbler']
+    f_index = 0
 
-    if reformat == 'chars':
-        title = re.sub('[^A-Za-z0-9]+', ' ', title)
-    try:
-        req = requests.get(url[0], headers=url[1])
-        result = req.json()
-        if not result:
-            title = title.split(' ')
-            title = title[0]
-            url = get_ps_store_url(title, region)
+    while f_index != len(formats):
+
+        if url is None:
+            url = get_ps_store_url(
+                title, region, reformat=formats[f_index], legacy=legacy)
+        req = None
+
+        try:
             req = requests.get(url[0], headers=url[1])
             result = req.json()
-    except requests.exceptions.HTTPError as warning:
-        _LOGGER.warning("PS cover art HTTP error, %s", warning)
-        return None, None
-    except requests.exceptions.RequestException as warning:
-        _LOGGER.warning("PS cover art request failed, %s", warning)
-        return None, None
-    return parse_data(result, title, title_id, region, url[2])
+            if not result:
+                title = title.split(' ')
+                title = title[0]
+                url = get_ps_store_url(title, region)
+                req = requests.get(url[0], headers=url[1])
+                result = req.json()
+        except requests.exceptions.HTTPError as warning:
+            _LOGGER.warning("PS cover art HTTP error, %s", warning)
+            return None
+        except requests.exceptions.RequestException as warning:
+            _LOGGER.warning("PS cover art request failed, %s", warning)
+            return None
+
+        data = parse_data(result, title, title_id, region, url[2])
+        _LOGGER.debug(data)
+        if data is not None:
+            return data
+        url = None
+        f_index += 1
+    return None
 
 
 def parse_data(result, title, title_id, region, lang):
@@ -117,27 +127,27 @@ def parse_data(result, title, title_id, region, lang):
     item_list = []
     type_list = type_list[lang]
     parent_list = []
-    # type_list = ['Full Game', 'Game', 'PSN Game', 'Bundle', 'App']
 
     for item in result['included']:
         item_list.append(ResultItem(item))
 
     # Filter each item by prioritized type
     for g_type in type_list:
-        print("Searching type: {}".format(g_type))
+        _LOGGER.debug("Searching type: {}".format(g_type))
         for item in item_list:
-            print(item.game_type)
             if item.game_type == g_type:
-                print("Item: {}, {}, {}".format(
-                    item.name, item.sku_id, item.parent))
                 if item.sku_id == title_id:
-                    if not item.parent:
+                    _LOGGER.debug("Item: {}, {}, {}".format(
+                        item.name, item.sku_id, vars(item.parent)))
+                    if not item.parent or item.parent.data is None:
+                        _LOGGER.info("Direct Match")
                         return item
                     parent_list.append(item.parent)
 
     for item in parent_list:
         if item.data is not None:
             if item.sku_id == title_id:
+                _LOGGER.info("Parent Match")
                 return item
     return None
 
