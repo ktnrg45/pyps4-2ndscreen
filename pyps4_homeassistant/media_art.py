@@ -129,7 +129,7 @@ def parse_data(result, title, title_id, region, lang):
     parent_list = []
 
     for item in result['included']:
-        item_list.append(ResultItem(item))
+        item_list.append(ResultItem(item, type_list))
 
     # Filter each item by prioritized type
     for g_type in type_list:
@@ -166,9 +166,10 @@ def parse_id(sku_id):
 class ResultItem():
     """Item object."""
 
-    def __init__(self, data):
+    def __init__(self, data, type_list):
         """Init Class."""
         self.data = data['attributes']
+        self.type_list
 
     @property
     def name(self):
@@ -178,7 +179,11 @@ class ResultItem():
     @property
     def game_type(self):
         """Get Game Type."""
-        return self.data['game-content-type'] if not None else None
+        game_type = self.data['game-content-type'] if not None else None
+        if game_type:
+            if game_type == self.type_list[4]:
+                return 'App'
+            return game_type
 
     @property
     def sku_id(self):
@@ -208,6 +213,7 @@ class ParentItem():
     def __init__(self, data, game_type):
         """Init Class."""
         self.data = data
+        self._type = game_type
 
     @property
     def name(self):
@@ -230,4 +236,4 @@ class ParentItem():
     @property
     def game_type(self):
         """Parent Game type."""
-        return self.game_type
+        return self._type
