@@ -213,7 +213,7 @@ class ResultItem():
 class ParentItem():
     """Item object."""
 
-    def __init__(self, data, game_type):
+    def __init__(self, data, game_type=None):
         """Init Class."""
         self.data = data
         self._game_type = game_type
