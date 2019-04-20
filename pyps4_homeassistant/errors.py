@@ -9,8 +9,8 @@ class NotReady(Exception):
     """PS4 no connection."""
 
 
-class PSStoreDataNotFound(Exception):
-    """No PS Store Data Found."""
+class PSDataIncomplete(Exception):
+    """PS Store data missing attributes."""
 
 
 class LoginFailed(Exception):
