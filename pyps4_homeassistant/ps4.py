@@ -8,7 +8,8 @@ import time
 
 from .connection import Connection
 from .ddp import get_status, launch, wakeup
-from .errors import NotReady, UnknownButton, LoginFailed
+from .errors import (NotReady, PSDataIncomplete,
+                     UnknownButton, LoginFailed)
 from .media_art import get_ps_store_data as ps_data
 from .media_art import COUNTRIES, DEPRECATED_REGIONS
 
@@ -245,7 +246,11 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
         else:
             region = regions[region]
 
-        result_item = ps_data(title, title_id, region, url)
+        try:
+            result_item = ps_data(title, title_id, region, url)
+        except (TypeError, AttributeError):
+            result_item = None
+            raise PSDataIncomplete
         if result_item is not None:
             _LOGGER.debug("Found Title: %s, URL: %s",
                           result_item.name, result_item.cover_art)
