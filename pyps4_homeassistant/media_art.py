@@ -122,7 +122,7 @@ def get_ps_store_data(title, title_id, region, url=None, legacy=False):
     return None
 
 
-def tumbler_search(
+def tumbler_search(  # noqa: pylint: disable=too-many-arguments
         current_chars, next_chars, remaining_chars,
         title_id, region, reformat='tumbler', legacy=False):
     """Search using tumbler method."""
@@ -139,7 +139,7 @@ def tumbler_search(
         data = parse_data(result, title_id, url[2])
         if not data:
             next_chars = result['data']['attributes']['next'] or None
-            next_list.append(next_chars) if next_chars else None
+            next_list.append(next_chars) if next_chars else None  # noqa: pylint: disable=expression-not-assigned
         else:
             break
     return data or None
