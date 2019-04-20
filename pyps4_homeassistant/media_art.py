@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """Media Art Functions."""
 import logging
+import urllib
+import requests
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -37,7 +39,6 @@ COUNTRIES = {"Argentina": "en/ar", "Australia": "en/au", "Austria": "de/at",
 def get_ps_store_url(title, region, reformat='chars', legacy=False):
     """Get URL for title search in PS Store."""
     import html
-    import urllib
     import re
 
     headers = {
@@ -47,15 +48,14 @@ def get_ps_store_url(title, region, reformat='chars', legacy=False):
             '(KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36'
     }
 
-    if reformat == 'chars':
-        title = re.sub('[^A-Za-z0-9]+', ' ', title)
-    elif reformat == 'chars+':  # ignore ' and -
-        title = re.sub(r'[^A-Za-z0-9\-\']+', ' ', title)
+    if reformat == 'chars':  # No Special Chars.
+        title = re.sub(r'[^A-Za-z0-9\ ]+', '', title)
+    elif reformat == 'chars+':  # ignore ' and - and :
+        title = re.sub(r'[^A-Za-z0-9\-\'\:]+', ' ', title)
     elif reformat == 'orig':
         pass
     elif reformat == 'tumbler':
-        title = re.sub('[^A-Za-z0-9]+', ' ', title)
-        title = title.split(' ')[0]
+        pass
     title = html.escape(title)
     title = urllib.parse.quote(title.encode('utf-8'))
     if legacy is True:
@@ -74,33 +74,44 @@ def get_ps_store_url(title, region, reformat='chars', legacy=False):
 
 def get_ps_store_data(title, title_id, region, url=None, legacy=False):
     """Get cover art from database."""
-    import requests
-
     formats = ['chars', 'chars+', 'orig', 'tumbler']
     f_index = 0
 
+    # Try to find title in data. Reformat title of punctuation.
     while f_index != len(formats):
 
         if url is None:
             url = get_ps_store_url(
                 title, region, reformat=formats[f_index], legacy=legacy)
-        req = None
-
-        try:
-            req = requests.get(url[0], headers=url[1], timeout=3)
-            result = req.json()
+            result = get_request(url)
             if not result:
-                title = title.split(' ')
-                title = title[0]
-                url = get_ps_store_url(title, region)
-                req = requests.get(url[0], headers=url[1])
-                result = req.json()
-        except requests.exceptions.HTTPError as warning:
-            _LOGGER.warning("PS cover art HTTP error, %s", warning)
-            return None
-        except requests.exceptions.RequestException as warning:
-            _LOGGER.warning("PS cover art request failed, %s", warning)
-            return None
+                continue
+
+        # Try tumbler search. Add chars to search, one by one.
+        if formats[f_index] == 'tumbler':
+            char_index = 0
+            while char_index < (len(title) - 1):
+                index = char_index + 1
+                current_chars = title[0:index]
+                url = get_ps_store_url(
+                    current_chars, region, reformat=formats[f_index],
+                    legacy=legacy)
+                result = get_request(url)
+                data = parse_data(result, title_id, url[2])
+                if not data:
+                    remaining_chars = list(title[index:])
+                    char_index = char_index + 1
+                    next_chars = result['data']['attributes']['next'] or None
+
+                    # If the next char is not in the next attr.
+                    if title[char_index] not in next_chars\
+                            if next_chars else None:
+                        _LOGGER.debug("Starting Tumbler")
+                        return tumbler_search(
+                            current_chars, next_chars, remaining_chars,
+                            title_id, region)
+                    continue
+                return data
 
         data = parse_data(result, title_id, url[2])
         _LOGGER.debug(data)
@@ -109,6 +120,50 @@ def get_ps_store_data(title, title_id, region, url=None, legacy=False):
         url = None
         f_index += 1
     return None
+
+
+def tumbler_search(
+        current_chars, next_chars, remaining_chars,
+        title_id, region, reformat='tumbler', legacy=False):
+    """Search using tumbler method."""
+    current = current_chars
+    chars = next_chars
+    next_list = []
+    data = None
+    for char in chars:
+        if char not in remaining_chars:
+            continue
+        next_str = "{}{}".format(current, char)
+        url = get_ps_store_url(next_str, region, reformat, legacy)
+        result = get_request(url)
+        data = parse_data(result, title_id, url[2])
+        if not data:
+            next_chars = result['data']['attributes']['next'] or None
+            next_list.append(next_chars) if next_chars else None
+        else:
+            break
+    return data or None
+
+
+def get_request(url, retry=2):
+    """Get HTTP request."""
+    retries = 0
+    while retries < retry:
+        try:
+            req = requests.get(url[0], headers=url[1], timeout=3)
+            result = req.json()
+            if not result:
+                retries += 1
+                continue
+            return result
+        except requests.exceptions.HTTPError as warning:
+            _LOGGER.warning("PS cover art HTTP error, %s", warning)
+            retries += 1
+            continue
+        except requests.exceptions.RequestException as warning:
+            _LOGGER.warning("PS cover art request failed, %s", warning)
+            retries += 1
+            continue
 
 
 def parse_data(result, title_id, lang):
