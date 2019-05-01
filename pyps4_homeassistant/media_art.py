@@ -182,6 +182,7 @@ def parse_data(result, title_id, lang):
     item_list = []
     type_list = type_list[lang]
     parent_list = []
+    child_list = []
 
     for item in result['included']:
         item_list.append(ResultItem(item, type_list))
@@ -198,7 +199,13 @@ def parse_data(result, title_id, lang):
                     if not item.parent or item.parent.data is None:
                         _LOGGER.info("Direct Match")
                         return item
+                    child_list.append(item)
                     parent_list.append(item.parent)
+
+    if child_list is not None:
+        for item in child_list:
+            _LOGGER.info("Direct Non-parent Match")
+            return item
 
     for item in parent_list:
         if item.data is not None:
@@ -289,7 +296,7 @@ class ParentItem():
     @property
     def cover_art(self):
         """Parent Art."""
-        return self.data['url'] if not None else None
+        return self.data['thumbnail'] if not None else None
 
     @property
     def game_type(self):
