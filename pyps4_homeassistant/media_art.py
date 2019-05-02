@@ -224,19 +224,24 @@ class ResultItem():
 
     def __init__(self, data, type_list):
         """Init Class."""
-        self.data = data['attributes']
         self.type_list = type_list
+        self.data = data['attributes']
+        _LOGGER.warning(self.data.keys())
 
     @property
     def name(self):
         """Get Item Name."""
-        return self.data['name'] if not None else None
+        if 'name' in self.data:
+            return self.data['name']
+        return None
 
     @property
     def game_type(self):
         """Get Game Type."""
-        game_type = self.data['game-content-type'] if not None else None
-        if game_type:
+        game_type = None
+        if 'game-content-type' in self.data:
+            game_type = self.data['game-content-type']
+        if game_type is not None:
             if game_type == self.type_list[4]:
                 return 'App'
             return game_type
@@ -245,23 +250,28 @@ class ResultItem():
     @property
     def sku_id(self):
         """Get SKU."""
-        full_id = self.data['default-sku-id'] if not None else None
-        if full_id:
+        full_id = None
+        if 'default-sku-id' in self.data:
+            full_id = self.data['default-sku-id']
+        if full_id is not None:
             return parse_id(full_id)
         return None
 
     @property
     def cover_art(self):
         """Get Art URL."""
-        return self.data['thumbnail-url-base'] if not None else None
+        if 'thumbnail-url-base' in self.data:
+            return self.data['thumbnail-url-base']
+        return None
 
     @property
     def parent(self):
         """Get Parents."""
-        if self.game_type:
-            return ParentItem(
-                self.data['parent'],
-                self.game_type) if not None else None
+        if self.game_type is not None:
+            if 'parent' in self.data and self.data['parent'] != 'null':
+                return ParentItem(
+                    self.data['parent'],
+                    self.game_type)
         return None
 
 
@@ -276,20 +286,26 @@ class ParentItem():
     @property
     def name(self):
         """Parent Name."""
-        return self.data['name'] if not None else None
+        if 'name' in self.data:
+            return self.data['name']
+        return None
 
     @property
     def sku_id(self):
         """Parent SKU."""
-        full_id = self.data['id'] if not None else None
-        if full_id:
+        full_id = None
+        if 'id' in self.data:
+            full_id = self.data['id']
+        if full_id is not None:
             return parse_id(full_id)
         return None
 
     @property
     def cover_art(self):
         """Parent Art."""
-        return "{}{}".format(self.data['url'], "/image") if not None else None
+        if 'url' in self.data:
+            return "{}{}".format(self.data['url'], "/image")
+        return None
 
     @property
     def game_type(self):
