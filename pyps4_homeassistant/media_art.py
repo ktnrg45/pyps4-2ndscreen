@@ -227,7 +227,6 @@ class ResultItem():
         """Init Class."""
         self.type_list = type_list
         self.data = data['attributes']
-        _LOGGER.warning(self.data.keys())
 
     @property
     def name(self):
