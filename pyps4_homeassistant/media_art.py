@@ -139,7 +139,8 @@ def tumbler_search(  # noqa: pylint: disable=too-many-arguments
         data = parse_data(result, title_id, url[2])
         if not data:
             next_chars = result['data']['attributes']['next'] or None
-            next_list.append(next_chars) if next_chars else None  # noqa: pylint: disable=expression-not-assigned
+            if next_chars is not None:
+                next_list.append(next_chars)
         else:
             break
     return data or None
