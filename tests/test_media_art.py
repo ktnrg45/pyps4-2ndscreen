@@ -3,6 +3,7 @@ import logging
 import pyps4_homeassistant.ps4 as ps4
 
 TEST_LIST = [  # title, titleid, region
+    ["Netflix", 'CUSA00129', 'United States'],
     ["Marvel's Spider-Man", 'CUSA11993', 'Austria'],
     ["Marvel's Spider-Man", 'CUSA11993', 'Nederland'],
     ["Marvel's Spider-Man", 'CUSA11993', 'Italy'],
