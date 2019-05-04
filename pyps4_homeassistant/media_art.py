@@ -88,7 +88,7 @@ def get_ps_store_data(title, title_id, region, url=None, legacy=False):
                 continue
 
         # Try tumbler search. Add chars to search, one by one.
-        if formats[f_index] == 'tumbler':
+        if formats[f_index] == 'tumbler' and legacy is False:
             char_index = 0
             while char_index < (len(title) - 1):
                 index = char_index + 1
@@ -112,7 +112,8 @@ def get_ps_store_data(title, title_id, region, url=None, legacy=False):
                             title_id, region)
                     continue
                 return data
-
+        else:
+            return None
         data = parse_data(result, title_id, url[2])
         _LOGGER.debug(data)
         if data is not None:
