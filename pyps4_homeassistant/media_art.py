@@ -88,7 +88,7 @@ def get_ps_store_data(title, title_id, region, url=None, legacy=False):
                 continue
 
         # Try tumbler search. Add chars to search, one by one.
-        if formats[f_index] == 'tumbler' and legacy is False:
+        if formats[f_index] == 'tumbler':
             char_index = 0
             while char_index < (len(title) - 1):
                 index = char_index + 1
@@ -112,9 +112,6 @@ def get_ps_store_data(title, title_id, region, url=None, legacy=False):
                             title_id, region)
                     continue
                 return data
-
-        elif formats[f_index] == 'tumbler' and legacy is True:
-            return None
 
         data = parse_data(result, title_id, url[2])
         _LOGGER.debug(data)
@@ -142,8 +139,7 @@ def tumbler_search(  # noqa: pylint: disable=too-many-arguments
         data = parse_data(result, title_id, url[2])
         if not data:
             next_chars = result['data']['attributes']['next'] or None
-            if next_chars is not None:
-                next_list.append(next_chars)
+            next_list.append(next_chars) if next_chars else None  # noqa: pylint: disable=expression-not-assigned
         else:
             break
     return data or None
@@ -228,23 +224,19 @@ class ResultItem():
 
     def __init__(self, data, type_list):
         """Init Class."""
-        self.type_list = type_list
         self.data = data['attributes']
+        self.type_list = type_list
 
     @property
     def name(self):
         """Get Item Name."""
-        if 'name' in self.data:
-            return self.data['name']
-        return None
+        return self.data['name'] if not None else None
 
     @property
     def game_type(self):
         """Get Game Type."""
-        game_type = None
-        if 'game-content-type' in self.data:
-            game_type = self.data['game-content-type']
-        if game_type is not None:
+        game_type = self.data['game-content-type'] if not None else None
+        if game_type:
             if game_type == self.type_list[4]:
                 return 'App'
             return game_type
@@ -253,28 +245,23 @@ class ResultItem():
     @property
     def sku_id(self):
         """Get SKU."""
-        full_id = None
-        if 'default-sku-id' in self.data:
-            full_id = self.data['default-sku-id']
-        if full_id is not None:
+        full_id = self.data['default-sku-id'] if not None else None
+        if full_id:
             return parse_id(full_id)
         return None
 
     @property
     def cover_art(self):
         """Get Art URL."""
-        if 'thumbnail-url-base' in self.data:
-            return self.data['thumbnail-url-base']
-        return None
+        return self.data['thumbnail-url-base'] if not None else None
 
     @property
     def parent(self):
         """Get Parents."""
-        if self.game_type is not None:
-            if 'parent' in self.data and self.data['parent'] != 'null':
-                return ParentItem(
-                    self.data['parent'],
-                    self.game_type)
+        if self.game_type:
+            return ParentItem(
+                self.data['parent'],
+                self.game_type) if not None else None
         return None
 
 
@@ -289,26 +276,20 @@ class ParentItem():
     @property
     def name(self):
         """Parent Name."""
-        if 'name' in self.data:
-            return self.data['name']
-        return None
+        return self.data['name'] if not None else None
 
     @property
     def sku_id(self):
         """Parent SKU."""
-        full_id = None
-        if 'id' in self.data:
-            full_id = self.data['id']
-        if full_id is not None:
+        full_id = self.data['id'] if not None else None
+        if full_id:
             return parse_id(full_id)
         return None
 
     @property
     def cover_art(self):
         """Parent Art."""
-        if 'url' in self.data:
-            return "{}{}".format(self.data['url'], "/image")
-        return None
+        return self.data['url'] if not None else None
 
     @property
     def game_type(self):
