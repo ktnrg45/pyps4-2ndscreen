@@ -112,8 +112,10 @@ def get_ps_store_data(title, title_id, region, url=None, legacy=False):
                             title_id, region)
                     continue
                 return data
-        else:
+
+        elif formats[f_index] == 'tumbler' and legacy is True:
             return None
+
         data = parse_data(result, title_id, url[2])
         _LOGGER.debug(data)
         if data is not None:
