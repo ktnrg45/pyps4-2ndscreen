@@ -245,6 +245,15 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
                 return None
         else:
             region = regions[region]
+        try:
+            result_item = ps_data(title, title_id, region, url, legacy=True)
+        except (TypeError, AttributeError):
+            result_item = None
+            raise PSDataIncomplete
+        if result_item is not None:
+            _LOGGER.debug("Found Title: %s, URL: %s",
+                          result_item.name, result_item.cover_art)
+            return result_item
 
         try:
             result_item = ps_data(title, title_id, region, url)

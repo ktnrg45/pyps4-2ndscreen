@@ -3,6 +3,7 @@ import logging
 import pyps4_homeassistant.ps4 as ps4
 
 TEST_LIST = [  # title, titleid, region
+    ["Netflix", 'CUSA00129', 'United States'],
     ["Marvel's Spider-Man", 'CUSA11993', 'Austria'],
     ["Marvel's Spider-Man", 'CUSA11993', 'Nederland'],
     ["Marvel's Spider-Man", 'CUSA11993', 'Italy'],
@@ -45,7 +46,7 @@ def test_sample_list():
         title_id = item[1]
         region = item[2]
         result_item = TEST_PS4.get_ps_store_data(
-            title, title_id, region, search_all=False)
+            title, title_id, region)
         if result_item:
             _LOGGER.info(
                 "Result %s: %s",
