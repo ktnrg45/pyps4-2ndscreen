@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """Methods for PS4 Object."""
 from __future__ import print_function
-from threading import Timer
 import json
 import logging
 import time
@@ -28,50 +27,14 @@ def delay(seconds):
         pass
 
 
-class StatusTimer():
-    """Status Thread Class."""
-
-    def __init__(self, seconds, target):
-        """Init."""
-        self._should_continue = False
-        self.is_running = False
-        self.seconds = seconds
-        self.target = target
-        self.thread = None
-
-    def _handle_target(self):
-        self.is_running = True
-        self.target()
-        self.is_running = False
-        self._start_timer()
-
-    def _start_timer(self):
-        """Restart Timer."""
-        if self._should_continue:
-            self.thread = Timer(self.seconds, self._handle_target)
-            self.thread.start()
-
-    def start(self):
-        """Start Timer."""
-        if not self._should_continue and not self.is_running:
-            self._should_continue = True
-            self._start_timer()
-
-    def cancel(self):
-        """Cancel Timer."""
-        if self.thread is not None:
-            self._should_continue = False
-            self.thread.cancel()
-
-
-class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
+class Ps4():   # noqa: pylint: disable=too-many-instance-attributes, too-many-arguments
     """The PS4 object."""
 
     STATUS_OK = 200
     STATUS_STANDBY = 620
 
     def __init__(self, host, credential=None, credentials_file=None,
-                 broadcast=False):
+                 broadcast=False, client=None):
         """Initialize the instance.
 
         Keyword arguments:
@@ -84,11 +47,10 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
         self._broadcast = broadcast
         self._socket = None
         self._credential = None
-        self._status_timer = None
         self._msg_sending = False
-        self.keep_alive = False
         self.status = None
         self.connected = False
+        self.client = client
 
         if credential:
             self._credential = credential
@@ -98,42 +60,44 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
 
         self._connection = Connection(host, credential=self._credential)
 
+    def _prepare_connection(self):
+        self.wakeup()
+        self.launch()
+        delay(0.5)
+        _LOGGER.debug("Connection prepared")
+
     def open(self):
         """Open a connection to the PS4."""
-        self.get_status()
-        if self.is_standby:
-            raise NotReady
+        if self.status is None:
+            self.get_status()
+        if not self.is_running:
+            raise NotReady("PS4 is not On")
 
+        self._prepare_connection()
         if self.connected is False:
-            self.wakeup()
-            self.launch()
-            delay(0.5)
             self._connection.connect()
             login = self._connection.login()
             if login is True:
                 self.connected = True
-                if self.keep_alive is True:
-                    _LOGGER.debug("Keep Alive feature enabled")
-                    self._status_timer = StatusTimer(30, self.send_status)
-                    self._status_timer.start()
+                return True
+            return False
+        return True
 
     def close(self):
         """Close the connection to the PS4."""
         self._connection.disconnect()
         self.connected = False
-        self.keep_alive = False
-        if self._status_timer is not None:
-            self._status_timer.cancel()
-            self._status_timer = None
-
-    def is_keepalive(self):
-        """Check if keep alive should be sent."""
-        if self.keep_alive is False:
-            self.close()
+        _LOGGER.debug("Disconnecting from PS4 @ %s", self._host)
 
     def get_status(self):
         """Get current status info."""
-        self.status = get_status(self._host)
+        import socket
+
+        try:
+            self.status = get_status(self._host)
+        except socket.timeout:
+            _LOGGER.debug("PS4 @ %s status timed out", self._host)
+            return None
         return self.status
 
     def launch(self):
@@ -149,14 +113,12 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
         self.open()
         is_login = self._connection.login(pin)
         if is_login is False:
-            raise LoginFailed
+            raise LoginFailed("PS4 Refused Connection")
         self.close()
         return is_login
 
     def standby(self):
         """Standby."""
-        if self.connected is True:
-            self.close()
         self.open()
         self._connection.standby()
         self.close()
@@ -166,8 +128,6 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
 
         `title_id`: title to start
         """
-        if self.connected is True:
-            self.close()
         self.open()
         if self._connection.start_title(title_id):
             if running_id is not None:
@@ -176,8 +136,7 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
             elif running_id == title_id:
                 _LOGGER.warning("Title: %s already started", title_id)
         else:
-            self.keep_alive = False
-        self.is_keepalive()
+            self.close()
 
     def remote_control(self, button_name, hold_time=0):
         """Send a remote control button press.
@@ -212,13 +171,12 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
                    'close_rc': 2048}
         button_name = button_name.lower()
         if button_name not in buttons.keys():
-            raise UnknownButton
+            raise UnknownButton("Button: {} is not valid".format(button_name))
         operation = buttons[button_name]
         self.open()
         if not self._connection.remote_control(operation, hold_time):
-            self.keep_alive = False
+            self.close()
         self._msg_sending = False
-        self.is_keepalive()
 
     def send_status(self):
         """Send connection status to PS4."""

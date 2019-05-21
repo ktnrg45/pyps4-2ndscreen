@@ -7,3 +7,4 @@ from .helpers import *
 from .ddp import *
 from .media_art import *
 from .errors import *
+from .client import *
