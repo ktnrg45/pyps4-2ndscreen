@@ -5,6 +5,7 @@ from __future__ import print_function
 import re
 import socket
 import logging
+import select
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -74,11 +75,17 @@ def get_ddp_launch_message(credential):
     return get_ddp_message('LAUNCH', data)
 
 
-def _send_recv_msg(host, broadcast, msg, receive=True):
-    """Send a ddp message and receive the response."""
+def get_socket(timeout=3):
+    """Return DDP socket object."""
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((UDP_IP, UDP_PORT))
-    sock.settimeout(3.0)
+    sock.settimeout(timeout)
+    return sock
+
+
+def _send_recv_msg(host, broadcast, msg, receive=True):
+    """Send a ddp message and receive the response."""
+    sock = get_socket()
 
     if broadcast:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -89,13 +96,21 @@ def _send_recv_msg(host, broadcast, msg, receive=True):
     sock.sendto(msg.encode('utf-8'), (_host, DDP_PORT))
 
     if receive:
-        return sock.recvfrom(1024)
+        available, _, _ = select.select([sock], [], [], 0.01)
+        if sock in available:
+            return sock.recvfrom(1024)
     return None
 
 
 def _send_msg(host, broadcast, msg):
     """Send a ddp message."""
-    _send_recv_msg(host, broadcast, msg, receive=False)
+    return _send_recv_msg(host, broadcast, msg, receive=False)
+
+
+def send_search_msg(host):
+    """Send message only."""
+    msg = get_ddp_search_message()
+    return _send_msg(host, True, msg)
 
 
 def search(host=None, broadcast=True):
@@ -113,7 +128,10 @@ def search(host=None, broadcast=True):
 
 def get_status(host):
     """Get status."""
-    ps_list = search(host=host)
+    try:
+        ps_list = search(host=host)
+    except TypeError:
+        return None
     return ps_list[0]
 
 
