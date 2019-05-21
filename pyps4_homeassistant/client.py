@@ -11,6 +11,14 @@ DEFAULT_INTERVAL = 3
 DEFAULT_INTERVAL_KEEP_ALIVE = 30
 
 
+def _should_poll(last, interval):
+    """Poll timer."""
+    time_since = time.time() - last
+    if time_since > interval:
+        return True
+    return False
+
+
 class PS4Client():
     """Client for handling background IO."""
 
@@ -36,7 +44,7 @@ class PS4Client():
         self.stop_all()
         self.listeners = {}
 
-    def start_listener(self, ps4):
+    def start_listener(self, ps4):  # noqa: pylint: disable=protected-access
         """Start listener thread."""
         _LOGGER.debug("Starting listener @ %s", ps4._host)
         self.started.append(self.listeners[ps4])
@@ -56,10 +64,9 @@ class PS4Client():
     def schedule_task(self, ps4, task, *args):
         """Schedule socket task in thread."""
         listener = self.listeners[ps4]
-        queue = listener.queue
         if args:
             task = (task, *args)
-        queue.put(task)
+        listener.queue.put(task)
 
     def add_ps4(self, ps4):
         """Add PS4 to listeners."""
@@ -84,7 +91,7 @@ class PS4Client():
 class Listener(threading.Thread):
     """Listener per PS4 to handle sockets."""
 
-    def __init__(self, client, ps4):
+    def __init__(self, client, ps4):  # noqa: pylint: too-many-instance-attributes
         """Init."""
         super().__init__()
         self.client = client
@@ -135,26 +142,19 @@ class Listener(threading.Thread):
 
             # Call when queue is empty.
             # Queue status update.
-            if self._should_poll(self.last_poll, self.interval):
+            if _should_poll(self.last_poll, self.interval):
                 self.queue.put(self.ps4.get_status, False)
 
             # Queue Keep Alive.
             if self.ps4.connected:
-                if self._should_poll(self.last_keep_alive,
-                                     self.interval_keep_alive):
+                if _should_poll(self.last_keep_alive,
+                                self.interval_keep_alive):
                     self.queue.put(self.ps4.send_status, False)
 
         # If stopping.
         self.queue.join()
         self.running = False
-        _LOGGER.debug("Stopping Listener @ %s", self.ps4._host)
-
-    def _should_poll(self, last, interval):
-        """Poll timer."""
-        time_since = time.time() - last
-        if time_since > interval:
-            return True
-        return False
+        _LOGGER.debug("Stopping Listener @ %s", self.ps4._host)   # noqa: pylint: disable=protected-access
 
     def _notify_callbacks(self):
         """Call all callbacks."""
@@ -164,7 +164,7 @@ class Listener(threading.Thread):
 
     def _check_status(self, status):
         if status != self._status:
-            _LOGGER.debug(
+            _LOGGER.debug(  # noqa: pylint: disable=protected-access
                 "PS4 @ %s: Status changed to %s", self.ps4._host, status)
             self._status = status
             self._notify_callbacks()
