@@ -60,13 +60,11 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
 
         self._connection = Connection(host, credential=self._credential)
 
-        if self.client is not None:
-            self.client.add_ps4(ps4=self)
-
     def _prepare_connection(self):
         self.wakeup()
         self.launch()
         delay(0.5)
+        _LOGGER.debug("Connection prepared")
 
     def open(self):
         """Open a connection to the PS4."""
@@ -75,8 +73,8 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
         if not self.is_running:
             raise NotReady("PS4 is not On")
 
+        self._prepare_connection()
         if self.connected is False:
-            self._prepare_connection()
             self._connection.connect()
             login = self._connection.login()
             if login is True:
