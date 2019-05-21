@@ -27,7 +27,7 @@ def delay(seconds):
         pass
 
 
-class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
+class Ps4():   # noqa: pylint: disable=too-many-instance-attributes, too-many-arguments
     """The PS4 object."""
 
     STATUS_OK = 200
@@ -81,6 +81,7 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
                 self.connected = True
                 return True
             return False
+        return True
 
     def close(self):
         """Close the connection to the PS4."""
@@ -170,7 +171,7 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes
                    'close_rc': 2048}
         button_name = button_name.lower()
         if button_name not in buttons.keys():
-            raise UnknownButton("Button: %s is not valid", button_name)
+            raise UnknownButton("Button: {} is not valid".format(button_name))
         operation = buttons[button_name]
         self.open()
         if not self._connection.remote_control(operation, hold_time):
