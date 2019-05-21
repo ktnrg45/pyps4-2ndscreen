@@ -44,9 +44,9 @@ class PS4Client():
         self.stop_all()
         self.listeners = {}
 
-    def start_listener(self, ps4):  # noqa: pylint: disable=protected-access
+    def start_listener(self, ps4):
         """Start listener thread."""
-        _LOGGER.debug("Starting listener @ %s", ps4._host)
+        _LOGGER.debug("Starting listener @ %s", ps4._host)  # noqa: pylint: disable=protected-access
         self.started.append(self.listeners[ps4])
         self.listeners[ps4].start()
 
@@ -88,10 +88,10 @@ class PS4Client():
         return None
 
 
-class Listener(threading.Thread):
+class Listener(threading.Thread):  # noqa: pylint: disable=too-many-instance-attributes, line-too-long
     """Listener per PS4 to handle sockets."""
 
-    def __init__(self, client, ps4):  # noqa: pylint: too-many-instance-attributes
+    def __init__(self, client, ps4):
         """Init."""
         super().__init__()
         self.client = client
@@ -164,7 +164,7 @@ class Listener(threading.Thread):
 
     def _check_status(self, status):
         if status != self._status:
-            _LOGGER.debug(  # noqa: pylint: disable=protected-access
-                "PS4 @ %s: Status changed to %s", self.ps4._host, status)
+            _LOGGER.debug(
+                "PS4 @ %s: Status changed to %s", self.ps4._host, status)  # noqa: pylint: disable=protected-access
             self._status = status
             self._notify_callbacks()
