@@ -35,6 +35,20 @@ COUNTRIES = {"Argentina": "en/ar", "Australia": "en/au", "Austria": "de/at",
              "United Arab Emirates": "en/ae", "United States": "en/us",
              "United Kingdom": "en/gb"}
 
+TYPE_LIST = {
+    'de': ['Vollversion', 'Spiel', 'PSN-Spiel', 'Paket', 'App'],
+    'en': ['Full Game', 'Game', 'PSN Game', 'Bundle', 'App'],
+    'es': ['Juego completo', 'Juego', 'Juego de PSN', 'Paquete', 'App'],
+    'fr': ['Jeu complet', 'Jeu', 'Jeu PSN', 'Offre groupée', 'App'],
+    'it': ['Gioco completo', 'Gioco', 'Gioco PSN', 'Bundle', 'App'],
+    'ko': ['제품판', '게임', 'PSN 게임', '번들', '앱'],
+    'nl': ['Volledige game', 'game', 'PSN-game', 'Bundel', 'App'],
+    'pt': ['Jogo completo', 'jogo', 'Jogo da PSN', 'Pacote', 'App'],
+    'ru': ['Полная версия', 'Игра', 'Игра PSN', 'Комплект', 'Приложение'],
+}
+
+FORMATS = ['chars', 'chars+', 'orig', 'tumbler']
+
 
 def get_ps_store_url(title, region, reformat='chars', legacy=False):
     """Get URL for title search in PS Store."""
@@ -74,7 +88,7 @@ def get_ps_store_url(title, region, reformat='chars', legacy=False):
 
 def get_ps_store_data(title, title_id, region, url=None, legacy=False):
     """Get cover art from database."""
-    formats = ['chars', 'chars+', 'orig', 'tumbler']
+    formats = FORMATS
     f_index = 0
 
     # Try to find title in data. Reformat title of punctuation.
@@ -172,19 +186,8 @@ def get_request(url, retry=2):
 
 def parse_data(result, title_id, lang):
     """Filter through each item in search request."""
-    type_list = {
-        'de': ['Vollversion', 'Spiel', 'PSN-Spiel', 'Paket', 'App'],
-        'en': ['Full Game', 'Game', 'PSN Game', 'Bundle', 'App'],
-        'es': ['Juego Completo', 'Juego', 'Juego de PSN', 'Paquete', 'App'],
-        'fr': ['Jeu complet', 'Jeu', 'Jeu PSN', 'Offre groupée', 'App'],
-        'it': ['Gioco completo', 'Gioco', 'Gioco PSN', 'Bundle', 'App'],
-        'ko': ['제품판', '게임', 'PSN 게임', '번들', '앱'],
-        'nl': ['Volledige game', 'game', 'PSN-game', 'Bundel', 'App'],
-        'pt': ['Jogo completo', 'jogo', 'Jogo da PSN', 'Pacote', 'App'],
-        'ru': ['Полная версия', 'Игра', 'Игра PSN', 'Комплект', 'Приложение'],
-    }
     item_list = []
-    type_list = type_list[lang]
+    type_list = TYPE_LIST[lang]
     parent_list = []
 
     for item in result['included']:
