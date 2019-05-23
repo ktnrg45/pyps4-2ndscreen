@@ -1,6 +1,6 @@
 [MESSAGES CONTROL]
 
-disable=wildcard-import,unused-import,too-many-public-methods
+disable=wildcard-import,unused-import,too-many-public-methods,too-many-locals,too-many-arguments
 
 [REPORTS]
 
