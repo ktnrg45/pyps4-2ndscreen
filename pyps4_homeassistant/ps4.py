@@ -11,7 +11,8 @@ from .errors import (NotReady, PSDataIncomplete,
                      UnknownButton, LoginFailed)
 from .media_art import (get_ps_store_data as ps_data,
                         async_get_ps_store_requests,
-                        parse_data, COUNTRIES, DEPRECATED_REGIONS)
+                        get_region, parse_data, prepare_tumbler,
+                        COUNTRIES, DEPRECATED_REGIONS)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -197,18 +198,7 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes, too-many-ar
 
     def get_ps_store_data(self, title, title_id, region, url=None):
         """Return Title and Cover data."""
-        regions = COUNTRIES
-        d_regions = DEPRECATED_REGIONS
-
-        if region not in regions:
-            if region in d_regions:
-                _LOGGER.warning('Region: %s is deprecated', region)
-                region = d_regions[region]
-            else:
-                _LOGGER.error('Region: %s is not valid', region)
-                return None
-        else:
-            region = regions[region]
+        region = get_region(region)
         try:
             _LOGGER.debug("Searching using legacy API")
             result_item = ps_data(title, title_id, region, url, legacy=True)
@@ -241,7 +231,7 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes, too-many-ar
         lang = lang[0]
         _LOGGER.debug("Searching...")
         responses = await async_get_ps_store_requests(
-            title, title_id, region)
+            title, region)
         for response in responses:
             try:
                 result_item = parse_data(response, title_id, lang)
@@ -249,12 +239,23 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes, too-many-ar
                 result_item = None
                 raise PSDataIncomplete
             if result_item is not None:
-                _LOGGER.debug("Found Title: %s, URL: %s",
-                              result_item.name, result_item.cover_art)
-                self.ps_name = result_item.name
-                self.ps_cover = result_item.cover_art
-                return result_item
-            return None
+                break
+
+        if result_item is None:
+            region = get_region(region)
+            try:
+                result_item = prepare_tumbler(title, title_id, region)
+            except (TypeError, AttributeError):
+                result_item = None
+                raise PSDataIncomplete
+
+        if result_item is not None:
+            _LOGGER.debug("Found Title: %s, URL: %s",
+                          result_item.name, result_item.cover_art)
+            self.ps_name = result_item.name
+            self.ps_cover = result_item.cover_art
+            return result_item
+        return None
 
     @property
     def is_running(self):
