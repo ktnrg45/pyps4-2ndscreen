@@ -30,7 +30,7 @@ Ports
 ----------
 PS4 listens on ports 987 and 997 (Priveleged).
 Must run command on python path if no access.
-This is so you do not need sudo/root priveleges to run.
+This is so you do not need sudo/root priveleges to run although you can run as sudo but it is not advised.
 
 Example:
 
@@ -72,8 +72,11 @@ To Do List:
 - Port TCP and UDP functions to Asyncio.
 
 
+Credits:
+----------
+Thanks to hthiery for writing the underlying socket protocol https://github.com/hthiery/python-ps4
 
-References
+References:
 ----------
 
 - https://github.com/dsokoloski/ps4-wake
