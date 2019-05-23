@@ -3,6 +3,8 @@
 import logging
 import urllib
 import requests
+import aiohttp
+import asyncio
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -48,6 +50,22 @@ TYPE_LIST = {
 }
 
 FORMATS = ['chars', 'chars+', 'orig', 'tumbler']
+
+
+def get_region(region):
+    """Validate and format region."""
+    regions = COUNTRIES
+    d_regions = DEPRECATED_REGIONS
+
+    if region not in regions:
+        if region in d_regions:
+            _LOGGER.warning('Region: %s is deprecated', region)
+            region = d_regions[region]
+        else:
+            _LOGGER.error('Region: %s is not valid', region)
+            return None
+    else:
+        return regions[region]
 
 
 def get_ps_store_url(title, region, reformat='chars', legacy=False):
@@ -101,31 +119,9 @@ def get_ps_store_data(title, title_id, region, url=None, legacy=False):
             if not result:
                 continue
 
-        # Try tumbler search. Add chars to search, one by one.
+        # Try tumbler search.
         if formats[f_index] == 'tumbler' and legacy is False:
-            char_index = 0
-            while char_index < (len(title) - 1):
-                index = char_index + 1
-                current_chars = title[0:index]
-                url = get_ps_store_url(
-                    current_chars, region, reformat=formats[f_index],
-                    legacy=legacy)
-                result = get_request(url)
-                data = parse_data(result, title_id, url[2])
-                if not data:
-                    remaining_chars = list(title[index:])
-                    char_index = char_index + 1
-                    next_chars = result['data']['attributes']['next'] or None
-
-                    # If the next char is not in the next attr.
-                    if title[char_index] not in next_chars\
-                            if next_chars else None:
-                        _LOGGER.debug("Starting Tumbler")
-                        return tumbler_search(
-                            current_chars, next_chars, remaining_chars,
-                            title_id, region)
-                    continue
-                return data
+            return prepare_tumbler(title, title_id, region)
 
         elif formats[f_index] == 'tumbler' and legacy is True:
             return None
@@ -139,6 +135,33 @@ def get_ps_store_data(title, title_id, region, url=None, legacy=False):
     return None
 
 
+def prepare_tumbler(title, title_id, region):
+    """Try tumbler search. Add chars to search, one by one."""
+    char_index = 0
+    while char_index < (len(title) - 1):
+        index = char_index + 1
+        current_chars = title[0:index]
+        url = get_ps_store_url(
+            current_chars, region, reformat='tumbler',
+            legacy=False)
+        result = get_request(url)
+        data = parse_data(result, title_id, url[2])
+        if data is None:
+            remaining_chars = list(title[index:])
+            char_index = char_index + 1
+            next_chars = result['data']['attributes']['next'] or None
+
+            # If the next char is not in the next attr.
+            if title[char_index] not in next_chars\
+                    if next_chars else None:
+                _LOGGER.debug("Starting Tumbler")
+                return tumbler_search(
+                    current_chars, next_chars, remaining_chars,
+                    title_id, region)
+            continue
+        return data
+
+
 def tumbler_search(  # noqa: pylint: disable=too-many-arguments
         current_chars, next_chars, remaining_chars,
         title_id, region, reformat='tumbler', legacy=False):
@@ -146,15 +169,16 @@ def tumbler_search(  # noqa: pylint: disable=too-many-arguments
     current = current_chars
     chars = next_chars
     next_list = []
+    ignore = ["'", ' ']
     data = None
     for char in chars:
-        if char not in remaining_chars:
+        if char not in remaining_chars or char in ignore:
             continue
         next_str = "{}{}".format(current, char)
         url = get_ps_store_url(next_str, region, reformat, legacy)
         result = get_request(url)
         data = parse_data(result, title_id, url[2])
-        if not data:
+        if data is not None:
             next_chars = result['data']['attributes']['next'] or None
             if next_chars is not None:
                 next_list.append(next_chars)
@@ -201,27 +225,17 @@ def _format_url(url):
 
 async def fetch(url, params, session):
     """Get Request."""
-    async with session.get(url, params=params) as response:
-        return await response.json()
+    try:
+        async with session.get(url, params=params, timeout=10) as response:
+            return await response.json()
+    except asyncio.TimeoutError:
+        return None
 
 
-async def async_get_ps_store_requests(title, title_id, region):
+async def async_get_ps_store_requests(title, region, tumbler=False):
     """Return Title and Cover data with aiohttp."""
-    import aiohttp
-
     requests = []
-    regions = COUNTRIES
-    d_regions = DEPRECATED_REGIONS
-
-    if region not in regions:
-        if region in d_regions:
-            _LOGGER.warning('Region: %s is deprecated', region)
-            region = d_regions[region]
-        else:
-            _LOGGER.error('Region: %s is not valid', region)
-            return None
-    else:
-        region = regions[region]
+    region = get_region(region)
 
     async with aiohttp.ClientSession() as session:
         for format_type in FORMATS:
@@ -230,7 +244,8 @@ async def async_get_ps_store_requests(title, title_id, region):
             url, params = _format_url(_url)
 
             request = await fetch(url, params, session)
-            requests.append(request)
+            if request is not None:
+                requests.append(request)
 
         for format_type in FORMATS:
             _url = get_ps_store_url(
@@ -238,7 +253,9 @@ async def async_get_ps_store_requests(title, title_id, region):
             url, params = _format_url(_url)
 
             request = await fetch(url, params, session)
-            requests.append(request)
+            if request is not None:
+                requests.append(request)
+        session.close()
         return requests
 
 
@@ -253,13 +270,11 @@ def parse_data(result, title_id, lang):
 
     # Filter each item by prioritized type
     for g_type in type_list:
-        _LOGGER.debug("Searching type: %s", g_type)
         for item in item_list:
             if item.game_type == g_type:
                 if item.sku_id == title_id:
                     _LOGGER.debug(
-                        "Item: %s, %s, %s", item.name, item.sku_id,
-                        vars(item.parent))
+                        "Item: %s, %s", item.name, item.sku_id)
                     if not item.parent or item.parent.data is None:
                         _LOGGER.info("Direct Match")
                         return item
@@ -333,9 +348,10 @@ class ResultItem():
         """Get Parents."""
         if self.game_type is not None:
             if 'parent' in self.data and self.data['parent'] != 'null':
-                return ParentItem(
-                    self.data['parent'],
-                    self.game_type)
+                if self.data['parent'] is not None:
+                    return ParentItem(
+                        self.data['parent'],
+                        self.game_type)
         return None
 
 
