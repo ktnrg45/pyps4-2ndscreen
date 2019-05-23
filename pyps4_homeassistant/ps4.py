@@ -9,7 +9,9 @@ from .connection import Connection
 from .ddp import get_status, launch, wakeup
 from .errors import (NotReady, PSDataIncomplete,
                      UnknownButton, LoginFailed)
-from .media_art import get_ps_store_data as ps_data
+from .media_art import (get_ps_store_data as ps_data,
+                        get_ps_store_url as ps_url,
+                        parse_data, FORMATS)
 from .media_art import COUNTRIES, DEPRECATED_REGIONS
 
 _LOGGER = logging.getLogger(__name__)
@@ -25,6 +27,62 @@ def delay(seconds):
     start_time = time.time()
     while time.time() - start_time < seconds:
         pass
+
+
+def _format_url(url):
+    f_params = {}
+    url = url[0]
+    url = url.split('?')
+    params = url[1]
+    params = params.replace('?', '')
+    params = params.split('&')
+    for item in params:
+        item = item.split('=')
+        f_params[item[0]] = item[1]
+    url = url[0]
+    return url, f_params
+
+
+async def fetch(url, params, session):
+    """Get Request."""
+    async with session.get(url, params=params) as response:
+        return await response.json()
+
+
+async def async_get_ps_store_requests(title, title_id, region):
+    """Return Title and Cover data with aiohttp."""
+    import aiohttp
+
+    requests = []
+    regions = COUNTRIES
+    d_regions = DEPRECATED_REGIONS
+
+    if region not in regions:
+        if region in d_regions:
+            _LOGGER.warning('Region: %s is deprecated', region)
+            region = d_regions[region]
+        else:
+            _LOGGER.error('Region: %s is not valid', region)
+            return None
+    else:
+        region = regions[region]
+
+    async with aiohttp.ClientSession() as session:
+        for format_type in FORMATS:
+            _url = ps_url(title, region, reformat=format_type, legacy=True)
+            url, params = _format_url(_url)
+
+            request = await fetch(url, params, session)
+            requests.append(request)
+
+        for format_type in FORMATS:
+            _url = ps_url(
+                title, region, reformat=format_type, legacy=False)
+            url, params = _format_url(_url)
+
+            request = await fetch(url, params, session)
+            requests.append(request)
+        return requests
 
 
 class Ps4():   # noqa: pylint: disable=too-many-instance-attributes, too-many-arguments
@@ -51,6 +109,8 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes, too-many-ar
         self.status = None
         self.connected = False
         self.client = client
+        self.ps_cover = None
+        self.ps_name = None
 
         if credential:
             self._credential = credential
@@ -59,6 +119,9 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes, too-many-ar
             self._credential = creds['user-credential']
 
         self._connection = Connection(host, credential=self._credential)
+
+        if self.client is not None:
+            self.client.add_ps4(ps4=self)
 
     def _prepare_connection(self):
         self.wakeup()
@@ -189,7 +252,7 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes, too-many-ar
             if is_loggedin is False:
                 self.close()
 
-    def get_ps_store_data(self, title, title_id, region, url=None):  # noqa: pylint: disable=no-self-use, line-too-long
+    def get_ps_store_data(self, title, title_id, region, url=None):
         """Return Title and Cover data."""
         regions = COUNTRIES
         d_regions = DEPRECATED_REGIONS
@@ -204,6 +267,7 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes, too-many-ar
         else:
             region = regions[region]
         try:
+            _LOGGER.debug("Searching using legacy API")
             result_item = ps_data(title, title_id, region, url, legacy=True)
         except (TypeError, AttributeError):
             result_item = None
@@ -221,8 +285,33 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes, too-many-ar
         if result_item is not None:
             _LOGGER.debug("Found Title: %s, URL: %s",
                           result_item.name, result_item.cover_art)
+            self.ps_name = result_item.name
+            self.ps_cover = result_item.cover_art
             return result_item
         return None
+
+    async def async_get_ps_store_data(self, title, title_id, region):
+        """Parse Responses."""
+        regions = COUNTRIES
+        lang = regions[region]
+        lang = lang.split('/')
+        lang = lang[0]
+        _LOGGER.debug("Searching...")
+        responses = await async_get_ps_store_requests(
+            title, title_id, region)
+        for response in responses:
+            try:
+                result_item = parse_data(response, title_id, lang)
+            except (TypeError, AttributeError):
+                result_item = None
+                raise PSDataIncomplete
+            if result_item is not None:
+                _LOGGER.debug("Found Title: %s, URL: %s",
+                              result_item.name, result_item.cover_art)
+                self.ps_name = result_item.name
+                self.ps_cover = result_item.cover_art
+                return result_item
+            return None
 
     @property
     def is_running(self):
@@ -262,3 +351,13 @@ class Ps4():   # noqa: pylint: disable=too-many-instance-attributes, too-many-ar
     def running_app_name(self):
         """Return the name of the running application."""
         return self.status['running-app-name']
+
+    @property
+    def running_app_ps_cover(self):
+        """Return the URL for the title cover art."""
+        return self.ps_cover
+
+    @property
+    def running_app_ps_name(self):
+        """Return the name fetched from PS Store."""
+        return self.ps_name
