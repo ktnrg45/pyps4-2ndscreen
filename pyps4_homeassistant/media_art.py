@@ -184,6 +184,64 @@ def get_request(url, retry=2):
             continue
 
 
+def _format_url(url):
+    """Format url for aiohttp."""
+    f_params = {}
+    url = url[0]
+    url = url.split('?')
+    params = url[1]
+    params = params.replace('?', '')
+    params = params.split('&')
+    for item in params:
+        item = item.split('=')
+        f_params[item[0]] = item[1]
+    url = url[0]
+    return url, f_params
+
+
+async def fetch(url, params, session):
+    """Get Request."""
+    async with session.get(url, params=params) as response:
+        return await response.json()
+
+
+async def async_get_ps_store_requests(title, title_id, region):
+    """Return Title and Cover data with aiohttp."""
+    import aiohttp
+
+    requests = []
+    regions = COUNTRIES
+    d_regions = DEPRECATED_REGIONS
+
+    if region not in regions:
+        if region in d_regions:
+            _LOGGER.warning('Region: %s is deprecated', region)
+            region = d_regions[region]
+        else:
+            _LOGGER.error('Region: %s is not valid', region)
+            return None
+    else:
+        region = regions[region]
+
+    async with aiohttp.ClientSession() as session:
+        for format_type in FORMATS:
+            _url = get_ps_store_url(
+                title, region, reformat=format_type, legacy=True)
+            url, params = _format_url(_url)
+
+            request = await fetch(url, params, session)
+            requests.append(request)
+
+        for format_type in FORMATS:
+            _url = get_ps_store_url(
+                title, region, reformat=format_type, legacy=False)
+            url, params = _format_url(_url)
+
+            request = await fetch(url, params, session)
+            requests.append(request)
+        return requests
+
+
 def parse_data(result, title_id, lang):
     """Filter through each item in search request."""
     item_list = []
