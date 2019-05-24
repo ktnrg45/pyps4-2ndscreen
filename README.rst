@@ -3,19 +3,15 @@ Python Control for PlayStation 4 consoles.
 
 |BuildStatus| |PypiVersion| |PyPiPythonVersions|
 
-Purpose
+Description
 ----------
-To add a pure python implementation of ps4-waker. Including PS4 credential creation.
-Integration with Home-Assistant. 
+A full Python implementation of the Node.js package, ps4-waker.
+This is an unofficial API for the PS4 2nd Screen App. 
 
 Compatibility
 ----------
 Tested on:
 Python 3.5/3.6/3.7
-Home-Assistant/Hass.IO 0.89
-
-
-**This package can be used as a standalone api. It does not require the use of Home Assistant.
 
 Installation
 ----------
