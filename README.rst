@@ -6,7 +6,7 @@ Python Control for PlayStation 4 consoles.
 Description
 ----------
 A full Python implementation of the Node.js package, ps4-waker.
-This is an unofficial API for the PS4 2nd Screen App. 
+This is an unofficial API for the PS4 2nd Screen App.
 
 Compatibility
 ----------
@@ -21,6 +21,9 @@ To install run:
 
     pip install pyps4-homeassistant
 
+Protocol
+----------
+UDP is used to get status updates and retrieve user credentials.
 
 Ports
 ----------
