@@ -12,7 +12,7 @@ from .errors import (NotReady, PSDataIncomplete,
 from .media_art import (get_ps_store_data as ps_data,
                         async_get_ps_store_requests,
                         get_region, parse_data, prepare_tumbler,
-                        COUNTRIES, DEPRECATED_REGIONS)
+                        COUNTRIES)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ def delay(seconds):
         pass
 
 
-class Ps4():   # noqa: pylint: disable=too-many-instance-attributes, too-many-arguments
+class Ps4():
     """The PS4 object."""
 
     STATUS_OK = 200
