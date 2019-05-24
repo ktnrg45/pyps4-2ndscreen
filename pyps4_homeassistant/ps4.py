@@ -4,6 +4,7 @@ from __future__ import print_function
 import json
 import logging
 import time
+import asyncio
 
 from .connection import Connection
 from .ddp import get_status, launch, wakeup
@@ -160,10 +161,6 @@ class Ps4():
            Doing this after a long-press of PS just breaks it,
            however.
         """
-        if self._msg_sending is True:
-            _LOGGER.debug("RC Command in progress")
-            return
-        self._msg_sending = True
         buttons = {'up': 1,
                    'down': 2,
                    'right': 4,
@@ -181,18 +178,14 @@ class Ps4():
             raise UnknownButton("Button: {} is not valid".format(button_name))
         operation = buttons[button_name]
         self.open()
+        _LOGGER.debug("Sending RC Command: %s", button_name)
         if not self._connection.remote_control(operation, hold_time):
             self.close()
-        self._msg_sending = False
 
     def send_status(self):
         """Send connection status to PS4."""
         if self.connected is True:
-            while self._msg_sending is True:
-                pass
-            self._msg_sending = True
             is_loggedin = self._connection.send_status()
-            self._msg_sending = False
             if is_loggedin is False:
                 self.close()
 
@@ -243,8 +236,10 @@ class Ps4():
 
         if result_item is None:
             region = get_region(region)
+            loop = asyncio.get_event_loop()
             try:
-                result_item = prepare_tumbler(title, title_id, region)
+                result_item = await loop.run_in_executor(
+                    None, prepare_tumbler, title, title_id, region)
             except (TypeError, AttributeError):
                 result_item = None
                 raise PSDataIncomplete
