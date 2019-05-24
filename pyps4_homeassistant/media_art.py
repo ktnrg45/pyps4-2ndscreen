@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """Media Art Functions."""
 import logging
+import asyncio
 import urllib
 import requests
 import aiohttp
-import asyncio
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -60,7 +60,7 @@ def get_region(region):
     if region not in regions:
         if region in d_regions:
             _LOGGER.warning('Region: %s is deprecated', region)
-            region = d_regions[region]
+            return d_regions[region]
         else:
             _LOGGER.error('Region: %s is not valid', region)
             return None
@@ -234,7 +234,7 @@ async def fetch(url, params, session):
 
 async def async_get_ps_store_requests(title, region, tumbler=False):
     """Return Title and Cover data with aiohttp."""
-    requests = []
+    responses = []
     region = get_region(region)
 
     async with aiohttp.ClientSession() as session:
@@ -243,20 +243,20 @@ async def async_get_ps_store_requests(title, region, tumbler=False):
                 title, region, reformat=format_type, legacy=True)
             url, params = _format_url(_url)
 
-            request = await fetch(url, params, session)
-            if request is not None:
-                requests.append(request)
+            response = await fetch(url, params, session)
+            if response is not None:
+                responses.append(response)
 
         for format_type in FORMATS:
             _url = get_ps_store_url(
                 title, region, reformat=format_type, legacy=False)
             url, params = _format_url(_url)
 
-            request = await fetch(url, params, session)
-            if request is not None:
-                requests.append(request)
-        session.close()
-        return requests
+            response = await fetch(url, params, session)
+            if response is not None:
+                responses.append(response)
+        await session.close()
+        return responses
 
 
 def parse_data(result, title_id, lang):
