@@ -61,11 +61,9 @@ def get_region(region):
         if region in d_regions:
             _LOGGER.warning('Region: %s is deprecated', region)
             return d_regions[region]
-        else:
-            _LOGGER.error('Region: %s is not valid', region)
-            return None
-    else:
-        return regions[region]
+        _LOGGER.error('Region: %s is not valid', region)
+        return None
+    return regions[region]
 
 
 def get_ps_store_url(title, region, reformat='chars', legacy=False):
@@ -232,7 +230,7 @@ async def fetch(url, params, session):
         return None
 
 
-async def async_get_ps_store_requests(title, region, tumbler=False):
+async def async_get_ps_store_requests(title, region):
     """Return Title and Cover data with aiohttp."""
     responses = []
     region = get_region(region)
