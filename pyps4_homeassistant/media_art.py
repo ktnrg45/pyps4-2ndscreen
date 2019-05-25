@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """Media Art Functions."""
 import logging
+import asyncio
 import urllib
 import requests
+import aiohttp
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -34,6 +36,34 @@ COUNTRIES = {"Argentina": "en/ar", "Australia": "en/au", "Austria": "de/at",
              "Taiwan": "en/tw", "Thailand": "en/th", "Turkey": "en/tr",
              "United Arab Emirates": "en/ae", "United States": "en/us",
              "United Kingdom": "en/gb"}
+
+TYPE_LIST = {
+    'de': ['Vollversion', 'Spiel', 'PSN-Spiel', 'Paket', 'App'],
+    'en': ['Full Game', 'Game', 'PSN Game', 'Bundle', 'App'],
+    'es': ['Juego completo', 'Juego', 'Juego de PSN', 'Paquete', 'App'],
+    'fr': ['Jeu complet', 'Jeu', 'Jeu PSN', 'Offre groupée', 'App'],
+    'it': ['Gioco completo', 'Gioco', 'Gioco PSN', 'Bundle', 'App'],
+    'ko': ['제품판', '게임', 'PSN 게임', '번들', '앱'],
+    'nl': ['Volledige game', 'game', 'PSN-game', 'Bundel', 'App'],
+    'pt': ['Jogo completo', 'jogo', 'Jogo da PSN', 'Pacote', 'App'],
+    'ru': ['Полная версия', 'Игра', 'Игра PSN', 'Комплект', 'Приложение'],
+}
+
+FORMATS = ['chars', 'chars+', 'orig', 'tumbler']
+
+
+def get_region(region):
+    """Validate and format region."""
+    regions = COUNTRIES
+    d_regions = DEPRECATED_REGIONS
+
+    if region not in regions:
+        if region in d_regions:
+            _LOGGER.warning('Region: %s is deprecated', region)
+            return d_regions[region]
+        _LOGGER.error('Region: %s is not valid', region)
+        return None
+    return regions[region]
 
 
 def get_ps_store_url(title, region, reformat='chars', legacy=False):
@@ -74,7 +104,7 @@ def get_ps_store_url(title, region, reformat='chars', legacy=False):
 
 def get_ps_store_data(title, title_id, region, url=None, legacy=False):
     """Get cover art from database."""
-    formats = ['chars', 'chars+', 'orig', 'tumbler']
+    formats = FORMATS
     f_index = 0
 
     # Try to find title in data. Reformat title of punctuation.
@@ -87,31 +117,9 @@ def get_ps_store_data(title, title_id, region, url=None, legacy=False):
             if not result:
                 continue
 
-        # Try tumbler search. Add chars to search, one by one.
+        # Try tumbler search.
         if formats[f_index] == 'tumbler' and legacy is False:
-            char_index = 0
-            while char_index < (len(title) - 1):
-                index = char_index + 1
-                current_chars = title[0:index]
-                url = get_ps_store_url(
-                    current_chars, region, reformat=formats[f_index],
-                    legacy=legacy)
-                result = get_request(url)
-                data = parse_data(result, title_id, url[2])
-                if not data:
-                    remaining_chars = list(title[index:])
-                    char_index = char_index + 1
-                    next_chars = result['data']['attributes']['next'] or None
-
-                    # If the next char is not in the next attr.
-                    if title[char_index] not in next_chars\
-                            if next_chars else None:
-                        _LOGGER.debug("Starting Tumbler")
-                        return tumbler_search(
-                            current_chars, next_chars, remaining_chars,
-                            title_id, region)
-                    continue
-                return data
+            return prepare_tumbler(title, title_id, region)
 
         elif formats[f_index] == 'tumbler' and legacy is True:
             return None
@@ -125,6 +133,33 @@ def get_ps_store_data(title, title_id, region, url=None, legacy=False):
     return None
 
 
+def prepare_tumbler(title, title_id, region):
+    """Try tumbler search. Add chars to search, one by one."""
+    char_index = 0
+    while char_index < (len(title) - 1):
+        index = char_index + 1
+        current_chars = title[0:index]
+        url = get_ps_store_url(
+            current_chars, region, reformat='tumbler',
+            legacy=False)
+        result = get_request(url)
+        data = parse_data(result, title_id, url[2])
+        if data is None:
+            remaining_chars = list(title[index:])
+            char_index = char_index + 1
+            next_chars = result['data']['attributes']['next'] or None
+
+            # If the next char is not in the next attr.
+            if title[char_index] not in next_chars\
+                    if next_chars else None:
+                _LOGGER.debug("Starting Tumbler")
+                return tumbler_search(
+                    current_chars, next_chars, remaining_chars,
+                    title_id, region)
+            continue
+        return data
+
+
 def tumbler_search(  # noqa: pylint: disable=too-many-arguments
         current_chars, next_chars, remaining_chars,
         title_id, region, reformat='tumbler', legacy=False):
@@ -132,15 +167,16 @@ def tumbler_search(  # noqa: pylint: disable=too-many-arguments
     current = current_chars
     chars = next_chars
     next_list = []
+    ignore = ["'", ' ']
     data = None
     for char in chars:
-        if char not in remaining_chars:
+        if char not in remaining_chars or char in ignore:
             continue
         next_str = "{}{}".format(current, char)
         url = get_ps_store_url(next_str, region, reformat, legacy)
         result = get_request(url)
         data = parse_data(result, title_id, url[2])
-        if not data:
+        if data is not None:
             next_chars = result['data']['attributes']['next'] or None
             if next_chars is not None:
                 next_list.append(next_chars)
@@ -170,21 +206,61 @@ def get_request(url, retry=2):
             continue
 
 
+def _format_url(url):
+    """Format url for aiohttp."""
+    f_params = {}
+    url = url[0]
+    url = url.split('?')
+    params = url[1]
+    params = params.replace('?', '')
+    params = params.split('&')
+    for item in params:
+        item = item.split('=')
+        f_params[item[0]] = item[1]
+    url = url[0]
+    return url, f_params
+
+
+async def fetch(url, params, session):
+    """Get Request."""
+    try:
+        async with session.get(url, params=params, timeout=10) as response:
+            return await response.json()
+    except asyncio.TimeoutError:
+        return None
+
+
+async def async_get_ps_store_requests(title, region):
+    """Return Title and Cover data with aiohttp."""
+    responses = []
+    region = get_region(region)
+
+    async with aiohttp.ClientSession() as session:
+        for format_type in FORMATS:
+            _url = get_ps_store_url(
+                title, region, reformat=format_type, legacy=True)
+            url, params = _format_url(_url)
+
+            response = await fetch(url, params, session)
+            if response is not None:
+                responses.append(response)
+
+        for format_type in FORMATS:
+            _url = get_ps_store_url(
+                title, region, reformat=format_type, legacy=False)
+            url, params = _format_url(_url)
+
+            response = await fetch(url, params, session)
+            if response is not None:
+                responses.append(response)
+        await session.close()
+        return responses
+
+
 def parse_data(result, title_id, lang):
     """Filter through each item in search request."""
-    type_list = {
-        'de': ['Vollversion', 'Spiel', 'PSN-Spiel', 'Paket', 'App'],
-        'en': ['Full Game', 'Game', 'PSN Game', 'Bundle', 'App'],
-        'es': ['Juego Completo', 'Juego', 'Juego de PSN', 'Paquete', 'App'],
-        'fr': ['Jeu complet', 'Jeu', 'Jeu PSN', 'Offre groupée', 'App'],
-        'it': ['Gioco completo', 'Gioco', 'Gioco PSN', 'Bundle', 'App'],
-        'ko': ['제품판', '게임', 'PSN 게임', '번들', '앱'],
-        'nl': ['Volledige game', 'game', 'PSN-game', 'Bundel', 'App'],
-        'pt': ['Jogo completo', 'jogo', 'Jogo da PSN', 'Pacote', 'App'],
-        'ru': ['Полная версия', 'Игра', 'Игра PSN', 'Комплект', 'Приложение'],
-    }
     item_list = []
-    type_list = type_list[lang]
+    type_list = TYPE_LIST[lang]
     parent_list = []
 
     for item in result['included']:
@@ -192,13 +268,11 @@ def parse_data(result, title_id, lang):
 
     # Filter each item by prioritized type
     for g_type in type_list:
-        _LOGGER.debug("Searching type: %s", g_type)
         for item in item_list:
             if item.game_type == g_type:
                 if item.sku_id == title_id:
                     _LOGGER.debug(
-                        "Item: %s, %s, %s", item.name, item.sku_id,
-                        vars(item.parent))
+                        "Item: %s, %s", item.name, item.sku_id)
                     if not item.parent or item.parent.data is None:
                         _LOGGER.info("Direct Match")
                         return item
@@ -272,9 +346,10 @@ class ResultItem():
         """Get Parents."""
         if self.game_type is not None:
             if 'parent' in self.data and self.data['parent'] != 'null':
-                return ParentItem(
-                    self.data['parent'],
-                    self.game_type)
+                if self.data['parent'] is not None:
+                    return ParentItem(
+                        self.data['parent'],
+                        self.game_type)
         return None
 
 

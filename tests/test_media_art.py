@@ -1,9 +1,13 @@
 """Tests for media_art. Uses actual HTTP response."""
 import logging
+import asyncio
 import pyps4_homeassistant.ps4 as ps4
 
 TEST_LIST = [  # title, titleid, region
     ["Netflix", 'CUSA00129', 'United States'],
+    ["Shadow of the Colossus", "CUSA08804", "Taiwan"],
+    ["Fortnite", "CUSA07669", "Spain"],
+    ["The Last of Us™ Remastered", "CUSA00552", "United States"],
     ["Marvel's Spider-Man", 'CUSA11993', 'Austria'],
     ["Marvel's Spider-Man", 'CUSA11993', 'Nederland'],
     ["Marvel's Spider-Man", 'CUSA11993', 'Italy'],
@@ -37,6 +41,7 @@ TEST_CREDS = "Imatest000"
 TEST_PS4 = ps4.Ps4(TEST_HOST, TEST_CREDS)
 
 
+# Deprecated. Test async version only.
 def test_sample_list():
     """Tests if art can be retrieved."""
     for x in TEST_LIST:
@@ -54,4 +59,21 @@ def test_sample_list():
         assert result_item is not None
 
 
-test_sample_list()
+async def async_test_sample_list():
+    """Test sample list with asyncio."""
+    for x in TEST_LIST:
+        test_item = TEST_LIST.index(x)
+        item = TEST_LIST[test_item]
+        title = item[0]
+        title_id = item[1]
+        region = item[2]
+        result_item = await TEST_PS4.async_get_ps_store_data(
+            title, title_id, region)
+        if result_item:
+            _LOGGER.info(
+                "Result %s: %s",
+                TEST_LIST.index(x), result_item.name)
+        assert result_item is not None
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(async_test_sample_list())

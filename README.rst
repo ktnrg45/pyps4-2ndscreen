@@ -1,36 +1,35 @@
 Python Control for PlayStation 4 consoles.
-============================
+==========================================
 
 |BuildStatus| |PypiVersion| |PyPiPythonVersions|
 
-Purpose
-----------
-To add a pure python implementation of ps4-waker. Including PS4 credential creation.
-Integration with Home-Assistant. 
+Description
+--------------------
+A full Python implementation of the Node.js package, ps4-waker.
+This is an unofficial API for the PS4 2nd Screen App.
 
 Compatibility
-----------
+--------------------
 Tested on:
 Python 3.5/3.6/3.7
-Home-Assistant/Hass.IO 0.89
-
-
-**This package can be used as a standalone api. It does not require the use of Home Assistant.
 
 Installation
-----------
+--------------------
 To install run:
 
 .. code:: bash
 
     pip install pyps4-homeassistant
 
+Protocol
+--------------------
+UDP is used to get status updates and retrieve user credentials.
 
 Ports
-----------
+--------------------
 PS4 listens on ports 987 and 997 (Priveleged).
 Must run command on python path if no access.
-This is so you do not need sudo/root priveleges to run.
+This is so you do not need sudo/root priveleges to run although you can run as sudo but it is not advised.
 
 Example:
 
@@ -39,7 +38,7 @@ Example:
     sudo setcap 'cap_net_bind_service=+ep' /usr/bin/python3.5
 
 Usage
-----------
+--------------------
 API should be accessed initially like the following examples.
 
 Most functions can be accessed from the high-level PS4 object. You will need to pass in th IP address of your PS4 and your PSN credentials.
@@ -64,17 +63,20 @@ This will start the credential service and will return the credentials for the P
 
 
 Cover Art Issues
-----------
+--------------------
 If you find that media art cannot be found. Please post an issue with your Region, Country, Title of game, an ID of game.
 
 To Do List:
-----------
+--------------------
 - Port TCP and UDP functions to Asyncio.
 
 
+Credits:
+--------------------
+Thanks to hthiery for writing the underlying socket protocol in Python. https://github.com/hthiery/python-ps4
 
-References
-----------
+References:
+--------------------
 
 - https://github.com/dsokoloski/ps4-wake
 - https://github.com/dhleong/ps4-waker
