@@ -63,10 +63,17 @@ class PS4Client():
 
     def schedule_task(self, ps4, task, *args):
         """Schedule socket task in thread."""
-        listener = self.listeners[ps4]
-        if args:
-            task = (task, *args)
-        listener.queue.put(task)
+        active = self.get_active()
+        if active is not None:
+            if active.ps4 != ps4:
+                active.ps4.close()
+        if not ps4.msg_sending:
+            listener = self.listeners[ps4]
+            if args:
+                task = (task, *args)
+            listener.queue.put(task)
+        else:
+            _LOGGER.info("PS4 already has a task in progress")
 
     def add_ps4(self, ps4):
         """Add PS4 to listeners."""
@@ -81,14 +88,15 @@ class PS4Client():
         if ps4 in self.listeners:
             self.listeners[ps4].callbacks.append(callback)
 
-    def _get_active(self):
+    def get_active(self):
+        """Return logged in PS4."""
         for listener in self.listeners.values():
             if listener.ps4.connected:
                 return listener
         return None
 
 
-class Listener(threading.Thread):  # noqa: pylint: disable=too-many-instance-attributes, line-too-long
+class Listener(threading.Thread):
     """Listener per PS4 to handle sockets."""
 
     def __init__(self, client, ps4):
