@@ -26,7 +26,7 @@ with open('README.rst') as f:
 
 setup(name='pyps4_homeassistant',
       version=version.__version__,
-      description='PS4 Python Library for Home Assistant',
+      description='PS4 2nd Screen Python Library',
       long_description=readme,
       long_description_content_type='text/markdown',
       author='ktnrg45',
