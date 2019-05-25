@@ -1,5 +1,5 @@
 Python Control for PlayStation 4 consoles.
-============================
+==========================================
 
 |BuildStatus| |PypiVersion| |PyPiPythonVersions|
 
