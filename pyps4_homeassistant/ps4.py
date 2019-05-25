@@ -17,6 +17,19 @@ from .media_art import (get_ps_store_data as ps_data,
 
 _LOGGER = logging.getLogger(__name__)
 
+BUTTONS = {'up': 1,
+           'down': 2,
+           'right': 4,
+           'left': 8,
+           'enter': 16,
+           'back': 32,
+           'option': 64,
+           'ps': 128,
+           'key_off': 256,
+           'cancel': 512,
+           'open_rc': 1024,
+           'close_rc': 2048}
+
 
 def open_credential_file(filename):
     """Open credential file."""
@@ -50,7 +63,7 @@ class Ps4():
         self._broadcast = broadcast
         self._socket = None
         self._credential = None
-        self._msg_sending = False
+        self.msg_sending = False
         self.status = None
         self.connected = False
         self.client = client
@@ -96,6 +109,7 @@ class Ps4():
         self._connection.disconnect()
         self.connected = False
         _LOGGER.debug("Disconnecting from PS4 @ %s", self._host)
+        return True
 
     def get_status(self):
         """Get current status info."""
@@ -125,26 +139,48 @@ class Ps4():
         self.close()
         return is_login
 
-    def standby(self):
+    def standby(self, retry=2):
         """Standby."""
-        self.open()
-        self._connection.standby()
-        self.close()
+        retries = 0
+        while retries < retry:
+            self.open()
+            if self._connection.standby():
+                self.close()
+                return True
+            self.close()
+            retries += 1
+        return False
 
-    def start_title(self, title_id, running_id=None):
+    def start_title(self, title_id, running_id=None, retry=2):
         """Start title.
 
         `title_id`: title to start
+        'running_id': Title currently running,
+        Use to confirm closing of current title.
         """
-        self.open()
-        if self._connection.start_title(title_id):
-            if running_id is not None:
-                delay(1)
-                self.remote_control('enter')
-            elif running_id == title_id:
-                _LOGGER.warning("Title: %s already started", title_id)
-        else:
-            self.close()
+        if self.msg_sending:
+            _LOGGER.warning("PS4 already sending message.")
+            return False
+        retries = 0
+        while retries < retry:
+            self.msg_sending = True
+            if self.open():
+                if self._connection.start_title(title_id):
+
+                    # Auto confirm prompt to close title.
+                    if running_id is not None:
+                        delay(1)
+                        self.remote_control('enter')
+                    elif running_id == title_id:
+                        _LOGGER.warning("Title: %s already started", title_id)
+                    self.msg_sending = False
+                    return True
+                else:
+                    self.close()
+                    retries += 1
+                    delay(1)
+        self.msg_sending = False
+        return False
 
     def remote_control(self, button_name, hold_time=0):
         """Send a remote control button press.
@@ -161,26 +197,19 @@ class Ps4():
            Doing this after a long-press of PS just breaks it,
            however.
         """
-        buttons = {'up': 1,
-                   'down': 2,
-                   'right': 4,
-                   'left': 8,
-                   'enter': 16,
-                   'back': 32,
-                   'option': 64,
-                   'ps': 128,
-                   'key_off': 256,
-                   'cancel': 512,
-                   'open_rc': 1024,
-                   'close_rc': 2048}
+        if self.msg_sending:
+            _LOGGER.warning("PS4 already sending message.")
+            return
+        self.msg_sending = True
         button_name = button_name.lower()
-        if button_name not in buttons.keys():
+        if button_name not in BUTTONS.keys():
             raise UnknownButton("Button: {} is not valid".format(button_name))
-        operation = buttons[button_name]
-        self.open()
-        _LOGGER.debug("Sending RC Command: %s", button_name)
-        if not self._connection.remote_control(operation, hold_time):
-            self.close()
+        operation = BUTTONS[button_name]
+        if self.open():
+            _LOGGER.debug("Sending RC Command: %s", button_name)
+            if not self._connection.remote_control(operation, hold_time):
+                self.close()
+        self.msg_sending = False
 
     def send_status(self):
         """Send connection status to PS4."""
