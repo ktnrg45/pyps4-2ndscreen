@@ -8,6 +8,8 @@ Description
 A full Python implementation of the Node.js package, ps4-waker.
 This is an unofficial API for the PS4 2nd Screen App.
 
+** This module is in beta development and will be re-released under a new name in PYPI at Version 1.0.0. Breaking changes and major code revisions will likely be made until then, to establish and revise the bulk of the framework for this module.
+
 Compatibility
 --------------------
 Tested on:
