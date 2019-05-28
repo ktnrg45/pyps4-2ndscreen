@@ -66,6 +66,16 @@ def get_region(region):
     return regions[region]
 
 
+def get_lang(region) -> str:
+    """Get language code from region."""
+    regions = COUNTRIES
+    lang = regions[region]
+    lang = lang.split('/')
+    lang = lang[0]
+    assert lang in TYPE_LIST.keys()
+    return lang
+
+
 def get_ps_store_url(title, region, reformat='chars', legacy=False):
     """Get URL for title search in PS Store."""
     import html
@@ -102,67 +112,46 @@ def get_ps_store_url(title, region, reformat='chars', legacy=False):
     return url
 
 
-def get_ps_store_data(title, title_id, region, url=None, legacy=False):
-    """Get cover art from database."""
-    formats = FORMATS
-    f_index = 0
-
-    # Try to find title in data. Reformat title of punctuation.
-    while f_index != len(formats):
-
-        if url is None:
-            url = get_ps_store_url(
-                title, region, reformat=formats[f_index], legacy=legacy)
-            result = get_request(url)
-            if not result:
-                continue
-
-        # Try tumbler search.
-        if formats[f_index] == 'tumbler' and legacy is False:
-            return prepare_tumbler(title, title_id, region)
-
-        elif formats[f_index] == 'tumbler' and legacy is True:
-            return None
-
-        data = parse_data(result, title_id, url[2])
-        _LOGGER.debug(data)
-        if data is not None:
-            return data
-        url = None
-        f_index += 1
-    return None
-
-
-def prepare_tumbler(title, title_id, region):
+async def async_prepare_tumbler(
+    title, title_id, region,
+        session: aiohttp.ClientSession) -> dict or None:
     """Try tumbler search. Add chars to search, one by one."""
+    lang = get_lang(region)
+    _region = get_region(region)
     char_index = 0
     while char_index < (len(title) - 1):
         index = char_index + 1
         current_chars = title[0:index]
         url = get_ps_store_url(
-            current_chars, region, reformat='tumbler',
-            legacy=False)
-        result = get_request(url)
-        data = parse_data(result, title_id, url[2])
+            current_chars, _region, reformat='tumbler')
+        url, params = _format_url(url)
+        response = await fetch(url, params, session)
+
+        data = parse_data(response, title_id, lang)
+
+        # If title not found iterate to next char.
         if data is None:
             remaining_chars = list(title[index:])
             char_index = char_index + 1
-            next_chars = result['data']['attributes']['next'] or None
+            next_chars = response['data']['attributes']['next'] or None
 
             # If the next char is not in the next attr.
+            if next_chars is None:
+                return None
             if title[char_index] not in next_chars\
                     if next_chars else None:
                 _LOGGER.debug("Starting Tumbler")
-                return tumbler_search(
+                return await async_tumbler_search(
                     current_chars, next_chars, remaining_chars,
-                    title_id, region)
+                    title_id, region, session)
             continue
+
         return data
 
 
-def tumbler_search(  # noqa: pylint: disable=too-many-arguments
-        current_chars, next_chars, remaining_chars,
-        title_id, region, reformat='tumbler', legacy=False):
+async def async_tumbler_search(
+    current_chars: list, next_chars: list, remaining_chars: list,
+        title_id, region, session: aiohttp.ClientSession) -> dict or None:
     """Search using tumbler method."""
     current = current_chars
     chars = next_chars
@@ -173,37 +162,21 @@ def tumbler_search(  # noqa: pylint: disable=too-many-arguments
         if char not in remaining_chars or char in ignore:
             continue
         next_str = "{}{}".format(current, char)
-        url = get_ps_store_url(next_str, region, reformat, legacy)
-        result = get_request(url)
-        data = parse_data(result, title_id, url[2])
+        url = get_ps_store_url(next_str, region, 'tumbler', True)
+        url, params = _format_url(url)
+        response = await fetch(url, params, session)
+
+        if response is None:
+            continue
+
+        data = parse_data(response, title_id, get_lang(region))
         if data is not None:
-            next_chars = result['data']['attributes']['next'] or None
+            next_chars = response['data']['attributes']['next'] or None
             if next_chars is not None:
                 next_list.append(next_chars)
         else:
             break
     return data or None
-
-
-def get_request(url, retry=2):
-    """Get HTTP request."""
-    retries = 0
-    while retries < retry:
-        try:
-            req = requests.get(url[0], headers=url[1], timeout=3)
-            result = req.json()
-            if not result:
-                retries += 1
-                continue
-            return result
-        except requests.exceptions.HTTPError as warning:
-            _LOGGER.warning("PS cover art HTTP error, %s", warning)
-            retries += 1
-            continue
-        except requests.exceptions.RequestException as warning:
-            _LOGGER.warning("PS cover art request failed, %s", warning)
-            retries += 1
-            continue
 
 
 def _format_url(url):
@@ -223,38 +196,53 @@ def _format_url(url):
 
 async def fetch(url, params, session):
     """Get Request."""
+    from aiohttp.client_exceptions import ContentTypeError
     try:
-        async with session.get(url, params=params, timeout=10) as response:
+        async with session.get(url, params=params, timeout=3) as response:
             return await response.json()
-    except asyncio.TimeoutError:
+    except (asyncio.TimeoutError, ContentTypeError):
         return None
 
 
-async def async_get_ps_store_requests(title, region):
+async def async_get_ps_store_requests(title, region,
+                                      session: aiohttp.ClientSession) -> list:
     """Return Title and Cover data with aiohttp."""
     responses = []
     region = get_region(region)
 
-    async with aiohttp.ClientSession() as session:
-        for format_type in FORMATS:
-            _url = get_ps_store_url(
-                title, region, reformat=format_type, legacy=True)
-            url, params = _format_url(_url)
+    for format_type in FORMATS:
+        _url = get_ps_store_url(
+            title, region, reformat=format_type, legacy=True)
+        url, params = _format_url(_url)
 
-            response = await fetch(url, params, session)
-            if response is not None:
-                responses.append(response)
+        response = await fetch(url, params, session)
+        if response is not None:
+            responses.append(response)
 
-        for format_type in FORMATS:
-            _url = get_ps_store_url(
-                title, region, reformat=format_type, legacy=False)
-            url, params = _format_url(_url)
+    for format_type in FORMATS:
+        _url = get_ps_store_url(
+            title, region, reformat=format_type, legacy=False)
+        url, params = _format_url(_url)
 
-            response = await fetch(url, params, session)
-            if response is not None:
-                responses.append(response)
-        await session.close()
-        return responses
+        response = await fetch(url, params, session)
+        if response is not None:
+            responses.append(response)
+
+    return responses
+
+
+async def async_search_all(title, title_id, session):
+    """Search all databases."""
+    for region in COUNTRIES:
+        responses = []
+        responses = await async_get_ps_store_requests(title, region, session)
+        for response in responses:
+            data = parse_data(response, title_id, get_lang(region))
+            if data is not None:
+                _LOGGER.debug(
+                    "Search of database: %s, Found title: %S, %s",
+                    region, data.name, data.cover_art)
+                return data
 
 
 def parse_data(result, title_id, lang):
