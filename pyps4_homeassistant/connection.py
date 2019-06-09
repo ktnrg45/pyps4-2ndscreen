@@ -6,6 +6,9 @@ import binascii
 import logging
 import socket
 import time
+import asyncio
+import threading
+import queue
 
 from construct import (Bytes, Const, Int32ul, Padding, Struct)
 from Cryptodome.Cipher import AES, PKCS1_OAEP
@@ -359,3 +362,187 @@ class Connection():
     def _send_status_ack(self):
         """Send ACK for connection status."""
         self._send_msg(_get_status_ack(), encrypted=True)
+
+
+class AsyncConnection(Connection):
+    """Connection using Asyncio."""
+
+    async def async_connect(self, ps4):
+        """Create asyncio TCP connection."""
+        loop = asyncio.get_event_loop()
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.setblocking(False)
+        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+
+        await self._async_tcp_handshake(sock, loop)
+        connect = loop.create_connection(
+            lambda: TCPProtocol(ps4, loop), sock=sock)
+        transport, protocol = await loop.create_task(connect)
+        self.set_socket(protocol)
+        return transport, protocol
+
+    async def _async_tcp_handshake(self, sock, loop):
+        await loop.sock_connect(sock, (self._host, TCP_PORT))
+        msg = _get_hello_request()
+        await loop.sock_sendall(sock, msg)
+        response = await loop.sock_recv(sock, 1024)
+        data = _parse_hello_request(response)
+        self._set_crypto_init_vector(data.seed)
+        msg = _get_handshake_request(data.seed)
+        await loop.sock_sendall(sock, msg)
+
+
+class TCPProtocol(asyncio.Protocol):
+    """Asyncio TCP Protocol."""
+
+    def __init__(self, ps4, loop):
+        """Init."""
+        self.loop = loop
+        self.ps4 = ps4
+        self.callback = _handle_response
+        self.transport = None
+        self.connection = ps4.connection
+        self.task = None
+        self.task_data = None
+        self.handler = ProtocolHandler(self)
+
+    def connection_made(self, transport):
+        """When connected."""
+        self.transport = transport
+        self.ps4.connected = True
+        self.handler.start()
+        _LOGGER.debug("PS4 Transport Connected @ %s", self.ps4.host)
+
+    def connection_lost(self, exc):
+        """Call if connection lost."""
+        self.disconnect
+
+    def add_task(self, task, *args):
+        """Add task to queue."""
+        if args:
+            task = (task, *args)
+        self.handler.queue.put(task)
+
+    def send(self, msg):
+        """Send Message."""
+        _LOGGER.debug('TX: %s %s', len(msg), binascii.hexlify(msg))
+        msg = self.connection.encrypt_message(msg)
+        self.transport.write(msg)
+
+    def data_received(self, data):
+        """Call when data received."""
+        data = self.connection._decipher.decrypt(data)
+        self._handle(data)
+
+    def disconnect(self):
+        """Close the connection."""
+        self.transport.close()
+        self._reset_crypto_init_vector()
+        self.ps4.loggedin = False
+        self.ps4.connected = False
+
+    def _handle(self, data):
+        data_hex = binascii.hexlify(data)
+        _LOGGER.debug('RX: %s %s', len(data), data_hex)
+        if data_hex == STATUS_REQUEST:
+            self._ack_status()
+            return
+        if self.callback(self.task, data):
+            _LOGGER.debug("Command successful: %s", self.task)
+
+        if self.task == 'login':
+            self.ps4.loggedin = True
+
+        self.task = None
+        return
+
+    async def _wait_for_login(self, timeout=5):
+        start_time = time.time()
+        while not self.ps4.loggedin:
+            await asyncio.sleep(0.0)
+            if self.ps4.loggedin:
+                return
+            if time.time() - start_time < timeout:
+                continue
+            break
+        _LOGGER.error("Could not login to PS4 in time")
+
+    async def login(self, name=None, pin=None):
+        """Login."""
+        task = 'login'
+        msg = _get_login_request(self.ps4.credential, name, pin)
+        self.add_task(task, self.send, msg)
+        await self._wait_for_login()
+
+    async def standby(self):
+        """Standby."""
+        if not self.ps4.loggedin:
+            await self.login()
+        task = 'standby'
+        msg = _get_standby_request()
+        self.add_task(task, self.send, msg)
+
+    async def start_title(self, title_id, running_id=None):
+        """Start Title."""
+        if not self.ps4.loggedin:
+            await self.login()
+        task = 'start_title'
+        msg = _get_boot_request(title_id)
+        self.add_task(task, self.send, msg)
+
+    async def remote_control(self, operation, hold_time=0):
+        """Remote Control."""
+        if not self.ps4.loggedin:
+            await self.login()
+        msg = _get_remote_control_request(operation, hold_time)
+        self.add_task(None, self._send_remote_control_request, msg, operation)
+
+    def _send_remote_control_request(self, msg, operation):
+        for message in msg:
+            self.send(message)
+        if operation == 128:
+            delay(1.0)
+            self.send(_get_remote_control_close_request())
+
+    def _ack_status(self):
+        self.ps4.get_status()
+        self.add_task(None, self.send, _get_status_ack())
+        _LOGGER.debug("Sent ACK for status.")
+
+    @property
+    def connected(self):
+        """Return True if connected."""
+        return self.ps4.connected
+
+
+class ProtocolHandler(threading.Thread):
+    """Thread for TCP Protocol."""
+
+    def __init__(self, protocol):
+        """Init."""
+        super().__init__()
+        self.protocol = protocol
+        self.ps4 = self.protocol.ps4
+        self.queue = queue.Queue(maxsize=2)
+        self.stop = threading.Event()
+
+    def run(self):
+        """Start Thread."""
+        while not self.stop.is_set():
+            if self.ps4.is_standby:
+                self.ps4.loggedin = False
+                self.ps4.connected = False
+                self.stop.set()
+            if self.ps4.connected:
+                if not self.queue.empty():
+                    if self.protocol.task is None:
+                        item = self.queue.get()
+                        # If args are passed in.
+                        if isinstance(item, tuple):
+                            args = item[2:]
+                            task_name = item[0]
+                            task = item[1]
+                            self.protocol.task = task_name
+                            task(*args)
+                        else:
+                            task()
