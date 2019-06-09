@@ -6,14 +6,87 @@ import re
 import socket
 import logging
 import select
+import asyncio
 
 _LOGGER = logging.getLogger(__name__)
 
+BROADCAST_IP = '255.255.255.255'
 UDP_IP = '0.0.0.0'
 UDP_PORT = 0
 
 DDP_PORT = 987
 DDP_VERSION = '00020020'
+
+
+class DDPProtocol(asyncio.DatagramProtocol):
+    """Async UDP Client."""
+
+    def __init__(self):
+        """Init Instance."""
+        self.callbacks = {}
+        self.transport = None
+        self.message = get_ddp_search_message()
+        super().__init__()
+
+    def connection_made(self, transport):
+        """On Connection."""
+        self.transport = transport
+        _LOGGER.debug("PS4 Transport Created: %s", type(self.transport))
+
+    def send_msg(self, ps4, message=None):
+        """Send Message."""
+        _LOGGER.debug("Sending DDP MSG")
+        if message is None:
+            message = self.message
+
+        self.transport.sendto(message.encode('utf-8'),
+                              (ps4.host, DDP_PORT))
+
+    def datagram_received(self, data, addr):
+        """When data is received."""
+        if data is not None:
+            self._handle(data, addr)
+
+    def _handle(self, data, addr):
+        data = parse_ddp_response(data.decode('utf-8'))
+        data[u'host-ip'] = addr[0]
+
+        for ps4 in self.callbacks:
+            if addr[0] == ps4.host:
+                old_status = ps4.status
+                ps4.status = data
+                if old_status != data:
+                    _LOGGER.debug("Status: %s", ps4.status)
+                    if self.callbacks[ps4]:
+                        callbacks = self.callbacks[ps4]
+                        for callback in callbacks:
+                            callback()
+
+    def connection_lost(self, exc):
+        """On Connection Lost."""
+        _LOGGER.error("DDP Transport Closed")
+        self.transport.close()
+
+    def error_received(self, exc):
+        """Handle Exceptions."""
+        _LOGGER.warning('Error received:', exc)
+
+    def add_callback(self, ps4, callback):
+        """Add callback to list."""
+        if ps4 not in self.callbacks.keys():
+            self.callbacks[ps4] = [callback]
+        else:
+            self.callbacks[ps4].value().append(callback)
+
+
+async def async_create_ddp_endpoint():
+    """Create Async UDP endpoint."""
+    loop = asyncio.get_event_loop()
+    connect = loop.create_datagram_endpoint(
+        lambda: DDPProtocol(), local_addr=(UDP_IP, UDP_PORT),
+        reuse_address=True, reuse_port=True, allow_broadcast=True)
+    transport, protocol = await loop.create_task(connect)
+    return transport, protocol
 
 
 def get_ddp_message(msg_type, data=None):
@@ -78,8 +151,8 @@ def get_ddp_launch_message(credential):
 def get_socket(timeout=3):
     """Return DDP socket object."""
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind((UDP_IP, UDP_PORT))
     sock.settimeout(timeout)
+    sock.bind((UDP_IP, UDP_PORT))
     return sock
 
 
@@ -89,7 +162,7 @@ def _send_recv_msg(host, broadcast, msg, receive=True):
 
     if broadcast:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        _host = host or '255.255.255.255'
+        _host = host or BROADCAST_IP
     else:
         _host = host
 
