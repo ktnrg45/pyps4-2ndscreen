@@ -8,7 +8,6 @@ import socket
 import time
 import asyncio
 import threading
-import queue
 
 from construct import (Bytes, Const, Int32ul, Padding, Struct)
 from Cryptodome.Cipher import AES, PKCS1_OAEP
@@ -21,6 +20,7 @@ TCP_PORT = 997
 STATUS_REQUEST = b'0c000000120000000000000000000000'
 RANDOM_SEED = \
     b'\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+TIMEOUT = 5
 
 PUBLIC_KEY = (
     '-----BEGIN PUBLIC KEY-----\n'
@@ -404,6 +404,7 @@ class TCPProtocol(asyncio.Protocol):
         self.connection = ps4.connection
         self.task = None
         self.task_data = None
+        self.task_queue = None
         self.handler = ProtocolHandler(self)
 
     def connection_made(self, transport):
@@ -421,7 +422,10 @@ class TCPProtocol(asyncio.Protocol):
         """Add task to queue."""
         if args:
             task = (task, *args)
-        self.handler.queue.put(task)
+        try:
+            self.handler.queue.put_nowait(task)
+        except asyncio.QueueFull:
+            _LOGGER.info("PS4 is busy. Please wait to issue new command")
 
     def send(self, msg):
         """Send Message."""
@@ -454,25 +458,20 @@ class TCPProtocol(asyncio.Protocol):
             self.ps4.loggedin = True
 
         self.task = None
+        self.handler.queue.task_done()
         return
 
-    async def _wait_for_login(self, timeout=5):
-        start_time = time.time()
-        while not self.ps4.loggedin:
+    async def _wait_for_task(self):
+        """Future. Wait for completion."""
+        qsize = self.handler.queue.qsize
+        while self.handler.queue.qsize > qsize:
             await asyncio.sleep(0.0)
-            if self.ps4.loggedin:
-                return
-            if time.time() - start_time < timeout:
-                continue
-            break
-        _LOGGER.error("Could not login to PS4 in time")
 
     async def login(self, name=None, pin=None):
         """Login."""
         task = 'login'
         msg = _get_login_request(self.ps4.credential, name, pin)
         self.add_task(task, self.send, msg)
-        await self._wait_for_login()
 
     async def standby(self):
         """Standby."""
@@ -489,6 +488,8 @@ class TCPProtocol(asyncio.Protocol):
         task = 'start_title'
         msg = _get_boot_request(title_id)
         self.add_task(task, self.send, msg)
+        if running_id != title_id:
+            await self.remote_control(16)
 
     async def remote_control(self, operation, hold_time=0):
         """Remote Control."""
@@ -523,8 +524,9 @@ class ProtocolHandler(threading.Thread):
         super().__init__()
         self.protocol = protocol
         self.ps4 = self.protocol.ps4
-        self.queue = queue.Queue(maxsize=2)
+        self.queue = asyncio.Queue(maxsize=5)
         self.stop = threading.Event()
+        self.block = threading.Event()
 
     def run(self):
         """Start Thread."""
@@ -535,8 +537,9 @@ class ProtocolHandler(threading.Thread):
                 self.stop.set()
             if self.ps4.connected:
                 if not self.queue.empty():
+                    self.block.set()
                     if self.protocol.task is None:
-                        item = self.queue.get()
+                        item = self.queue.get_nowait()
                         # If args are passed in.
                         if isinstance(item, tuple):
                             args = item[2:]
@@ -546,3 +549,12 @@ class ProtocolHandler(threading.Thread):
                             task(*args)
                         else:
                             task()
+                        try:
+                            asyncio.wait_for(
+                                self.protocol._wait_for_task, TIMEOUT)
+                        except asyncio.timeout:
+                            _LOGGER.error(
+                                "Could not complete command:"
+                                "%s for PS4 in time", self.task)
+                        finally:
+                            self.block.clear()
