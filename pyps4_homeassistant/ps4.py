@@ -123,9 +123,10 @@ class Ps4():
             _LOGGER.debug("PS4 @ %s status timed out", self.host)
             return None
         else:
-            if self.is_standby:
-                self.connected = False
-                self.loggedin = False
+            if self.status is not None:
+                if self.is_standby:
+                    self.connected = False
+                    self.loggedin = False
         return self.status
 
     def launch(self):
@@ -290,52 +291,55 @@ class Ps4():
     @property
     def is_running(self):
         """Return if the PS4 is running."""
-        if self.status['status_code'] == STATUS_OK:
-            return True
+        if self.status is not None:
+            if self.status['status_code'] == STATUS_OK:
+                return True
         return False
 
     @property
     def is_standby(self):
         """Return if the PS4 is in standby."""
-        if self.status['status_code'] == STATUS_STANDBY:
-            self.loggedin = False
-            return True
+        if self.status is not None:
+            if self.status['status_code'] == STATUS_STANDBY:
+                self.connected = False
+                self.loggedin = False
+                return True
         return False
 
     @property
     def system_version(self):
         """Get the system version."""
-        return self.status['system-version']
+        return self.status['system-version'] or None
 
     @property
     def host_id(self):
         """Get the host id."""
-        return self.status['host-id']
+        return self.status['host-id'] or None
 
     @property
     def host_name(self):
         """Get the host name."""
-        return self.status['host-name']
+        return self.status['host-name'] or None
 
     @property
     def running_app_titleid(self):
         """Return the title Id of the running application."""
-        return self.status['running-app-titleid']
+        return self.status['running-app-titleid'] or None
 
     @property
     def running_app_name(self):
         """Return the name of the running application."""
-        return self.status['running-app-name']
+        return self.status['running-app-name'] or None
 
     @property
     def running_app_ps_cover(self):
         """Return the URL for the title cover art."""
-        return self.ps_cover
+        return self.ps_cover or None
 
     @property
     def running_app_ps_name(self):
         """Return the name fetched from PS Store."""
-        return self.ps_name
+        return self.ps_name or None
 
 
 class Ps4Async(Ps4):
@@ -363,20 +367,19 @@ class Ps4Async(Ps4):
             except Exception:
                 pass
             finally:
-                if self.is_standby:
-                    self.connected = False
-                    self.loggedin = False
-                _LOGGER.debug(
-                    "connected: %s, loggedin: %s",
-                    self.connected, self.loggedin)
-                return self.status
+                if self.status is not None:
+                    if self.is_standby:
+                        self.connected = False
+                        self.loggedin = False
+                    return self.status
+                return None
         else:
             return super().get_status()
 
     def launch(self):
         """Launch."""
         if self.ddp_protocol is None:
-            _LOGGER.error("DDP Protocol does not exist")
+            _LOGGER.error("DDP Protocol does not exist/Not ready")
         else:
             self.ddp_protocol.send_msg(
                 self, get_ddp_launch_message(self.credential))
@@ -401,6 +404,9 @@ class Ps4Async(Ps4):
         if self.tcp_protocol is None:
             _LOGGER.error("TCP Protocol does not exist")
         else:
+            if running_id is None:
+                if self.running_app_titleid is not None:
+                    running_id = self.running_app_titleid
             await self.tcp_protocol.start_title(title_id, running_id)
 
     async def remote_control(self, button_name, hold_time=0):
