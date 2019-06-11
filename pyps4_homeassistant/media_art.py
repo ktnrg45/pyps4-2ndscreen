@@ -3,7 +3,6 @@
 import logging
 import asyncio
 import urllib
-import requests
 import aiohttp
 
 _LOGGER = logging.getLogger(__name__)
