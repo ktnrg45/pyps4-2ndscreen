@@ -51,7 +51,7 @@ class DDPProtocol(asyncio.DatagramProtocol):
         data = parse_ddp_response(data.decode('utf-8'))
         data[u'host-ip'] = addr[0]
 
-        for ps4 in self.callbacks.keys():
+        for ps4 in self.callbacks:
             if addr[0] == ps4.host:
                 old_status = ps4.status
                 ps4.status = data
