@@ -28,8 +28,8 @@ TEST_LIST = [  # title, titleid, region
     ["Marvel's Spider-Man", 'CUSA11993', 'Sweden'],
     ["Ratchet & Clank™", 'CUSA01073', 'Sweden'],
     ["Uncharted: The Nathan Drake Collection™", 'CUSA02320', 'United States'],
-    ["NHL™ 18", 'CUSA07580', 'France'],
-#    ["Marvel's Spider-Man", 'CUSA11995', 'Russia']  # Inconsistent return
+    ["NHL™ 18", 'CUSA07580', 'France']
+   # ["Marvel's Spider-Man", 'CUSA11995', 'Russia']  # Inconsistent return
 ]
 
 logging.basicConfig(level=logging.DEBUG)
