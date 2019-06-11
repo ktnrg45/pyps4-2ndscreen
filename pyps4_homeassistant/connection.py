@@ -489,6 +489,7 @@ class TCPProtocol(asyncio.Protocol):
         msg = _get_boot_request(title_id)
         self.add_task(task, self.send, msg)
         if running_id != title_id:
+            await asyncio.sleep(0.01)
             await self.remote_control(16)
 
     async def remote_control(self, operation, hold_time=0):
