@@ -552,8 +552,8 @@ class ProtocolHandler(threading.Thread):
                         else:
                             task()
                         try:
-                            asyncio.wait_for(  # noqa: pylint: disable=protected-access
-                                self.protocol._wait_for_task, TIMEOUT)
+                            asyncio.wait_for(
+                                self.protocol._wait_for_task, TIMEOUT)  # noqa: pylint: disable=protected-access
                         except asyncio.TimeoutError:
                             _LOGGER.error(
                                 "Could not complete command:"
