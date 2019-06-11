@@ -14,7 +14,7 @@ from .ddp import (get_status, launch, wakeup,
 from .errors import (NotReady, PSDataIncomplete,
                      UnknownButton, LoginFailed)
 from .media_art import (async_get_ps_store_requests, async_search_all,
-                        get_region, get_lang, parse_data,
+                        get_lang, parse_data,
                         async_prepare_tumbler)
 
 _LOGGER = logging.getLogger(__name__)
@@ -360,17 +360,14 @@ class Ps4Async(Ps4):
     def get_status(self) -> dict:
         """Get current status info."""
         if self.ddp_protocol is not None:
-            try:
-                self.ddp_protocol.send_msg(self)
-            except Exception:
-                pass
-            finally:
-                if self.status is not None:
-                    if self.is_standby:
-                        self.connected = False
-                        self.loggedin = False
-                    return self.status
-                return None
+            self.ddp_protocol.send_msg(self)
+            if self.status is not None:
+                if self.is_standby:
+                    self.connected = False
+                    self.loggedin = False
+                return self.status
+            return None
+
         else:
             return super().get_status()
 
@@ -390,15 +387,19 @@ class Ps4Async(Ps4):
             self.ddp_protocol.send_msg(
                 self, get_ddp_wake_message(self.credential))
 
-    async def standby(self):
+    async def standby(self, retry=None):
         """Standby."""
+        if retry is not None:
+            _LOGGER.info("Retries not implemented")
         if self.tcp_protocol is None:
             _LOGGER.error("TCP Protocol does not exist")
         else:
             await self.tcp_protocol.standby()
 
-    async def start_title(self, title_id, running_id=None):
+    async def start_title(self, title_id, running_id=None, retry=None):
         """Start title."""
+        if retry is not None:
+            _LOGGER.info("Retries not implemented")
         if self.tcp_protocol is None:
             _LOGGER.error("TCP Protocol does not exist")
         else:
@@ -435,8 +436,8 @@ class Ps4Async(Ps4):
             raise NotReady("PS4 is not On")
         try:
             self._prepare_connection()
-            transport, protocol = await self.connection.async_connect(self)
-            self.tcp_protocol = protocol
+            self.tcp_transport, self.tcp_protocol =\
+                await self.connection.async_connect(self)
             self.connected = True
         except (OSError, ConnectionRefusedError):
             _LOGGER.error("PS4 Refused Connection")
