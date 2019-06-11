@@ -112,7 +112,7 @@ def get_ps_store_url(title, region, reformat='chars', legacy=False):
 
 
 async def async_prepare_tumbler(
-    title, title_id, region,
+        title, title_id, region,
         session: aiohttp.ClientSession) -> dict or None:
     """Try tumbler search. Add chars to search, one by one."""
     lang = get_lang(region)
@@ -149,7 +149,7 @@ async def async_prepare_tumbler(
 
 
 async def async_tumbler_search(
-    current_chars: list, next_chars: list, remaining_chars: list,
+        current_chars: list, next_chars: list, remaining_chars: list,
         title_id, region, session: aiohttp.ClientSession) -> dict or None:
     """Search using tumbler method."""
     current = current_chars
@@ -239,7 +239,7 @@ async def async_search_all(title, title_id, session):
             data = parse_data(response, title_id, get_lang(region))
             if data is not None:
                 _LOGGER.debug(
-                    "Search of database: %s, Found title: %S, %s",
+                    "Search of database: %s, Found title: %s, %s",
                     region, data.name, data.cover_art)
                 return data
 
