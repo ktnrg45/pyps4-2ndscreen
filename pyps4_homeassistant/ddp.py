@@ -69,7 +69,7 @@ class DDPProtocol(asyncio.DatagramProtocol):
 
     def error_received(self, exc):
         """Handle Exceptions."""
-        _LOGGER.warning('Error received:', exc)
+        _LOGGER.warning('Error received at DDP Transport')
 
     def add_callback(self, ps4, callback):
         """Add callback to list."""
@@ -83,7 +83,7 @@ async def async_create_ddp_endpoint():
     """Create Async UDP endpoint."""
     loop = asyncio.get_event_loop()
     connect = loop.create_datagram_endpoint(
-        lambda: DDPProtocol(), local_addr=(UDP_IP, UDP_PORT),
+        lambda: DDPProtocol(), local_addr=(UDP_IP, UDP_PORT),  # noqa: pylint: disable=unnecessary-lambda
         reuse_address=True, reuse_port=True, allow_broadcast=True)
     transport, protocol = await loop.create_task(connect)
     return transport, protocol
