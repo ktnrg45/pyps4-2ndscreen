@@ -349,6 +349,7 @@ class Ps4Async(Ps4):
         super().__init__(host, credential, credentials_file,
                          broadcast, device_name)
         self.ddp_protocol = None
+        self.tcp_transport = None
         self.tcp_protocol = None
         self.connection = AsyncConnection(self.host, self.credential)
         self.loop = None
