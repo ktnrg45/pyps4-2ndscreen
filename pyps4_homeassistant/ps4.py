@@ -13,8 +13,7 @@ from .ddp import (get_status, launch, wakeup,
                   get_ddp_launch_message, get_ddp_wake_message)
 from .errors import (NotReady, PSDataIncomplete,
                      UnknownButton, LoginFailed)
-from .media_art import (get_ps_store_data as ps_data,
-                        async_get_ps_store_requests, async_search_all,
+from .media_art import (async_get_ps_store_requests, async_search_all,
                         get_region, get_lang, parse_data,
                         async_prepare_tumbler)
 
@@ -230,33 +229,6 @@ class Ps4():
             is_loggedin = self.connection.send_status()
             if is_loggedin is False:
                 self.close()
-
-    def get_ps_store_data(self, title, title_id, region, url=None):
-        """Return Title and Cover data."""
-        region = get_region(region)
-        try:
-            _LOGGER.debug("Searching using legacy API")
-            result_item = ps_data(title, title_id, region, url, legacy=True)
-        except (TypeError, AttributeError):
-            result_item = None
-            raise PSDataIncomplete
-        if result_item is not None:
-            _LOGGER.debug("Found Title: %s, URL: %s",
-                          result_item.name, result_item.cover_art)
-            return result_item
-
-        try:
-            result_item = ps_data(title, title_id, region, url)
-        except (TypeError, AttributeError):
-            result_item = None
-            raise PSDataIncomplete
-        if result_item is not None:
-            _LOGGER.debug("Found Title: %s, URL: %s",
-                          result_item.name, result_item.cover_art)
-            self.ps_name = result_item.name
-            self.ps_cover = result_item.cover_art
-            return result_item
-        return None
 
     async def async_get_ps_store_data(self, title, title_id,
                                       region, search_all=False):
