@@ -235,9 +235,9 @@ class Connection():
         self._random_seed = None
         self.pin = None
 
-    def set_socket(self, socket):
+    def set_socket(self, sock):
         """Set socket."""
-        self._socket = socket
+        self._socket = sock
 
     def connect(self):
         """Open the connection."""
@@ -254,13 +254,13 @@ class Connection():
         self._socket.close()
         self._reset_crypto_init_vector()
 
-    def login(self, name=DEFAULT_NAME, pin=None):
+    def login(self, name=None, pin=None):
         """Login."""
         _LOGGER.debug('Login')
         if pin is None:
-            self._send_login_request()
+            self._send_login_request(name=name)
         else:
-            self._send_login_request(pin=pin)
+            self._send_login_request(name=name, pin=pin)
         msg = self._recv_msg()
         return _handle_response('login', msg)
 
@@ -325,13 +325,14 @@ class Connection():
         if msg is not None:
             data = _parse_hello_request(msg)
             return data
+        return None
 
     def _send_handshake_request(self, seed):
         """Finish handshake."""
         self._send_msg(_get_handshake_request(seed))
 
     def _send_login_request(self, name=None, pin=None):
-        msg = _get_login_request(self.credential, name, pin)
+        msg = _get_login_request(self._credential, name, pin)
         self._send_msg(msg, encrypted=True)
 
     def _send_standby_request(self):
@@ -355,7 +356,9 @@ class Connection():
             _LOGGER.debug("Delaying RC off for PS Command")
             delay(1)
             try:
-                self._send_msg(_get_remote_control_request(), encrypted=True)
+                self._send_msg(
+                    _get_remote_control_request(operation, hold_time),
+                    encrypted=True)
             except (socket.error, socket.timeout):
                 _LOGGER.debug("Failed to send Remote Close MSG")
 
@@ -403,8 +406,6 @@ class TCPProtocol(asyncio.Protocol):
         self.transport = None
         self.connection = ps4.connection
         self.task = None
-        self.task_data = None
-        self.task_queue = None
         self.handler = ProtocolHandler(self)
 
     def connection_made(self, transport):
@@ -416,7 +417,7 @@ class TCPProtocol(asyncio.Protocol):
 
     def connection_lost(self, exc):
         """Call if connection lost."""
-        self.disconnect
+        self.disconnect()
 
     def add_task(self, task, *args):
         """Add task to queue."""
@@ -435,13 +436,13 @@ class TCPProtocol(asyncio.Protocol):
 
     def data_received(self, data):
         """Call when data received."""
-        data = self.connection._decipher.decrypt(data)
+        data = self.connection._decipher.decrypt(data)  # noqa: pylint: disable=protected-access
         self._handle(data)
 
     def disconnect(self):
         """Close the connection."""
         self.transport.close()
-        self._reset_crypto_init_vector()
+        self.connection._reset_crypto_init_vector()  # noqa: pylint: disable=protected-access
         self.ps4.loggedin = False
         self.ps4.connected = False
 
@@ -489,7 +490,7 @@ class TCPProtocol(asyncio.Protocol):
         msg = _get_boot_request(title_id)
         self.add_task(task, self.send, msg)
         if running_id != title_id:
-            await asyncio.sleep(0.01)
+            await asyncio.sleep(1)
             await self.remote_control(16)
 
     async def remote_control(self, operation, hold_time=0):
@@ -551,11 +552,11 @@ class ProtocolHandler(threading.Thread):
                         else:
                             task()
                         try:
-                            asyncio.wait_for(
+                            asyncio.wait_for(  # noqa: pylint: disable=protected-access
                                 self.protocol._wait_for_task, TIMEOUT)
-                        except asyncio.timeout:
+                        except asyncio.TimeoutError:
                             _LOGGER.error(
                                 "Could not complete command:"
-                                "%s for PS4 in time", self.task)
+                                "%s for PS4 in time", self.protocol.task)
                         finally:
                             self.block.clear()
