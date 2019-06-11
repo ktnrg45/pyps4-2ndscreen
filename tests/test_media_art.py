@@ -41,24 +41,6 @@ TEST_CREDS = "Imatest000"
 TEST_PS4 = ps4.Ps4(TEST_HOST, TEST_CREDS)
 
 
-# Deprecated. Test async version only.
-def test_sample_list():
-    """Tests if art can be retrieved."""
-    for x in TEST_LIST:
-        test_item = TEST_LIST.index(x)
-        item = TEST_LIST[test_item]
-        title = item[0]
-        title_id = item[1]
-        region = item[2]
-        result_item = TEST_PS4.get_ps_store_data(
-            title, title_id, region)
-        if result_item:
-            _LOGGER.info(
-                "Result %s: %s",
-                TEST_LIST.index(x), result_item.name)
-        assert result_item is not None
-
-
 async def async_test_sample_list():
     """Test sample list with asyncio."""
     for x in TEST_LIST:
