@@ -6,15 +6,17 @@ import logging
 import time
 import asyncio
 
+import aiohttp
+
 from .connection import Connection, AsyncConnection
 from .ddp import (get_status, launch, wakeup,
                   get_ddp_launch_message, get_ddp_wake_message)
 from .errors import (NotReady, PSDataIncomplete,
                      UnknownButton, LoginFailed)
 from .media_art import (get_ps_store_data as ps_data,
-                        async_get_ps_store_requests,
-                        get_region, parse_data, prepare_tumbler,
-                        COUNTRIES)
+                        async_get_ps_store_requests, async_search_all,
+                        get_region, get_lang, parse_data,
+                        async_prepare_tumbler)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -63,6 +65,7 @@ class Ps4():
         self.host = host
         self._broadcast = broadcast
         self._socket = None
+        self._power_on = False
         self.credential = None
         self.msg_sending = False
         self.status = None
@@ -121,13 +124,15 @@ class Ps4():
             self.status = get_status(self.host)
         except socket.timeout:
             _LOGGER.debug("PS4 @ %s status timed out", self.host)
-            return None
+            self.status = None
+            return self.status
         else:
             if self.status is not None:
                 if self.is_standby:
                     self.connected = False
                     self.loggedin = False
-        return self.status
+                return self.status
+            return None
 
     def launch(self):
         """Launch."""
@@ -136,6 +141,7 @@ class Ps4():
     def wakeup(self):
         """Wakeup."""
         wakeup(self.host, self.credential)
+        self._power_on = True
 
     def login(self, pin=None):
         """Login."""
@@ -252,41 +258,51 @@ class Ps4():
             return result_item
         return None
 
-    async def async_get_ps_store_data(self, title, title_id, region):
+    async def async_get_ps_store_data(self, title, title_id,
+                                      region, search_all=False):
         """Parse Responses."""
-        regions = COUNTRIES
-        lang = regions[region]
-        lang = lang.split('/')
-        lang = lang[0]
+        lang = get_lang(region)
         _LOGGER.debug("Searching...")
-        responses = await async_get_ps_store_requests(
-            title, region)
-        for response in responses:
-            try:
-                result_item = parse_data(response, title_id, lang)
-            except (TypeError, AttributeError):
-                result_item = None
-                raise PSDataIncomplete
+        async with aiohttp.ClientSession() as session:
+            responses = await async_get_ps_store_requests(
+                title, region, session)
+            for response in responses:
+                try:
+                    result_item = parse_data(response, title_id, lang)
+                except (TypeError, AttributeError):
+                    result_item = None
+                    raise PSDataIncomplete
+                if result_item is not None:
+                    break
+
+            if result_item is None:
+                try:
+                    result_item = await async_prepare_tumbler(
+                        title, title_id, region, session)
+                except (TypeError, AttributeError):
+                    result_item = None
+                    raise PSDataIncomplete
+
+            if search_all:
+                if result_item is None:
+                    _LOGGER.debug("Searching all databases...")
+                    try:
+                        result_item = await async_search_all(
+                            title, title_id, session)
+                    except (TypeError, AttributeError):
+                        result_item = None
+                        raise PSDataIncomplete
+
+            await session.close()
+
             if result_item is not None:
-                break
+                _LOGGER.debug("Found Title: %s, URL: %s",
+                              result_item.name, result_item.cover_art)
+                self.ps_name = result_item.name
+                self.ps_cover = result_item.cover_art
+                return result_item
 
-        if result_item is None:
-            region = get_region(region)
-            loop = asyncio.get_event_loop()
-            try:
-                result_item = await loop.run_in_executor(
-                    None, prepare_tumbler, title, title_id, region)
-            except (TypeError, AttributeError):
-                result_item = None
-                raise PSDataIncomplete
-
-        if result_item is not None:
-            _LOGGER.debug("Found Title: %s, URL: %s",
-                          result_item.name, result_item.cover_art)
-            self.ps_name = result_item.name
-            self.ps_cover = result_item.cover_art
-            return result_item
-        return None
+            return None
 
     @property
     def is_running(self):
@@ -301,45 +317,55 @@ class Ps4():
         """Return if the PS4 is in standby."""
         if self.status is not None:
             if self.status['status_code'] == STATUS_STANDBY:
-                self.connected = False
-                self.loggedin = False
                 return True
         return False
 
     @property
     def system_version(self):
         """Get the system version."""
-        return self.status['system-version'] or None
+        if self.status is not None:
+            return self.status['system-version']
+        return None
 
     @property
     def host_id(self):
         """Get the host id."""
-        return self.status['host-id'] or None
+        if self.status is not None:
+            return self.status['host-id']
+        return None
 
     @property
     def host_name(self):
         """Get the host name."""
-        return self.status['host-name'] or None
+        if self.status is not None:
+            return self.status['host-name']
+        return None
 
     @property
     def running_app_titleid(self):
         """Return the title Id of the running application."""
-        return self.status['running-app-titleid'] or None
+        if self.status is not None:
+            if 'running-app-titleid' in self.status:
+                return self.status['running-app-titleid']
+        return None
 
     @property
     def running_app_name(self):
         """Return the name of the running application."""
-        return self.status['running-app-name'] or None
+        if self.status is not None:
+            if 'running-app-name' in self.status:
+                return self.status['running-app-name']
+        return None
 
     @property
     def running_app_ps_cover(self):
         """Return the URL for the title cover art."""
-        return self.ps_cover or None
+        return self.ps_cover
 
     @property
     def running_app_ps_name(self):
         """Return the name fetched from PS Store."""
-        return self.ps_name or None
+        return self.ps_name
 
 
 class Ps4Async(Ps4):
@@ -428,7 +454,7 @@ class Ps4Async(Ps4):
         else:
             await self.tcp_protocol.close()
 
-    async def async_connect(self):
+    async def async_connect(self, auto_login=True):
         """Connect."""
         self. loop = asyncio.get_event_loop()
         if self.status is None:
@@ -444,3 +470,8 @@ class Ps4Async(Ps4):
             _LOGGER.error("PS4 Refused Connection")
             self.connected = False
             self.loggedin = False
+
+        if auto_login:
+            if self._power_on:
+                self._power_on = False
+                await self.login()
