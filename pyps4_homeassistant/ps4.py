@@ -65,6 +65,7 @@ class Ps4():
         self._broadcast = broadcast
         self._socket = None
         self._power_on = False
+        self._power_off = False
         self.credential = None
         self.msg_sending = False
         self.status = None
@@ -385,8 +386,17 @@ class Ps4Async(Ps4):
         if self.ddp_protocol is None:
             _LOGGER.error("DDP Protocol does not exist")
         else:
+            self._power_on = True
+            self._power_off = False
             self.ddp_protocol.send_msg(
                 self, get_ddp_wake_message(self.credential))
+
+    async def login(self):
+        """Login."""
+        if self.tcp_protocol is None:
+            _LOGGER.error("TCP Protocol does not exist")
+        else:
+            await self.tcp_protocol.login()
 
     async def standby(self, retry=None):
         """Standby."""
@@ -396,6 +406,7 @@ class Ps4Async(Ps4):
             _LOGGER.error("TCP Protocol does not exist")
         else:
             await self.tcp_protocol.standby()
+            self._power_off = True
 
     async def start_title(self, title_id, running_id=None, retry=None):
         """Start title."""
@@ -433,19 +444,20 @@ class Ps4Async(Ps4):
         self. loop = asyncio.get_event_loop()
         if self.status is None:
             self.get_status()
-        if not self.is_running:
-            raise NotReady("PS4 is not On")
-        try:
-            self._prepare_connection()
-            self.tcp_transport, self.tcp_protocol =\
-                await self.connection.async_connect(self)
-            self.connected = True
-        except (OSError, ConnectionRefusedError):
-            _LOGGER.error("PS4 Refused Connection")
-            self.connected = False
-            self.loggedin = False
+        if not self._power_off:
+            if not self.is_running:
+                raise NotReady("PS4 is not On")
+            try:
+                self._prepare_connection()
+                self.tcp_transport, self.tcp_protocol =\
+                    await self.connection.async_connect(self)
+                self.connected = True
+            except (OSError, ConnectionRefusedError):
+                _LOGGER.error("PS4 Refused Connection")
+                self.connected = False
+                self.loggedin = False
 
-        if auto_login:
-            if self._power_on:
-                self._power_on = False
-                await self.login()
+            if auto_login:
+                if self._power_on:
+                    self._power_on = False
+                    await self.login()
