@@ -391,12 +391,12 @@ class Ps4Async(Ps4):
             self.ddp_protocol.send_msg(
                 self, get_ddp_wake_message(self.credential))
 
-    async def login(self):
+    async def login(self, pin=None):
         """Login."""
         if self.tcp_protocol is None:
             _LOGGER.error("TCP Protocol does not exist")
         else:
-            await self.tcp_protocol.login()
+            await self.tcp_protocol.login(pin)
 
     async def standby(self, retry=None):
         """Standby."""
