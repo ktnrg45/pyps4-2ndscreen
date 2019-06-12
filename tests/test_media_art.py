@@ -1,6 +1,8 @@
 """Tests for media_art. Uses actual HTTP response."""
 import logging
 import asyncio
+import time
+
 import pyps4_homeassistant.ps4 as ps4
 
 TEST_LIST = [  # title, titleid, region
@@ -41,21 +43,41 @@ TEST_CREDS = "Imatest000"
 TEST_PS4 = ps4.Ps4(TEST_HOST, TEST_CREDS)
 
 
-async def async_test_sample_list():
+async def test_sample_list(x):
     """Test sample list with asyncio."""
-    for x in TEST_LIST:
-        test_item = TEST_LIST.index(x)
-        item = TEST_LIST[test_item]
-        title = item[0]
-        title_id = item[1]
-        region = item[2]
-        result_item = await TEST_PS4.async_get_ps_store_data(
-            title, title_id, region)
-        if result_item:
-            _LOGGER.info(
-                "Result %s: %s",
-                TEST_LIST.index(x), result_item.name)
-        assert result_item is not None
+    start = time.time()
+    test_item = TEST_LIST.index(x)
+    item = TEST_LIST[test_item]
+    title = item[0]
+    title_id = item[1]
+    region = item[2]
+    result_item = await TEST_PS4.async_get_ps_store_data(
+        title, title_id, region)
+    if result_item:
+        _LOGGER.info(
+            "Result %s: %s",
+            TEST_LIST.index(x), result_item.name)
+    assert result_item is not None
+    elapsed = time.time() - start
+    _LOGGER.info("Retrieved in %s seconds", elapsed)
 
-loop = asyncio.get_event_loop()
-loop.run_until_complete(async_test_sample_list())
+
+async def _get_tests():
+    tests = []
+    for x in TEST_LIST:
+        test = test_sample_list(x)
+        tests.append(test)
+    await asyncio.gather(*tests)
+
+
+def main():
+    """Run Tests."""
+    loop = asyncio.get_event_loop()
+    start = time.time()
+    loop.run_until_complete(_get_tests())
+    elapsed = time.time() - start
+    _LOGGER.info("Test completed in %s seconds", elapsed)
+
+
+if __name__ == "__main__":
+    main()
