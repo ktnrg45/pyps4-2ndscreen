@@ -43,10 +43,10 @@ TEST_CREDS = "Imatest000"
 TEST_PS4 = ps4.Ps4(TEST_HOST, TEST_CREDS)
 
 
-async def test_sample_list(x):
+async def test_sample_list(index_num):
     """Test sample list with asyncio."""
     start = time.time()
-    test_item = TEST_LIST.index(x)
+    test_item = TEST_LIST.index(index_num)
     item = TEST_LIST[test_item]
     title = item[0]
     title_id = item[1]
@@ -56,7 +56,7 @@ async def test_sample_list(x):
     if result_item:
         _LOGGER.info(
             "Result %s: %s",
-            TEST_LIST.index(x), result_item.name)
+            TEST_LIST.index(index_num), result_item.name)
     assert result_item is not None
     elapsed = time.time() - start
     _LOGGER.info("Retrieved in %s seconds", elapsed)
@@ -64,8 +64,8 @@ async def test_sample_list(x):
 
 async def _get_tests():
     tests = []
-    for x in TEST_LIST:
-        test = test_sample_list(x)
+    for index_num in TEST_LIST:
+        test = test_sample_list(index_num)
         tests.append(test)
     await asyncio.gather(*tests)
 
