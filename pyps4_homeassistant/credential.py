@@ -15,15 +15,15 @@ REQ_PORT = 997
 DDP_PORT = 987
 DDP_VERSION = '00020020'
 
+"""
+PS4 listens on ports 987 and 997 (Priveleged).
+Must run command on python path:
+"sudo setcap 'cap_net_bind_service=+ep' /usr/bin/python3.5"
+"""
+
 
 class Credentials:
     """The PS4 Credentials object. Masquerades as a PS4 to get credentials."""
-
-    """
-    PS4 listens on ports 987 and 997 (Priveleged).
-    Must run command on python path:
-    "sudo setcap 'cap_net_bind_service=+ep' /usr/bin/python3.5"
-    """
 
     def __init__(self, device_name=DEFAULT_DEVICE_NAME):
         """Init Cred Server."""
@@ -51,7 +51,7 @@ class Credentials:
             _LOGGER.error(
                 "Could not bind to port %s; \
                 Ensure port is accessible and unused, %s",
-                self.DDP_PORT, error)
+                DDP_PORT, error)
             return
 
     def listen(self, timeout=120):
