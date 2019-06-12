@@ -35,6 +35,8 @@ BUTTONS = {'up': 1,
 STATUS_OK = 200
 STATUS_STANDBY = 620
 
+DEFAULT_DEVICE_NAME = 'PYPS4-2ndScreen'
+
 
 def opencredential_file(filename):
     """Open credential file."""
@@ -52,7 +54,7 @@ class Ps4():
     """The PS4 object."""
 
     def __init__(self, host, credential=None, credentials_file=None,
-                 broadcast=False, device_name=None):
+                 broadcast=False, device_name=DEFAULT_DEVICE_NAME):
         """Initialize the instance.
 
         Keyword arguments:
