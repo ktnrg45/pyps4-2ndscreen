@@ -39,7 +39,7 @@ class Helper:
 
     def get_creds(self):  # noqa: pylint: disable=no-self-use
         """Return Credentials."""
-        credentials = Credentials()
+        credentials = Credentials(device_name=None)
         return credentials.listen()
 
     def port_bind(self, ports):  # noqa: pylint: disable=no-self-use
