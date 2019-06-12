@@ -10,7 +10,7 @@ install:
 script:
   - flake8 --exclude __init__.py pyps4_homeassistant
   - pylint pyps4_homeassistant
-  - py.test tests/test_media_art.py
+  - python tests/test_media_art.py
 branches:
   only:
   - master

@@ -24,9 +24,9 @@ class Helper:
             _LOGGER.debug("Found PS4 at: %s", device['host-ip'])
         return devices
 
-    def link(self, host, creds, pin):  # noqa: pylint: disable=no-self-use
+    def link(self, host, creds, pin, device_name=None):  # noqa: pylint: disable=no-self-use
         """Perform pairing with PS4."""
-        ps4 = Ps4(host, creds)
+        ps4 = Ps4(host, creds, device_name)
         is_ready = True
         is_login = True
         try:
