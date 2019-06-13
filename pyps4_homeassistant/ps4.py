@@ -13,8 +13,8 @@ from .ddp import (get_status, launch, wakeup,
                   get_ddp_launch_message, get_ddp_wake_message)
 from .errors import (NotReady, PSDataIncomplete,
                      UnknownButton, LoginFailed)
-from .media_art import (async_get_ps_store_requests, async_search_all,
-                        get_lang, parse_data,
+from .media_art import (async_get_ps_store_requests,
+                        get_lang, parse_data, COUNTRIES,
                         async_prepare_tumbler)
 
 _LOGGER = logging.getLogger(__name__)
@@ -233,9 +233,8 @@ class Ps4():
             if is_loggedin is False:
                 self.close()
 
-    async def async_get_ps_store_data(self, title, title_id,
-                                      region, search_all=False):
-        """Parse Responses."""
+    async def async_get_ps_store_data(self, title, title_id, region):
+        """Get and Parse Responses."""
         lang = get_lang(region)
         _LOGGER.debug("Searching...")
         async with aiohttp.ClientSession() as session:
@@ -258,16 +257,6 @@ class Ps4():
                     result_item = None
                     raise PSDataIncomplete
 
-            if search_all:
-                if result_item is None:
-                    _LOGGER.debug("Searching all databases...")
-                    try:
-                        result_item = await async_search_all(
-                            title, title_id, session)
-                    except (TypeError, AttributeError):
-                        result_item = None
-                        raise PSDataIncomplete
-
             await session.close()
 
             if result_item is not None:
@@ -278,6 +267,37 @@ class Ps4():
                 return result_item
 
             return None
+
+    async def async_search_all_ps_data(self, title, title_id, timeout=10):
+        _LOGGER.debug("Searching all databases...")
+        tasks = []
+        for region in COUNTRIES:
+            search_func = self.async_get_ps_store_data(title, title_id, region)
+            task = asyncio.ensure_future(
+                self._async_search_region(search_func))
+            tasks.append(task)
+
+        done, pending = await asyncio.wait(
+            tasks, timeout=timeout, return_when=asyncio.FIRST_COMPLETED)
+
+        # Return First Result.
+        data = None
+        for completed in done:
+            try:
+                data = completed.result()
+            except asyncio.InvalidStateError:
+                data = None
+            if data is not None:
+                for task in pending:
+                    task.cancel()
+                return data
+        return None
+
+    async def _async_search_region(self, task):
+        result_item = await task
+        if result_item is not None:
+            return result_item
+        return None
 
     @property
     def is_running(self):
@@ -335,11 +355,15 @@ class Ps4():
     @property
     def running_app_ps_cover(self):
         """Return the URL for the title cover art."""
+        if self.running_app_titleid is None:
+            self.ps_cover = None
         return self.ps_cover
 
     @property
     def running_app_ps_name(self):
         """Return the name fetched from PS Store."""
+        if self.running_app_titleid is None:
+            self.ps_name = None
         return self.ps_name
 
 
