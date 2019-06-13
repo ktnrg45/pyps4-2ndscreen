@@ -60,11 +60,11 @@ class Credentials:
         data = None
         address = None
         response = None
+        _LOGGER.info(
+            "Starting Credential Service with Timeout of %s seconds.",
+            timeout)
         while 1:
             try:
-                _LOGGER.info(
-                    "Starting Credential Service with Timeout of %s seconds.",
-                    timeout)
                 response = self.sock.recvfrom(1024)
             except socket.error:
                 self.sock.close()
