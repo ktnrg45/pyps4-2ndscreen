@@ -254,13 +254,11 @@ class Connection():
         self._socket.close()
         self._reset_crypto_init_vector()
 
-    def login(self, name=None, pin=None):
+    def login(self, pin=None):
         """Login."""
         _LOGGER.debug('Login')
-        if pin is None:
-            self._send_login_request(name=name)
-        else:
-            self._send_login_request(name=name, pin=pin)
+        name = self.ps4.device_name
+        self._send_login_request(name=name, pin=pin)
         msg = self._recv_msg()
         return _handle_response('login', msg)
 
@@ -468,10 +466,11 @@ class TCPProtocol(asyncio.Protocol):
         while self.handler.queue.qsize > qsize:
             await asyncio.sleep(0.0)
 
-    async def login(self, name=None, pin=None):
+    async def login(self, pin=None):
         """Login."""
         task = 'login'
-        msg = _get_login_request(self.ps4.credential, name, pin)
+        msg = _get_login_request(self.ps4.credential,
+                                 self.ps4.device_name, pin)
         self.add_task(task, self.send, msg)
 
     async def standby(self):
