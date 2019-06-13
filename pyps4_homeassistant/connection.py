@@ -443,6 +443,8 @@ class TCPProtocol(asyncio.Protocol):
         self.connection._reset_crypto_init_vector()  # noqa: pylint: disable=protected-access
         self.ps4.loggedin = False
         self.ps4.connected = False
+        self.ps4.transport = None
+        self.ps4.protocol = None
 
     def _handle(self, data):
         data_hex = binascii.hexlify(data)
