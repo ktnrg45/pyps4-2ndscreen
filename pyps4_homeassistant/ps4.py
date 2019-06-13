@@ -35,7 +35,7 @@ BUTTONS = {'up': 1,
 STATUS_OK = 200
 STATUS_STANDBY = 620
 
-DEFAULT_DEVICE_NAME = 'PYPS4-2ndScreen'
+DEFAULT_DEVICE_NAME = 'pyps4-2ndScreen'
 
 
 def opencredential_file(filename):
@@ -148,7 +148,7 @@ class Ps4():
     def login(self, pin=None):
         """Login."""
         self.open()
-        is_login = self.connection.login(self.device_name, pin)
+        is_login = self.connection.login(pin)
         if is_login is False:
             raise LoginFailed("PS4 Refused Connection")
         self.close()
