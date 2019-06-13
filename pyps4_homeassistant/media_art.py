@@ -230,20 +230,6 @@ async def async_get_ps_store_requests(title, region,
     return responses
 
 
-async def async_search_all(title, title_id, session):
-    """Search all databases."""
-    for region in COUNTRIES:
-        responses = []
-        responses = await async_get_ps_store_requests(title, region, session)
-        for response in responses:
-            data = parse_data(response, title_id, get_lang(region))
-            if data is not None:
-                _LOGGER.debug(
-                    "Search of database: %s, Found title: %s, %s",
-                    region, data.name, data.cover_art)
-                return data
-
-
 def parse_data(result, title_id, lang):
     """Filter through each item in search request."""
     item_list = []
