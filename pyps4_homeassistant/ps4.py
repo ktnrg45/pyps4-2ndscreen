@@ -269,6 +269,7 @@ class Ps4():
             return None
 
     async def async_search_all_ps_data(self, title, title_id, timeout=10):
+        """Search for title in all regions."""
         _LOGGER.debug("Searching all databases...")
         tasks = []
         for region in COUNTRIES:
