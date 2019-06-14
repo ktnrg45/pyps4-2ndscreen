@@ -474,9 +474,10 @@ class TCPProtocol(asyncio.Protocol):
         msg = _get_standby_request()
         self.add_task(task, self.send, msg)
 
-    async def disconnect(self):
+    def disconnect(self):
         """Close the connection."""
-        self.transport.close()
+        if self.transport is not None:
+            self.transport.close()
         self.connection._reset_crypto_init_vector()  # noqa: pylint: disable=protected-access
         self.ps4.loggedin = False
         self.ps4.connected = False
