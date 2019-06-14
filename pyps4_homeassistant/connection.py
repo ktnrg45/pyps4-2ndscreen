@@ -437,13 +437,6 @@ class TCPProtocol(asyncio.Protocol):
         data = self.connection._decipher.decrypt(data)  # noqa: pylint: disable=protected-access
         self._handle(data)
 
-    def disconnect(self):
-        """Close the connection."""
-        self.transport.close()
-        self.connection._reset_crypto_init_vector()  # noqa: pylint: disable=protected-access
-        self.ps4.loggedin = False
-        self.ps4.connected = False
-
     def _handle(self, data):
         data_hex = binascii.hexlify(data)
         _LOGGER.debug('RX: %s %s', len(data), data_hex)
@@ -480,6 +473,13 @@ class TCPProtocol(asyncio.Protocol):
         task = 'standby'
         msg = _get_standby_request()
         self.add_task(task, self.send, msg)
+
+    async def disconnect(self):
+        """Close the connection."""
+        self.transport.close()
+        self.connection._reset_crypto_init_vector()  # noqa: pylint: disable=protected-access
+        self.ps4.loggedin = False
+        self.ps4.connected = False
 
     async def start_title(self, title_id, running_id=None):
         """Start Title."""
