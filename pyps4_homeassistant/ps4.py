@@ -465,6 +465,8 @@ class Ps4Async(Ps4):
             _LOGGER.error("TCP Protocol does not exist")
         else:
             await self.tcp_protocol.disconnect()
+            self.tcp_transport = None
+            self.tcp_protocol = None
 
     async def async_connect(self, auto_login=True):
         """Connect."""
