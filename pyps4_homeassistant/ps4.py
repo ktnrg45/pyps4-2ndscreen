@@ -84,7 +84,7 @@ class Ps4():
             creds = opencredential_file(credentials_file)
             self.credential = creds['user-credential']
 
-        self.connection = Connection(host, credential=self.credential)
+        self.connection = Connection(self, credential=self.credential)
 
         if self.client is not None:
             self.client.add_ps4(ps4=self)
@@ -379,7 +379,7 @@ class Ps4Async(Ps4):
         self.ddp_protocol = None
         self.tcp_transport = None
         self.tcp_protocol = None
-        self.connection = AsyncConnection(self.host, self.credential)
+        self.connection = AsyncConnection(self, self.credential)
         self.loop = None
 
     def open(self):
