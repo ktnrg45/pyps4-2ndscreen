@@ -27,7 +27,7 @@ class Helper:
         """Perform pairing with PS4."""
         from .ps4 import Ps4
 
-        ps4 = Ps4(host, creds, device_name)
+        ps4 = Ps4(host, creds, device_name=device_name)
         is_ready = True
         is_login = True
         try:
