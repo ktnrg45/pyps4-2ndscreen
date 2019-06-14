@@ -125,6 +125,8 @@ async def async_prepare_tumbler(
             current_chars, _region, reformat='tumbler')
         url, params = _format_url(url)
         response = await fetch(url, params, session)
+        if response is None:
+            continue
 
         data = parse_data(response, title_id, lang)
 
