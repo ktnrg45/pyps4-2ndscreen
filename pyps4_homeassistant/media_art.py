@@ -75,7 +75,8 @@ def get_lang(region) -> str:
     return lang
 
 
-def get_ps_store_url(title, region, reformat='chars', legacy=False):
+def get_ps_store_url(title, region, reformat='chars', legacy=False,
+                     debug=False):
     """Get URL for title search in PS Store."""
     import html
     import re
@@ -105,7 +106,8 @@ def get_ps_store_url(title, region, reformat='chars', legacy=False):
         _url = 'https://store.playstation.com/valkyrie-api/{}/19/'\
                'tumbler-search/{}?suggested_size=9&mode=game'\
                '&platform=ps4'.format(region, title)
-    _LOGGER.debug(_url)
+    if debug:
+        _LOGGER.debug(_url)
 
     url = [_url, headers, region.split('/')[0]]
     return url
