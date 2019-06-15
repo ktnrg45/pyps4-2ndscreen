@@ -134,13 +134,17 @@ async def async_prepare_tumbler(
         if data is None:
             remaining_chars = list(title[index:])
             char_index = char_index + 1
-            next_chars = response['data']['attributes']['next'] or None
 
-            # If the next char is not in the next attr.
+            try:
+                next_chars = response['data']['attributes']['next']
+            except KeyError:
+                next_chars = None
+
+            # If no 'next' key return None.
             if next_chars is None:
                 return None
-            if title[char_index] not in next_chars\
-                    if next_chars else None:
+
+            if title[char_index] not in next_chars:
                 _LOGGER.debug("Starting Tumbler")
                 return await async_tumbler_search(
                     current_chars, next_chars, remaining_chars,
@@ -153,14 +157,14 @@ async def async_prepare_tumbler(
 async def async_tumbler_search(
         current_chars: list, next_chars: list, remaining_chars: list,
         title_id, region, session: aiohttp.ClientSession) -> dict or None:
-    """Search using tumbler method."""
+    """Search using available chars. Stop after 1 iteration."""
     _region = get_region(region)
     lang = get_lang(region)
     current = current_chars
     chars = next_chars
-    next_list = []
     ignore = ["'", ' ']
     data = None
+
     for char in chars:
         if char not in remaining_chars or char in ignore:
             continue
@@ -174,12 +178,8 @@ async def async_tumbler_search(
 
         data = parse_data(response, title_id, lang)
         if data is not None:
-            next_chars = response['data']['attributes']['next'] or None
-            if next_chars is not None:
-                next_list.append(next_chars)
-        else:
-            break
-    return data or None
+            return data
+    return None
 
 
 def _format_url(url):
