@@ -1,9 +1,6 @@
 """Helpers."""
 import logging
 
-from .credential import Credentials
-from .ddp import Discovery
-from .ps4 import Ps4
 from .errors import NotReady, LoginFailed
 
 _LOGGER = logging.getLogger(__name__)
@@ -17,6 +14,8 @@ class Helper:
 
     def has_devices(self, host=None):  # noqa: pylint: disable=no-self-use
         """Return if there are devices that can be discovered."""
+        from .ddp import Discovery
+
         _LOGGER.debug("Searching for PS4 Devices")
         discover = Discovery()
         devices = discover.search(host)
@@ -26,7 +25,9 @@ class Helper:
 
     def link(self, host, creds, pin, device_name=None):  # noqa: pylint: disable=no-self-use
         """Perform pairing with PS4."""
-        ps4 = Ps4(host, creds, device_name)
+        from .ps4 import Ps4
+
+        ps4 = Ps4(host, creds, device_name=device_name)
         is_ready = True
         is_login = True
         try:
@@ -37,14 +38,17 @@ class Helper:
             is_login = False
         return is_ready, is_login
 
-    def get_creds(self):  # noqa: pylint: disable=no-self-use
+    def get_creds(self, device_name=None):  # noqa: pylint: disable=no-self-use
         """Return Credentials."""
-        credentials = Credentials()
+        from .credential import Credentials
+
+        credentials = Credentials(device_name)
         return credentials.listen()
 
     def port_bind(self, ports):  # noqa: pylint: disable=no-self-use
         """Try binding to ports."""
         import socket
+
         for port in ports:
             try:
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

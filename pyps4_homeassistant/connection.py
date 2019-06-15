@@ -15,7 +15,6 @@ from Cryptodome.PublicKey import RSA
 
 _LOGGER = logging.getLogger(__name__)
 
-DEFAULT_NAME = 'pyps4-2ndScreen'
 TCP_PORT = 997
 STATUS_REQUEST = b'0c000000120000000000000000000000'
 RANDOM_SEED = \
@@ -133,8 +132,7 @@ def _get_login_request(credential, name=None, pin=None):
         pin = b''
     else:
         pin = pin.encode()
-    if name is None:
-        name = DEFAULT_NAME
+
     name = name.encode()
 
     config = {
@@ -224,9 +222,10 @@ def _get_status_ack():
 class Connection():
     """The TCP connection class."""
 
-    def __init__(self, host, credential=None, port=997):
+    def __init__(self, ps4, credential=None, port=997):
         """Init Class."""
-        self._host = host
+        self.ps4 = ps4
+        self._host = ps4.host
         self._credential = credential
         self._port = port
         self._socket = None
@@ -254,13 +253,10 @@ class Connection():
         self._socket.close()
         self._reset_crypto_init_vector()
 
-    def login(self, name=None, pin=None):
+    def login(self, pin=None):
         """Login."""
         _LOGGER.debug('Login')
-        if pin is None:
-            self._send_login_request(name=name)
-        else:
-            self._send_login_request(name=name, pin=pin)
+        self._send_login_request(pin=pin)
         msg = self._recv_msg()
         return _handle_response('login', msg)
 
@@ -301,9 +297,10 @@ class Connection():
             msg = self.encrypt_message(msg)
         self._socket.send(msg)
 
-    def _recv_msg(self):
+    def _recv_msg(self, decrypt=True):
         msg = self._socket.recv(1024)
-        msg = self._decipher.decrypt(msg)
+        if decrypt:
+            msg = self._decipher.decrypt(msg)
         _LOGGER.debug('RX: %s %s', len(msg), binascii.hexlify(msg))
         return msg
 
@@ -321,7 +318,7 @@ class Connection():
 
     def _recv_hello_request(self):
         """Receive ACK."""
-        msg = self._recv_msg()
+        msg = self._recv_msg(decrypt=False)
         if msg is not None:
             data = _parse_hello_request(msg)
             return data
@@ -331,7 +328,8 @@ class Connection():
         """Finish handshake."""
         self._send_msg(_get_handshake_request(seed))
 
-    def _send_login_request(self, name=None, pin=None):
+    def _send_login_request(self, pin=None):
+        name = self.ps4.device_name
         msg = _get_login_request(self._credential, name, pin)
         self._send_msg(msg, encrypted=True)
 
@@ -439,13 +437,6 @@ class TCPProtocol(asyncio.Protocol):
         data = self.connection._decipher.decrypt(data)  # noqa: pylint: disable=protected-access
         self._handle(data)
 
-    def disconnect(self):
-        """Close the connection."""
-        self.transport.close()
-        self.connection._reset_crypto_init_vector()  # noqa: pylint: disable=protected-access
-        self.ps4.loggedin = False
-        self.ps4.connected = False
-
     def _handle(self, data):
         data_hex = binascii.hexlify(data)
         _LOGGER.debug('RX: %s %s', len(data), data_hex)
@@ -468,9 +459,10 @@ class TCPProtocol(asyncio.Protocol):
         while self.handler.queue.qsize > qsize:
             await asyncio.sleep(0.0)
 
-    async def login(self, name=None, pin=None):
+    async def login(self, pin=None):
         """Login."""
         task = 'login'
+        name = self.ps4.device_name
         msg = _get_login_request(self.ps4.credential, name, pin)
         self.add_task(task, self.send, msg)
 
@@ -481,6 +473,14 @@ class TCPProtocol(asyncio.Protocol):
         task = 'standby'
         msg = _get_standby_request()
         self.add_task(task, self.send, msg)
+
+    def disconnect(self):
+        """Close the connection."""
+        if self.transport is not None:
+            self.transport.close()
+        self.connection._reset_crypto_init_vector()  # noqa: pylint: disable=protected-access
+        self.ps4.loggedin = False
+        self.ps4.connected = False
 
     async def start_title(self, title_id, running_id=None):
         """Start Title."""

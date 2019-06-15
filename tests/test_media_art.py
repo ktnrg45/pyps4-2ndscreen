@@ -30,8 +30,8 @@ TEST_LIST = [  # title, titleid, region
     ["Marvel's Spider-Man", 'CUSA11993', 'Sweden'],
     ["Ratchet & Clank™", 'CUSA01073', 'Sweden'],
     ["Uncharted: The Nathan Drake Collection™", 'CUSA02320', 'United States'],
-    ["NHL™ 18", 'CUSA07580', 'France']
-    # ["Marvel's Spider-Man", 'CUSA11995', 'Russia']  # Inconsistent return
+    ["NHL™ 18", 'CUSA07580', 'France'],
+    ["Marvel's Spider-Man", 'CUSA11995', 'Russia']
 ]
 
 logging.basicConfig(level=logging.DEBUG)
@@ -51,15 +51,30 @@ async def test_sample_list(index_num):
     title = item[0]
     title_id = item[1]
     region = item[2]
+
     result_item = await TEST_PS4.async_get_ps_store_data(
         title, title_id, region)
-    if result_item:
+    if result_item is None:
+        result_item = await test_search_all(title, title_id)
+    if result_item is not None:
         _LOGGER.info(
             "Result %s: %s",
             TEST_LIST.index(index_num), result_item.name)
+
     assert result_item is not None
     elapsed = time.time() - start
     _LOGGER.info("Retrieved in %s seconds", elapsed)
+
+
+async def test_search_all(title, title_id):
+    start = time.time()
+
+    result_item = await TEST_PS4.async_search_all_ps_data(
+        title, title_id)
+    elapsed = time.time() - start
+    _LOGGER.info("Search All completed in %s seconds", elapsed)
+    assert result_item is not None
+    return result_item
 
 
 async def _get_tests():
@@ -67,6 +82,8 @@ async def _get_tests():
     for index_num in TEST_LIST:
         test = test_sample_list(index_num)
         tests.append(test)
+    # Test one Item for search_all
+    tests.append(test_search_all(TEST_LIST[2][0], TEST_LIST[2][1]))
     await asyncio.gather(*tests)
 
 
@@ -76,7 +93,7 @@ def main():
     start = time.time()
     loop.run_until_complete(_get_tests())
     elapsed = time.time() - start
-    _LOGGER.info("Test completed in %s seconds", elapsed)
+    _LOGGER.info("All Tests completed in %s seconds", elapsed)
 
 
 if __name__ == "__main__":

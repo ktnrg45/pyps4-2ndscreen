@@ -125,6 +125,8 @@ async def async_prepare_tumbler(
             current_chars, _region, reformat='tumbler')
         url, params = _format_url(url)
         response = await fetch(url, params, session)
+        if response is None:
+            continue
 
         data = parse_data(response, title_id, lang)
 
@@ -152,6 +154,8 @@ async def async_tumbler_search(
         current_chars: list, next_chars: list, remaining_chars: list,
         title_id, region, session: aiohttp.ClientSession) -> dict or None:
     """Search using tumbler method."""
+    _region = get_region(region)
+    lang = get_lang(region)
     current = current_chars
     chars = next_chars
     next_list = []
@@ -161,14 +165,14 @@ async def async_tumbler_search(
         if char not in remaining_chars or char in ignore:
             continue
         next_str = "{}{}".format(current, char)
-        url = get_ps_store_url(next_str, region, 'tumbler', True)
+        url = get_ps_store_url(next_str, _region, 'tumbler', True)
         url, params = _format_url(url)
         response = await fetch(url, params, session)
 
         if response is None:
             continue
 
-        data = parse_data(response, title_id, get_lang(region))
+        data = parse_data(response, title_id, lang)
         if data is not None:
             next_chars = response['data']['attributes']['next'] or None
             if next_chars is not None:
@@ -228,20 +232,6 @@ async def async_get_ps_store_requests(title, region,
             responses.append(response)
 
     return responses
-
-
-async def async_search_all(title, title_id, session):
-    """Search all databases."""
-    for region in COUNTRIES:
-        responses = []
-        responses = await async_get_ps_store_requests(title, region, session)
-        for response in responses:
-            data = parse_data(response, title_id, get_lang(region))
-            if data is not None:
-                _LOGGER.debug(
-                    "Search of database: %s, Found title: %s, %s",
-                    region, data.name, data.cover_art)
-                return data
 
 
 def parse_data(result, title_id, lang):

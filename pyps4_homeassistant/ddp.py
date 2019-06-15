@@ -76,7 +76,12 @@ class DDPProtocol(asyncio.DatagramProtocol):
         if ps4 not in self.callbacks.keys():
             self.callbacks[ps4] = [callback]
         else:
-            self.callbacks[ps4].value().append(callback)
+            self.callbacks[ps4].append(callback)
+
+    def remove_callback(self, ps4, callback):
+        """Add callback to list."""
+        if ps4 in self.callbacks.keys():
+            self.callbacks[ps4].remove(callback)
 
 
 async def async_create_ddp_endpoint():
