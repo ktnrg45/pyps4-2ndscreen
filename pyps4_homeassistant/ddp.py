@@ -89,7 +89,7 @@ class DDPProtocol(asyncio.DatagramProtocol):
         if ps4.host in self.callbacks:
             if self.callbacks[ps4.host][ps4] == callback:
                 self.callbacks[ps4.host].pop(ps4)
-                
+
                 # If no callbacks remove host key also.
                 if not self.callbacks[ps4.host]:
                     self.callbacks.pop(ps4.host)
