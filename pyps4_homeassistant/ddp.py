@@ -79,17 +79,20 @@ class DDPProtocol(asyncio.DatagramProtocol):
         _LOGGER.info("Closing DDP Transport")
 
     def add_callback(self, ps4, callback):
-        """Add callback to list."""
+        """Add callback to list. One per PS4 Object."""
         if ps4.host not in self.callbacks:
             self.callbacks[ps4.host] = {}
         self.callbacks[ps4.host][ps4] = callback
 
     def remove_callback(self, ps4, callback):
-        """Add callback to list."""
+        """Remove callback from list."""
         if ps4.host in self.callbacks:
-            self.callbacks[ps4.host].pop(ps4)
-            if not self.callbacks[ps4.host]:
-                self.callbacks.pop(ps4.host)
+            if self.callbacks[ps4.host][ps4] == callback:
+                self.callbacks[ps4.host].pop(ps4)
+                
+                # If no callbacks remove host key also.
+                if not self.callbacks[ps4.host]:
+                    self.callbacks.pop(ps4.host)
 
 
 async def async_create_ddp_endpoint():
