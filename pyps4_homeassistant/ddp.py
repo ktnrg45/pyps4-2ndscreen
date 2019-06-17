@@ -45,22 +45,22 @@ class DDPProtocol(asyncio.DatagramProtocol):
     def datagram_received(self, data, addr):
         """When data is received."""
         if data is not None:
+            _LOGGER.debug("MSG from %s", addr)
             self._handle(data, addr)
 
     def _handle(self, data, addr):
         data = parse_ddp_response(data.decode('utf-8'))
         data[u'host-ip'] = addr[0]
 
-        for ps4 in self.callbacks:
-            if addr[0] == ps4.host:
+        address = addr[0]
+
+        if address in self.callbacks:
+            for ps4, callback in self.callbacks[address].items():
                 old_status = ps4.status
                 ps4.status = data
                 if old_status != data:
                     _LOGGER.debug("Status: %s", ps4.status)
-                    if self.callbacks[ps4]:
-                        callbacks = self.callbacks[ps4]
-                        for callback in callbacks:
-                            callback()
+                    callback()
 
     def connection_lost(self, exc):
         """On Connection Lost."""
@@ -73,15 +73,14 @@ class DDPProtocol(asyncio.DatagramProtocol):
 
     def add_callback(self, ps4, callback):
         """Add callback to list."""
-        if ps4 not in self.callbacks.keys():
-            self.callbacks[ps4] = [callback]
-        else:
-            self.callbacks[ps4].append(callback)
+        if ps4.host not in self.callbacks:
+            self.callbacks[ps4.host] = {}
+        self.callbacks[ps4.host][ps4] = callback
 
     def remove_callback(self, ps4, callback):
         """Add callback to list."""
-        if ps4 in self.callbacks.keys():
-            self.callbacks[ps4].remove(callback)
+        if ps4.host in self.callbacks:
+            self.callbacks[ps4.host].pop(ps4)
 
 
 async def async_create_ddp_endpoint():
