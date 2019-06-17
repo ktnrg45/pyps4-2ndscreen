@@ -64,12 +64,19 @@ class DDPProtocol(asyncio.DatagramProtocol):
 
     def connection_lost(self, exc):
         """On Connection Lost."""
-        _LOGGER.error("DDP Transport Closed")
-        self.transport.close()
+        if self.transport is not None:
+            _LOGGER.error("DDP Transport Closed")
+            self.transport.close()
 
     def error_received(self, exc):
         """Handle Exceptions."""
-        _LOGGER.warning('Error received at DDP Transport')
+        _LOGGER.warning("Error received at DDP Transport")
+
+    def close(self):
+        """Close Transport."""
+        self.transport.close()
+        self.transport = None
+        _LOGGER.info("Closing DDP Transport")
 
     def add_callback(self, ps4, callback):
         """Add callback to list."""
