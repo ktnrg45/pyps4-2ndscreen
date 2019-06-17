@@ -81,6 +81,8 @@ class DDPProtocol(asyncio.DatagramProtocol):
         """Add callback to list."""
         if ps4.host in self.callbacks:
             self.callbacks[ps4.host].pop(ps4)
+            if not self.callbacks[ps4.host]:
+                self.callbacks.pop(ps4.host)
 
 
 async def async_create_ddp_endpoint():
