@@ -12,7 +12,7 @@ _LOGGER = logging.getLogger(__name__)
 
 MOCK_HOST = '127.0.0.2'
 MOCK_HOST2 = '127.0.0.3'
-MOCK_PORT = '987'
+MOCK_PORT = 9041  # Random port. Otherwise need sudo.
 
 MOCK_CREDS = '12345678901'
 MOCK_CREDS2 = '12345678902'
@@ -22,7 +22,7 @@ MOCK_RESPONSE = {
     'host-id': "123456789A",
     'host-type': 'PS4',
     'host-name': 'FakePs4',
-    'host-request-port': 997
+    'host-request-port': MOCK_PORT
 }
 
 TIMEOUT = 1
@@ -112,6 +112,10 @@ class TestPS4DDPServer():
         """Start Tests."""
 
         _, self.mock_client_protocol = await async_create_ddp_endpoint()
+        assert self.mock_client_protocol.port == 987
+        # Change port to use unpriviliged port.
+        self.mock_client_protocol._set_write_port(MOCK_PORT)  # noqa: pylint: disable=protected-access
+        assert self.mock_client_protocol.port == MOCK_PORT
         self.mock_protocol = await self.start_mock_ps4(MOCK_HOST)
         self.mock_protocol2 = await self.start_mock_ps4(MOCK_HOST2)
 
