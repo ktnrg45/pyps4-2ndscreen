@@ -25,8 +25,13 @@ class DDPProtocol(asyncio.DatagramProtocol):
         """Init Instance."""
         self.callbacks = {}
         self.transport = None
+        self.port = DDP_PORT
         self.message = get_ddp_search_message()
         super().__init__()
+
+    def _set_write_port(self, port):
+        """Only used for tests."""
+        self.port = port
 
     def connection_made(self, transport):
         """On Connection."""
@@ -40,7 +45,7 @@ class DDPProtocol(asyncio.DatagramProtocol):
             message = self.message
 
         self.transport.sendto(message.encode('utf-8'),
-                              (ps4.host, DDP_PORT))
+                              (ps4.host, self.port))
 
     def datagram_received(self, data, addr):
         """When data is received."""
