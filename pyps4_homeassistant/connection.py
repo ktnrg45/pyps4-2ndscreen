@@ -510,7 +510,7 @@ class TCPProtocol(asyncio.Protocol):
     def _ack_status(self):
         self.ps4.get_status()
         self.add_task(None, self.send, _get_status_ack())
-        _LOGGER.debug("Sent ACK for status.")
+        _LOGGER.debug("Sent ACK for status")
 
     @property
     def connected(self):
