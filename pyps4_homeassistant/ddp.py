@@ -40,7 +40,6 @@ class DDPProtocol(asyncio.DatagramProtocol):
 
     def send_msg(self, ps4, message=None):
         """Send Message."""
-        _LOGGER.debug("Sending DDP MSG")
         if message is None:
             message = self.message
 
@@ -50,7 +49,6 @@ class DDPProtocol(asyncio.DatagramProtocol):
     def datagram_received(self, data, addr):
         """When data is received."""
         if data is not None:
-            _LOGGER.debug("MSG from %s", addr)
             self._handle(data, addr)
 
     def _handle(self, data, addr):
