@@ -413,6 +413,22 @@ class TCPProtocol(asyncio.Protocol):
         self.handler.start()
         _LOGGER.debug("PS4 Transport Connected @ %s", self.ps4.host)
 
+        if self.ps4.task_queue is not None:
+            valid_initial_tasks = {'start_title': self.start_title,
+                                   "remote_control": self.remote_control}
+            args = None
+
+            initial_task = self.ps4.task_queue
+            self.ps4.task_queue = None
+            args = initial_task[1:]
+            initial_task = initial_task[0]
+            task = valid_initial_tasks.get(initial_task)
+            if task is not None:
+                if args is not None:
+                    asyncio.ensure_future(task(*args))
+                else:
+                    asyncio.ensure_future(task())
+
     def connection_lost(self, exc):
         """Call if connection lost."""
         self.disconnect()
