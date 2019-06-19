@@ -236,7 +236,7 @@ class Ps4():
     async def async_get_ps_store_data(self, title, title_id, region):
         """Get and Parse Responses."""
         lang = get_lang(region)
-        _LOGGER.debug("Searching...")
+        _LOGGER.debug("Starting search request")
         async with aiohttp.ClientSession() as session:
             responses = await async_get_ps_store_requests(
                 title, region, session)
@@ -421,7 +421,7 @@ class Ps4Async(Ps4):
     async def login(self, pin=None):
         """Login."""
         if self.tcp_protocol is None:
-            _LOGGER.error("TCP Protocol does not exist")
+            _LOGGER.info("TCP Protocol does not exist")
         else:
             await self.tcp_protocol.login(pin)
 
@@ -430,7 +430,7 @@ class Ps4Async(Ps4):
         if retry is not None:
             _LOGGER.info("Retries not implemented")
         if self.tcp_protocol is None:
-            _LOGGER.error("TCP Protocol does not exist")
+            _LOGGER.info("TCP Protocol does not exist")
         else:
             await self.tcp_protocol.standby()
             self._power_off = True
@@ -440,7 +440,7 @@ class Ps4Async(Ps4):
         if retry is not None:
             _LOGGER.info("Retries not implemented")
         if self.tcp_protocol is None:
-            _LOGGER.error("TCP Protocol does not exist")
+            _LOGGER.info("TCP Protocol does not exist")
         else:
             if running_id is None:
                 if self.running_app_titleid is not None:
@@ -450,7 +450,7 @@ class Ps4Async(Ps4):
     async def remote_control(self, button_name, hold_time=0):
         """Remote Control."""
         if self.tcp_protocol is None:
-            _LOGGER.error("TCP Protocol does not exist")
+            _LOGGER.info("TCP Protocol does not exist")
         else:
             button_name = button_name.lower()
             if button_name not in BUTTONS.keys():
@@ -462,7 +462,7 @@ class Ps4Async(Ps4):
     async def close(self):
         """Close Transport."""
         if self.tcp_protocol is None:
-            _LOGGER.error("TCP Protocol does not exist")
+            _LOGGER.info("TCP Protocol does not exist")
         else:
             self.tcp_protocol.disconnect()
             self.tcp_transport = None
@@ -470,23 +470,26 @@ class Ps4Async(Ps4):
 
     async def async_connect(self, auto_login=True):
         """Connect."""
-        self. loop = asyncio.get_event_loop()
-        if self.status is None:
-            self.get_status()
-        if not self._power_off:
-            if not self.is_running:
-                raise NotReady("PS4 is not On")
-            try:
-                self._prepare_connection()
-                self.tcp_transport, self.tcp_protocol =\
-                    await self.connection.async_connect(self)
-                self.connected = True
-            except (OSError, ConnectionRefusedError):
-                _LOGGER.error("PS4 Refused Connection")
-                self.connected = False
-                self.loggedin = False
+        if not self.connected:
+            if self.status is None:
+                self.get_status()
+            if not self._power_off:
+                if not self.is_running:
+                    raise NotReady("PS4 is not On")
+                try:
+                    self._prepare_connection()
+                    self.tcp_transport, self.tcp_protocol =\
+                        await self.connection.async_connect(self)
+                except (OSError, ConnectionRefusedError):
+                    _LOGGER.info("PS4 Refused Connection")
+                    self.connected = False
+                    self.loggedin = False
+                else:
+                    self.connected = True
 
-            if auto_login:
-                if self._power_on:
-                    self._power_on = False
-                    await self.login()
+                    # If connected, is indicative that PS4 is powered on.
+                    if self._power_on:
+                        self._power_on = False
+
+                    if auto_login:
+                        await self.login()
