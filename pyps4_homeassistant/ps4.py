@@ -485,11 +485,9 @@ class Ps4Async(Ps4):
                     self.connected = False
                     self.loggedin = False
                 else:
-                    self.connected = True
-
-                    # If connected, is indicative that PS4 is powered on.
                     if self._power_on:
-                        self._power_on = False
+                        if auto_login:
+                            await self.login()
 
-                    if auto_login:
-                        await self.login()
+                    self._power_on = False
+                    self.connected = True
