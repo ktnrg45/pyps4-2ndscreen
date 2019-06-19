@@ -54,21 +54,20 @@ class Ps4():
     """The PS4 object."""
 
     def __init__(self, host, credential=None, credentials_file=None,
-                 broadcast=False, device_name=DEFAULT_DEVICE_NAME):
+                 device_name=DEFAULT_DEVICE_NAME):
         """Initialize the instance.
 
         Keyword arguments:
             host -- the host IP address
             credential -- the credential string
-            credential_file -- the credendtial file generated with ps4-waker
-            broadcast -- use broadcast IP address (default False)
+            credential_file -- credential file in working directory
         """
         self.host = host
-        self._broadcast = broadcast
+        self.credential = None
+        self.device_name = device_name
         self._socket = None
         self._power_on = False
         self._power_off = False
-        self.credential = None
         self.msg_sending = False
         self.status = None
         self.connected = False
@@ -76,7 +75,6 @@ class Ps4():
         self.ps_cover = None
         self.ps_name = None
         self.loggedin = False
-        self.device_name = device_name
 
         if credential:
             self.credential = credential
@@ -372,15 +370,16 @@ class Ps4Async(Ps4):
     """Async Version of Ps4 Class."""
 
     def __init__(self, host, credential=None, credentials_file=None,
-                 broadcast=False, device_name=None):
+                 device_name=None):
         """Inherit Class."""
         super().__init__(host, credential, credentials_file,
-                         broadcast, device_name)
+                         device_name)
         self.ddp_protocol = None
         self.tcp_transport = None
         self.tcp_protocol = None
+        self.task_queue = None
+
         self.connection = AsyncConnection(self, self.credential)
-        self.loop = None
 
     def open(self):
         """Not Implemented."""
@@ -437,26 +436,36 @@ class Ps4Async(Ps4):
 
     async def start_title(self, title_id, running_id=None, retry=None):
         """Start title."""
+        if running_id is None:
+            if self.running_app_titleid is not None:
+                running_id = self.running_app_titleid
+
         if retry is not None:
             _LOGGER.info("Retries not implemented")
         if self.tcp_protocol is None:
             _LOGGER.info("TCP Protocol does not exist")
+            task = ('start_title', title_id, running_id)
+            self.task_queue = task
+            self.wakeup()
+
         else:
-            if running_id is None:
-                if self.running_app_titleid is not None:
-                    running_id = self.running_app_titleid
             await self.tcp_protocol.start_title(title_id, running_id)
 
     async def remote_control(self, button_name, hold_time=0):
         """Remote Control."""
+        button_name = button_name.lower()
+        if button_name not in BUTTONS.keys():
+            raise UnknownButton(
+                "Button: {} is not valid".format(button_name))
+        operation = BUTTONS[button_name]
+
         if self.tcp_protocol is None:
             _LOGGER.info("TCP Protocol does not exist")
+            task = ('remote_control', operation, hold_time)
+            self.task_queue = task
+            self.wakeup()
+
         else:
-            button_name = button_name.lower()
-            if button_name not in BUTTONS.keys():
-                raise UnknownButton(
-                    "Button: {} is not valid".format(button_name))
-            operation = BUTTONS[button_name]
             await self.tcp_protocol.remote_control(operation, hold_time)
 
     async def close(self):
