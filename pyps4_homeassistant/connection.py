@@ -446,7 +446,7 @@ class TCPProtocol(asyncio.Protocol):
         """Send Message."""
         _LOGGER.debug('TX: %s %s', len(msg), binascii.hexlify(msg))
         msg = self.connection.encrypt_message(msg)
-        self.transport.write(msg)
+        self.loop.call_soon(self.transport.write, msg)
 
     def data_received(self, data):
         """Call when data received."""
@@ -541,6 +541,7 @@ class ProtocolHandler(threading.Thread):
         """Init."""
         super().__init__()
         self.protocol = protocol
+        self.daemon = True
         self.ps4 = self.protocol.ps4
         self.queue = asyncio.Queue(maxsize=5)
         self.stop = threading.Event()
