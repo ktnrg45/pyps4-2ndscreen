@@ -27,6 +27,7 @@ class Credentials:
 
     def __init__(self, device_name=DEFAULT_DEVICE_NAME):
         """Init Cred Server."""
+        self.sock = None
         self.response = {
             'host-id': HOST_ID,
             'host-type': 'PS4',
