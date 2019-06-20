@@ -1,4 +1,4 @@
-sudo: false
+sudo: False
 language: python
 python:
   - "3.5"
@@ -11,6 +11,7 @@ script:
   - flake8 --exclude __init__.py pyps4_homeassistant
   - pylint pyps4_homeassistant
   - python tests/test_media_art.py
+  - python tests/test_ddp_protocol.py
 branches:
   only:
   - master

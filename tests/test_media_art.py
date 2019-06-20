@@ -31,6 +31,7 @@ TEST_LIST = [  # title, titleid, region
     ["Ratchet & Clank™", 'CUSA01073', 'Sweden'],
     ["Uncharted: The Nathan Drake Collection™", 'CUSA02320', 'United States'],
     ["NHL™ 18", 'CUSA07580', 'France'],
+    ["Days Gone", 'CUSA08966', 'United States'],
     ["Marvel's Spider-Man", 'CUSA11995', 'Russia']
 ]
 
@@ -82,9 +83,12 @@ async def _get_tests():
     for index_num in TEST_LIST:
         test = test_sample_list(index_num)
         tests.append(test)
-    # Test one Item for search_all
-    tests.append(test_search_all(TEST_LIST[2][0], TEST_LIST[2][1]))
     await asyncio.gather(*tests)
+
+    # Test one Item for search_all
+    search_all = asyncio.ensure_future(
+        test_search_all(TEST_LIST[2][0], TEST_LIST[2][1]))
+    await search_all
 
 
 def main():

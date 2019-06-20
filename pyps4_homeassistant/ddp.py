@@ -25,8 +25,13 @@ class DDPProtocol(asyncio.DatagramProtocol):
         """Init Instance."""
         self.callbacks = {}
         self.transport = None
+        self.port = DDP_PORT
         self.message = get_ddp_search_message()
         super().__init__()
+
+    def _set_write_port(self, port):
+        """Only used for tests."""
+        self.port = port
 
     def connection_made(self, transport):
         """On Connection."""
@@ -35,12 +40,11 @@ class DDPProtocol(asyncio.DatagramProtocol):
 
     def send_msg(self, ps4, message=None):
         """Send Message."""
-        _LOGGER.debug("Sending DDP MSG")
         if message is None:
             message = self.message
 
         self.transport.sendto(message.encode('utf-8'),
-                              (ps4.host, DDP_PORT))
+                              (ps4.host, self.port))
 
     def datagram_received(self, data, addr):
         """When data is received."""
@@ -51,37 +55,47 @@ class DDPProtocol(asyncio.DatagramProtocol):
         data = parse_ddp_response(data.decode('utf-8'))
         data[u'host-ip'] = addr[0]
 
-        for ps4 in self.callbacks:
-            if addr[0] == ps4.host:
+        address = addr[0]
+
+        if address in self.callbacks:
+            for ps4, callback in self.callbacks[address].items():
                 old_status = ps4.status
                 ps4.status = data
                 if old_status != data:
                     _LOGGER.debug("Status: %s", ps4.status)
-                    if self.callbacks[ps4]:
-                        callbacks = self.callbacks[ps4]
-                        for callback in callbacks:
-                            callback()
+                    callback()
 
     def connection_lost(self, exc):
         """On Connection Lost."""
-        _LOGGER.error("DDP Transport Closed")
-        self.transport.close()
+        if self.transport is not None:
+            _LOGGER.error("DDP Transport Closed")
+            self.transport.close()
 
     def error_received(self, exc):
         """Handle Exceptions."""
-        _LOGGER.warning('Error received at DDP Transport')
+        _LOGGER.warning("Error received at DDP Transport")
+
+    def close(self):
+        """Close Transport."""
+        self.transport.close()
+        self.transport = None
+        _LOGGER.info("Closing DDP Transport")
 
     def add_callback(self, ps4, callback):
-        """Add callback to list."""
-        if ps4 not in self.callbacks.keys():
-            self.callbacks[ps4] = [callback]
-        else:
-            self.callbacks[ps4].append(callback)
+        """Add callback to list. One per PS4 Object."""
+        if ps4.host not in self.callbacks:
+            self.callbacks[ps4.host] = {}
+        self.callbacks[ps4.host][ps4] = callback
 
     def remove_callback(self, ps4, callback):
-        """Add callback to list."""
-        if ps4 in self.callbacks.keys():
-            self.callbacks[ps4].remove(callback)
+        """Remove callback from list."""
+        if ps4.host in self.callbacks:
+            if self.callbacks[ps4.host][ps4] == callback:
+                self.callbacks[ps4.host].pop(ps4)
+
+                # If no callbacks remove host key also.
+                if not self.callbacks[ps4.host]:
+                    self.callbacks.pop(ps4.host)
 
 
 async def async_create_ddp_endpoint():
