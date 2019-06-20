@@ -457,7 +457,7 @@ class TCPProtocol(asyncio.Protocol):
         data_hex = binascii.hexlify(data)
         _LOGGER.debug('RX: %s %s', len(data), data_hex)
         if data_hex == STATUS_REQUEST:
-            self._ack_status()
+            self.add_task(None, self._ack_status)
             return
         if self.callback(self.task, data):
             _LOGGER.debug("Command successful: %s", self.task)
@@ -525,8 +525,8 @@ class TCPProtocol(asyncio.Protocol):
 
     def _ack_status(self):
         self.ps4.get_status()
-        self.add_task(None, self.send, _get_status_ack())
-        _LOGGER.debug("Sent ACK for status")
+        self.send(_get_status_ack())
+        _LOGGER.debug("Sent ACK for status.")
 
     @property
     def connected(self):
