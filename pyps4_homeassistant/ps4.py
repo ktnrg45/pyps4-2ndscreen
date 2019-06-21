@@ -393,6 +393,11 @@ class Ps4Async(Ps4):
                 if self.is_standby:
                     self.connected = False
                     self.loggedin = False
+
+                    # Ensure that connection is closed.
+                    if self.tcp_protocol is not None:
+                        asyncio.ensure_future(self.close())
+
                 return self.status
             return None
 
@@ -444,6 +449,8 @@ class Ps4Async(Ps4):
             _LOGGER.info("Retries not implemented")
         if self.tcp_protocol is None:
             _LOGGER.info("TCP Protocol does not exist")
+
+            # Queue task upon login.
             task = ('start_title', title_id, running_id)
             self.task_queue = task
             self.wakeup()
@@ -461,6 +468,8 @@ class Ps4Async(Ps4):
 
         if self.tcp_protocol is None:
             _LOGGER.info("TCP Protocol does not exist")
+
+            # Queue task upon login.
             task = ('remote_control', operation, hold_time)
             self.task_queue = task
             self.wakeup()
@@ -471,7 +480,7 @@ class Ps4Async(Ps4):
     async def close(self):
         """Close Transport."""
         if self.tcp_protocol is None:
-            _LOGGER.info("TCP Protocol does not exist")
+            _LOGGER.info("TCP Protocol @ %s already disconnected", self.host)
         else:
             self.tcp_protocol.disconnect()
             self.tcp_transport = None
