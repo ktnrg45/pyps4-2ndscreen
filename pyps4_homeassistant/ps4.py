@@ -483,7 +483,7 @@ class Ps4Async(Ps4):
             if self.status is None:
                 self.get_status()
             if not self._power_off:
-                if not self.is_running:
+                if self.is_standby:
                     raise NotReady("PS4 is not On")
                 try:
                     self._prepare_connection()
