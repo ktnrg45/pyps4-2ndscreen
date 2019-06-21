@@ -7,7 +7,7 @@ import logging
 import socket
 import time
 import asyncio
-import threading
+from typing import cast
 
 from construct import (Bytes, Const, Int32ul, Padding, Struct)
 from Cryptodome.Cipher import AES, PKCS1_OAEP
@@ -404,13 +404,12 @@ class TCPProtocol(asyncio.Protocol):
         self.transport = None
         self.connection = ps4.connection
         self.task = None
-        self.handler = ProtocolHandler(self)
+        self.task_available = asyncio.Event()
 
     def connection_made(self, transport):
         """When connected."""
-        self.transport = transport
+        self.transport = cast(asyncio.Transport, transport)
         self.ps4.connected = True
-        self.handler.start()
         _LOGGER.debug("PS4 Transport Connected @ %s", self.ps4.host)
 
         if self.ps4.task_queue is not None:
@@ -424,71 +423,79 @@ class TCPProtocol(asyncio.Protocol):
             initial_task = initial_task[0]
             task = valid_initial_tasks.get(initial_task)
             if task is not None:
+                self.task_available.set()
                 if args is not None:
                     asyncio.ensure_future(task(*args))
                 else:
                     asyncio.ensure_future(task())
-
-    def connection_lost(self, exc):
-        """Call if connection lost."""
-        self.disconnect()
-
-    def add_task(self, task, *args):
-        """Add task to queue."""
-        if args:
-            task = (task, *args)
-        try:
-            self.handler.queue.put_nowait(task)
-        except asyncio.QueueFull:
-            _LOGGER.info("PS4 is busy. Please wait to issue new command")
-
-    def send(self, msg):
-        """Send Message."""
-        _LOGGER.debug('TX: %s %s', len(msg), binascii.hexlify(msg))
-        msg = self.connection.encrypt_message(msg)
-        self.loop.call_soon(self.transport.write, msg)
+        else:
+            self.task_available.set()
 
     def data_received(self, data):
         """Call when data received."""
         data = self.connection._decipher.decrypt(data)  # noqa: pylint: disable=protected-access
         self._handle(data)
 
+    def connection_lost(self, exc):
+        """Call if connection lost."""
+        self.disconnect()
+
+    def _complete_task(self):
+        self.task = None
+        self.task_available.set()
+
+    async def add_task(self, task_name, func, *args):
+        """Add task to queue."""
+        if args:
+            task = func(*args)
+        else:
+            task = func()
+
+        await self.task_available.wait()
+        self.task_available.clear()
+        self.task = task_name
+        await task
+
+    async def send(self, msg):
+        """Send Message."""
+        _LOGGER.debug('TX: %s %s', len(msg), binascii.hexlify(msg))
+        msg = self.connection.encrypt_message(msg)
+        self.transport.write(msg)
+
+    def sync_send(self, msg):
+        """Send Message synchronously."""
+        _LOGGER.debug('TX: %s %s', len(msg), binascii.hexlify(msg))
+        msg = self.connection.encrypt_message(msg)
+        self.transport.write(msg)
+
     def _handle(self, data):
         data_hex = binascii.hexlify(data)
         _LOGGER.debug('RX: %s %s', len(data), data_hex)
         if data_hex == STATUS_REQUEST:
-            self.add_task(None, self._ack_status)
-            return
-        if self.callback(self.task, data):
-            _LOGGER.debug("Command successful: %s", self.task)
-
-        if self.task == 'login':
-            self.ps4.loggedin = True
-
-        self.task = None
-        self.handler.queue.task_done()
-        return
-
-    async def _wait_for_task(self):
-        """Future. Wait for completion."""
-        qsize = self.handler.queue.qsize
-        while self.handler.queue.qsize > qsize:
-            await asyncio.sleep(0.0)
+            self._ack_status()
+        else:
+            if self.callback(self.task, data):
+                _LOGGER.debug("Command successful: %s", self.task)
+                if self.task == 'login':
+                    self.ps4.loggedin = True
+                self._complete_task()
 
     async def login(self, pin=None):
         """Login."""
-        task = 'login'
+        task_name = 'login'
         name = self.ps4.device_name
         msg = _get_login_request(self.ps4.credential, name, pin)
-        self.add_task(task, self.send, msg)
+        task = self.add_task(task_name, self.send, msg)
+        asyncio.ensure_future(task)
 
     async def standby(self):
         """Standby."""
         if not self.ps4.loggedin:
             await self.login()
-        task = 'standby'
+        task_name = 'standby'
         msg = _get_standby_request()
-        self.add_task(task, self.send, msg)
+        task = self.add_task(task_name, self.send, msg)
+        asyncio.ensure_future(task)
 
     def disconnect(self):
         """Close the connection."""
@@ -502,9 +509,10 @@ class TCPProtocol(asyncio.Protocol):
         """Start Title."""
         if not self.ps4.loggedin:
             await self.login()
-        task = 'start_title'
+        task_name = 'start_title'
         msg = _get_boot_request(title_id)
-        self.add_task(task, self.send, msg)
+        task = self.add_task(task_name, self.send, msg)
+        asyncio.ensure_future(task)
         if running_id != title_id:
             await asyncio.sleep(1)
             await self.remote_control(16)
@@ -513,67 +521,31 @@ class TCPProtocol(asyncio.Protocol):
         """Remote Control."""
         if not self.ps4.loggedin:
             await self.login()
+        task_name = 'remote_control'
         msg = _get_remote_control_request(operation, hold_time)
-        self.add_task(None, self._send_remote_control_request, msg, operation)
+        task = self.add_task(task_name, self._send_remote_control_request,
+                             msg, operation)
+        asyncio.ensure_future(task)
 
-    def _send_remote_control_request(self, msg, operation):
+    async def _send_remote_control_request(self, msg, operation):
+        """Send messages for remote control."""
         for message in msg:
-            self.send(message)
+            # Messages are time sensitive.
+            # Needs to be immediately sent in order.
+            self.sync_send(message)
+
+        # For 'PS' command.
         if operation == 128:
+            # Even more time sensitive. Sometimes unreliable.
             delay(1.0)
-            self.send(_get_remote_control_close_request())
+            self.sync_send(_get_remote_control_close_request())
+
+        # Don't handle or wait for a response
+        self.task_available.set()
 
     def _ack_status(self):
+        """Sends msg in response to heartbeat message."""
+        # Update state as well, no need to manage polling now.
         self.ps4.get_status()
-        self.send(_get_status_ack())
-        _LOGGER.debug("Sent ACK for status.")
-
-    @property
-    def connected(self):
-        """Return True if connected."""
-        return self.ps4.connected
-
-
-class ProtocolHandler(threading.Thread):
-    """Thread for TCP Protocol."""
-
-    def __init__(self, protocol):
-        """Init."""
-        super().__init__()
-        self.protocol = protocol
-        self.daemon = True
-        self.ps4 = self.protocol.ps4
-        self.queue = asyncio.Queue(maxsize=5)
-        self.stop = threading.Event()
-        self.block = threading.Event()
-
-    def run(self):
-        """Start Thread."""
-        while not self.stop.is_set():
-            if self.ps4.is_standby:
-                self.ps4.loggedin = False
-                self.ps4.connected = False
-                self.stop.set()
-            if self.ps4.connected:
-                if not self.queue.empty():
-                    self.block.set()
-                    if self.protocol.task is None:
-                        item = self.queue.get_nowait()
-                        # If args are passed in.
-                        if isinstance(item, tuple):
-                            args = item[2:]
-                            task_name = item[0]
-                            task = item[1]
-                            self.protocol.task = task_name
-                            task(*args)
-                        else:
-                            task()
-                        try:
-                            asyncio.wait_for(
-                                self.protocol._wait_for_task, TIMEOUT)  # noqa: pylint: disable=protected-access
-                        except asyncio.TimeoutError:
-                            _LOGGER.error(
-                                "Could not complete command:"
-                                "%s for PS4 in time", self.protocol.task)
-                        finally:
-                            self.block.clear()
+        asyncio.ensure_future(self.send(_get_status_ack()))
+        _LOGGER.debug("Sending Hearbeat response")
