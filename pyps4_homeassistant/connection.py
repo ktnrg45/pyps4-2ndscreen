@@ -423,6 +423,7 @@ class TCPProtocol(asyncio.Protocol):
             initial_task = initial_task[0]
             task = valid_initial_tasks.get(initial_task)
             if task is not None:
+                _LOGGER.info("Queued command: %s", initial_task)
                 self.task_available.set()
                 if args is not None:
                     asyncio.ensure_future(task(*args))
@@ -473,6 +474,8 @@ class TCPProtocol(asyncio.Protocol):
         _LOGGER.debug('RX: %s %s', len(data), data_hex)
         if data_hex == STATUS_REQUEST:
             self._ack_status()
+        elif self.task == 'remote_control':
+            pass
         else:
             if self.callback(self.task, data):
                 _LOGGER.debug("Command successful: %s", self.task)
@@ -501,6 +504,9 @@ class TCPProtocol(asyncio.Protocol):
         """Close the connection."""
         if self.transport is not None:
             self.transport.close()
+            self.ps4.protocol = None
+            self.transport = None
+            _LOGGER.debug("Transport @ %s is disconnected", self.ps4.host)
         self.connection._reset_crypto_init_vector()  # noqa: pylint: disable=protected-access
         self.ps4.loggedin = False
         self.ps4.connected = False
@@ -536,8 +542,8 @@ class TCPProtocol(asyncio.Protocol):
 
         # For 'PS' command.
         if operation == 128:
-            # Even more time sensitive. Sometimes unreliable.
-            delay(1.0)
+            # Even more time sensitive.
+            delay(1.0)  # Delay of 1 Second needed, still unreliable.
             self.sync_send(_get_remote_control_close_request())
 
         # Don't handle or wait for a response
