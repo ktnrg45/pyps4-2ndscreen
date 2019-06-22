@@ -244,6 +244,9 @@ class Ps4():
                 except (TypeError, AttributeError):
                     result_item = None
                     raise PSDataIncomplete
+                except RuntimeError:
+                    result_item = None
+
                 if result_item is not None:
                     break
 
@@ -254,6 +257,8 @@ class Ps4():
                 except (TypeError, AttributeError):
                     result_item = None
                     raise PSDataIncomplete
+                except RuntimeError:
+                    result_item = None
 
             await session.close()
 
@@ -288,7 +293,10 @@ class Ps4():
                 data = None
             if data is not None:
                 for task in pending:
-                    task.cancel()
+                    try:
+                        task.cancel()
+                    except RuntimeError:
+                        pass
                 return data
         return None
 
