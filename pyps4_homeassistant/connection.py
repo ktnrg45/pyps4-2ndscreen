@@ -542,9 +542,9 @@ class TCPProtocol(asyncio.Protocol):
 
         # For 'PS' command.
         if operation == 128:
-            # Even more time sensitive.
-            delay(1.0)  # Delay of 1 Second needed, still unreliable.
-            self.sync_send(_get_remote_control_close_request())
+            # Even more time sensitive. Delay of 1 Second needed.
+            self.loop.call_later(
+                1.0, self.sync_send, _get_remote_control_close_request())
 
         # Don't handle or wait for a response
         self.task_available.set()
