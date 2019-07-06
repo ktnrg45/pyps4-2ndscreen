@@ -321,7 +321,7 @@ class Ps4():
             if self.status['status_code'] == STATUS_STANDBY:
                 return True
         return False
-      
+
     @property
     def is_available(self):
         """Return if the PS4 is available."""
