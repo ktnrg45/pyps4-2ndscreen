@@ -308,7 +308,7 @@ class Ps4():
 
     @property
     def is_running(self):
-        """Return if the PS4 is running."""
+        """Return True if the PS4 is running."""
         if self.status is not None:
             if self.status['status_code'] == STATUS_OK:
                 return True
@@ -316,10 +316,17 @@ class Ps4():
 
     @property
     def is_standby(self):
-        """Return if the PS4 is in standby."""
+        """Return True if the PS4 is in standby."""
         if self.status is not None:
             if self.status['status_code'] == STATUS_STANDBY:
                 return True
+        return False
+      
+    @property
+    def is_available(self):
+        """Return if the PS4 is available."""
+        if self.status is not None:
+            return True
         return False
 
     @property
@@ -499,6 +506,9 @@ class Ps4Async(Ps4):
         if not self.connected:
             if self.status is None:
                 self.get_status()
+            if not self.is_available:
+                raise NotReady(
+                    "PS4 is not available or powered off. Check connection.")
             if not self._power_off:
                 if self.is_standby:
                     raise NotReady("PS4 is not On")
