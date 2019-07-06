@@ -147,7 +147,6 @@ async def async_prepare_tumbler(
                 return None
 
             if title[char_index] not in next_chars:
-                _LOGGER.debug("Starting Tumbler")
                 return await async_tumbler_search(
                     current_chars, next_chars, remaining_chars,
                     title_id, region, session)
