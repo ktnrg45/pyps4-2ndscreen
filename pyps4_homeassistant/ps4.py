@@ -231,10 +231,12 @@ class Ps4():
             if is_loggedin is False:
                 self.close()
 
-    async def async_get_ps_store_data(self, title, title_id, region):
+    async def async_get_ps_store_data(
+            self, title, title_id, region, search_all=False):
         """Get and Parse Responses."""
+        if not search_all:
+            _LOGGER.debug("Starting search request")
         lang = get_lang(region)
-        _LOGGER.debug("Starting search request")
         async with aiohttp.ClientSession() as session:
             responses = await async_get_ps_store_requests(
                 title, region, session)
@@ -276,9 +278,10 @@ class Ps4():
         _LOGGER.debug("Searching all databases...")
         tasks = []
         for region in COUNTRIES:
-            search_func = self.async_get_ps_store_data(title, title_id, region)
+            search_func = self.async_get_ps_store_data(
+                title, title_id, region, search_all=True)
             task = asyncio.ensure_future(
-                self._async_search_region(search_func))
+                self._async_search_region(search_func, region))
             tasks.append(task)
 
         done, pending = await asyncio.wait(
@@ -289,22 +292,28 @@ class Ps4():
         for completed in done:
             try:
                 data = completed.result()
-            except asyncio.InvalidStateError:
+            except (asyncio.InvalidStateError, RuntimeError):
                 data = None
             if data is not None:
                 for task in pending:
                     try:
                         task.cancel()
-                    except RuntimeError:
+                    except (RuntimeError, PSDataIncomplete):
                         pass
                 return data
         return None
 
-    async def _async_search_region(self, task):
-        result_item = await task
+    async def _async_search_region(self, task, region):
+        try:
+            result_item = await task
+        except RuntimeError:
+            result_item = None
         if result_item is not None:
+            _LOGGER.info(
+                "Search all successful with match in Region: {}"
+                .format(region))
             return result_item
-        return None
+        raise PSDataIncomplete
 
     @property
     def is_running(self):
