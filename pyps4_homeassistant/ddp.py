@@ -17,15 +17,18 @@ UDP_PORT = 0
 DDP_PORT = 987
 DDP_VERSION = '00020020'
 
+DEFAULT_POLL_COUNT = 3
+
 
 class DDPProtocol(asyncio.DatagramProtocol):
     """Async UDP Client."""
 
-    def __init__(self):
+    def __init__(self, max_polls=DEFAULT_POLL_COUNT):
         """Init Instance."""
         self.callbacks = {}
         self.transport = None
         self.port = DDP_PORT
+        self.max_polls = max_polls
         self.message = get_ddp_search_message()
         super().__init__()
 
@@ -46,6 +49,20 @@ class DDPProtocol(asyncio.DatagramProtocol):
         self.transport.sendto(message.encode('utf-8'),
                               (ps4.host, self.port))
 
+        # Track polls that were never returned.
+        ps4.poll_count += 1
+
+        # Assume PS4 is not available.
+        if ps4.poll_count >= self.max_polls:
+            if not ps4.unreachable:
+                _LOGGER.info("PS4 @ %s is unreachable", ps4.host)
+                ps4.unreachable = True
+            ps4.status = None
+            if ps4.host in self.callbacks:
+                callback = self.callbacks[ps4.host].get(ps4)
+                if callback is not None:
+                    callback()
+
     def datagram_received(self, data, addr):
         """When data is received."""
         if data is not None:
@@ -59,6 +76,8 @@ class DDPProtocol(asyncio.DatagramProtocol):
 
         if address in self.callbacks:
             for ps4, callback in self.callbacks[address].items():
+                ps4.poll_count = 0
+                ps4.unreachable = False
                 old_status = ps4.status
                 ps4.status = data
                 if old_status != data:
