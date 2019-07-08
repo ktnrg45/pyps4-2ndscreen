@@ -402,6 +402,8 @@ class Ps4Async(Ps4):
         self.tcp_transport = None
         self.tcp_protocol = None
         self.task_queue = None
+        self.poll_count = 0
+        self.unreachable = False
 
         self.connection = AsyncConnection(self, self.credential)
 
