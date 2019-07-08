@@ -503,7 +503,7 @@ class Ps4Async(Ps4):
         else:
             await self.tcp_protocol.remote_control(operation, hold_time)
 
-    async def close(self):
+    def close(self):
         """Close Transport."""
         if self.tcp_protocol is None:
             _LOGGER.info("TCP Protocol @ %s already disconnected", self.host)
