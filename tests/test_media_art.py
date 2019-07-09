@@ -67,15 +67,15 @@ async def test_sample_list(index_num):
     _LOGGER.info("Retrieved in %s seconds", elapsed)
 
 
-async def test_search_all(title, title_id):
-    start = time.time()
+# async def test_search_all(title, title_id):
+#     start = time.time()
 
-    result_item = await TEST_PS4.async_search_all_ps_data(
-        title, title_id)
-    elapsed = time.time() - start
-    _LOGGER.info("Search All completed in %s seconds", elapsed)
-    assert result_item is not None
-    return result_item
+#     result_item = await TEST_PS4.async_search_all_ps_data(
+#         title, title_id)
+#     elapsed = time.time() - start
+#     _LOGGER.info("Search All completed in %s seconds", elapsed)
+#     assert result_item is not None
+#     return result_item
 
 
 async def _get_tests():
