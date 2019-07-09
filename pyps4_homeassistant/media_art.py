@@ -202,9 +202,11 @@ async def fetch(url, params, session):
     """Get Request."""
     from aiohttp.client_exceptions import ContentTypeError
     try:
+        if session.closed:
+            return None
         async with session.get(url, params=params, timeout=3) as response:
             return await response.json()
-    except (asyncio.TimeoutError, ContentTypeError):
+    except (asyncio.TimeoutError, ContentTypeError, RuntimeError):
         return None
 
 
