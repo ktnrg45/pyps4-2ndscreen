@@ -17,10 +17,6 @@ class PSDataIncomplete(Exception):
     """PS Store data missing attributes."""
 
 
-class PSSearchError(Exception):
-    """PS Store search error."""
-
-
 class UnknownButton(Exception):
     """Button not valid."""
 
