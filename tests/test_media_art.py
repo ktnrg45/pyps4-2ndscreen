@@ -55,8 +55,8 @@ async def test_sample_list(index_num):
 
     result_item = await TEST_PS4.async_get_ps_store_data(
         title, title_id, region)
-    if result_item is None:
-        result_item = await test_search_all(title, title_id)
+#     if result_item is None:
+#         result_item = await test_search_all(title, title_id)
     if result_item is not None:
         _LOGGER.info(
             "Result %s: %s",
