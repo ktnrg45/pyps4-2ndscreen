@@ -257,7 +257,7 @@ class Ps4():
 
             await session.close()
 
-            if result_item is not None:
+            if result_item is not None and result_item == type(ResultItem):
                 _LOGGER.debug("Found Title: %s, URL: %s",
                               result_item.name, result_item.cover_art)
                 self.ps_name = result_item.name
