@@ -25,13 +25,13 @@ To install run:
 
 Protocol
 --------------------
-UDP is used to get status updates and retrieve user credentials.
+UDP is used to get status updates and retrieve user credentials. TCP is used to send commands to the PS4 Console.
 
 Ports
 --------------------
-PS4 listens on ports 987 and 997 (Priveleged).
+PS4 listens on ports 987 (Priveleged) to fetch user PSN credentials.
 Must run command on python path if no access.
-This is so you do not need sudo/root priveleges to run although you can run as sudo but it is not advised.
+This is so you do not need sudo/root priveleges to run although you can run as sudo, but it is not advised.
 
 Example:
 
