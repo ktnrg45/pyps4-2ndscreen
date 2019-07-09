@@ -231,29 +231,23 @@ class Ps4():
             if is_loggedin is False:
                 self.close()
 
-    async def async_get_ps_store_data(
-            self, title, title_id, region, search_all=False):
+    async def async_get_ps_store_data(self, title, title_id, region):
         """Get and Parse Responses."""
-        if not search_all:
-            _LOGGER.debug("Starting search request")
         lang = get_lang(region)
+        _LOGGER.debug("Starting search request")
         async with aiohttp.ClientSession() as session:
-            try:
-                responses = await async_get_ps_store_requests(
-                    title, region, session)
-            except RuntimeError:
-                pass
+            responses = await async_get_ps_store_requests(
+                title, region, session)
             for response in responses:
                 try:
                     result_item = parse_data(response, title_id, lang)
                 except (TypeError, AttributeError):
                     result_item = None
                     raise PSDataIncomplete
-                finally:
-                    if result_item is not None:
-                        break
+                if result_item is not None:
+                    break
 
-            if not search_all and result_item is None:
+            if result_item is None:
                 try:
                     result_item = await async_prepare_tumbler(
                         title, title_id, region, session)
@@ -277,10 +271,9 @@ class Ps4():
         _LOGGER.debug("Searching all databases...")
         tasks = []
         for region in COUNTRIES:
-            search_func = self.async_get_ps_store_data(
-                title, title_id, region, search_all=True)
+            search_func = self.async_get_ps_store_data(title, title_id, region)
             task = asyncio.ensure_future(
-                self._async_search_region(search_func, region))
+                self._async_search_region(search_func))
             tasks.append(task)
 
         done, pending = await asyncio.wait(
@@ -289,28 +282,19 @@ class Ps4():
         # Return First Result.
         data = None
         for completed in done:
-            data = completed.result()
-            if data == type(ResultItem):
-                break
-        try:
-            for task in tasks:
-                task.cancel()
-        except (RuntimeError, PSDataIncomplete,
-                asyncio.CancelledError):
-            pass
-        if data is not None:
-            return data
+            try:
+                data = completed.result()
+            except asyncio.InvalidStateError:
+                data = None
+            if data is not None:
+                for task in pending:
+                    task.cancel()
+                return data
         return None
 
-    async def _async_search_region(self, task, region):
-        try:
-            result_item = await task
-        except (RuntimeError, PSDataIncomplete):
-            result_item = None
+    async def _async_search_region(self, task):
+        result_item = await task
         if result_item is not None:
-            _LOGGER.info(
-                "Search all successful with match in Region: {}"
-                .format(region))
             return result_item
         return None
 
