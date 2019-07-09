@@ -25,13 +25,13 @@ To install run:
 
 Protocol
 --------------------
-UDP is used to get status updates and retrieve user credentials.
+UDP is used to get status updates and retrieve user credentials. TCP is used to send commands to the PS4 Console.
 
 Ports
 --------------------
-PS4 listens on ports 987 and 997 (Priveleged).
+PS4 listens on ports 987 (Priveleged) to fetch user PSN credentials.
 Must run command on python path if no access.
-This is so you do not need sudo/root priveleges to run although you can run as sudo but it is not advised.
+This is so you do not need sudo/root priveleges to run although you can run as sudo, but it is not advised.
 
 Example:
 
@@ -48,7 +48,7 @@ Most functions can be accessed from the high-level PS4 object. You will need to 
 There are several async/asyncio coroutine functions in this module. These functions should be accessed with an Asyncio loop.
 
 There are two versions of the Ps4 object/class: Ps4() and Ps4Async().
-The difference is that the Ps4() class uses synchronous sockets (socket.socket) while the Ps4Async() class uses asyncio transports and protocols.
+The difference is that the Ps4() class uses synchronous sockets (socket.socket) while the Ps4Async() class uses asyncio transports and protocols. If using the Async version, a running asyncio event loop is required.
 
 class Ps4()
 ------------
@@ -57,6 +57,14 @@ class Ps4()
     import pyps4_homeassistant
 
     pyps4_homeassistant.ps4.Ps4("192.168.0.2", "YourCredentials")
+    
+class Ps4Async()
+------------
+.. code:: python
+
+    import pyps4_homeassistant
+
+    pyps4_homeassistant.ps4.Ps4Async("192.168.0.2", "YourCredentials")
 
 Getting Credentials
 =====================

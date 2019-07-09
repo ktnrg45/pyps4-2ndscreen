@@ -55,20 +55,21 @@ def _handle_response(command, msg):
         'standby': [27],
         'login': [0, 17]
     }
-    _LOGGER.debug("Handling command: %s", command)
-    if command == 'login':
-        response_byte = msg[8]
-        if response_byte in pass_response['login']:
-            _LOGGER.debug("Login Successful")
-            return True
-        _LOGGER.debug("Login Failed")
-        return False
+    if command is not None:
+        _LOGGER.debug("Handling command: %s", command)
+        if command == 'login':
+            response_byte = msg[8]
+            if response_byte in pass_response['login']:
+                _LOGGER.debug("Login Successful")
+                return True
+            _LOGGER.debug("Login Failed")
+            return False
 
-    response_byte = msg[4]
-    _LOGGER.debug("RECV: %s for Command: %s", response_byte, command)
-    if response_byte not in pass_response[command]:
-        _LOGGER.warning("Command: %s Failed", command)
-        return False
+        response_byte = msg[4]
+        _LOGGER.debug("RECV: %s for Command: %s", response_byte, command)
+        if response_byte not in pass_response[command]:
+            _LOGGER.warning("Command: %s Failed", command)
+            return False
     return True
 
 
@@ -520,8 +521,7 @@ class TCPProtocol(asyncio.Protocol):
         task = self.add_task(task_name, self.send, msg)
         asyncio.ensure_future(task)
         if running_id != title_id:
-            await asyncio.sleep(1)
-            await self.remote_control(16)
+            self.loop.call_later(1.0, self._send_remote_control_request, 16)
 
     async def remote_control(self, operation, hold_time=0):
         """Remote Control."""
@@ -542,9 +542,9 @@ class TCPProtocol(asyncio.Protocol):
 
         # For 'PS' command.
         if operation == 128:
-            # Even more time sensitive.
-            delay(1.0)  # Delay of 1 Second needed, still unreliable.
-            self.sync_send(_get_remote_control_close_request())
+            # Even more time sensitive. Delay of 1 Second needed.
+            self.loop.call_later(
+                1.0, self.sync_send, _get_remote_control_close_request())
 
         # Don't handle or wait for a response
         self.task_available.set()
