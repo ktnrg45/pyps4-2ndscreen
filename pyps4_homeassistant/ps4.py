@@ -15,7 +15,7 @@ from .errors import (NotReady, PSDataIncomplete,
                      UnknownButton, LoginFailed)
 from .media_art import (async_get_ps_store_requests,
                         get_lang, parse_data, COUNTRIES,
-                        async_prepare_tumbler)
+                        async_prepare_tumbler, ResultItem)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -238,29 +238,28 @@ class Ps4():
             _LOGGER.debug("Starting search request")
         lang = get_lang(region)
         async with aiohttp.ClientSession() as session:
-            responses = await async_get_ps_store_requests(
-                title, region, session)
+            try:
+                responses = await async_get_ps_store_requests(
+                    title, region, session)
+            except RuntimeError:
+                pass
             for response in responses:
                 try:
                     result_item = parse_data(response, title_id, lang)
                 except (TypeError, AttributeError):
                     result_item = None
                     raise PSDataIncomplete
-                except RuntimeError:
-                    result_item = None
+                finally:
+                    if result_item is not None:
+                        break
 
-                if result_item is not None:
-                    break
-
-            if result_item is None:
+            if not search_all and result_item is None:
                 try:
                     result_item = await async_prepare_tumbler(
                         title, title_id, region, session)
                 except (TypeError, AttributeError):
                     result_item = None
                     raise PSDataIncomplete
-                except RuntimeError:
-                    result_item = None
 
             await session.close()
 
@@ -290,30 +289,30 @@ class Ps4():
         # Return First Result.
         data = None
         for completed in done:
-            try:
-                data = completed.result()
-            except (asyncio.InvalidStateError, RuntimeError):
-                data = None
-            if data is not None:
-                for task in pending:
-                    try:
-                        task.cancel()
-                    except (RuntimeError, PSDataIncomplete):
-                        pass
-                return data
+            data = completed.result()
+            if data == type(ResultItem):
+                break
+        try:
+            for task in tasks:
+                task.cancel()
+        except (RuntimeError, PSDataIncomplete,
+                asyncio.CancelledError):
+            pass
+        if data is not None:
+            return data
         return None
 
     async def _async_search_region(self, task, region):
         try:
             result_item = await task
-        except RuntimeError:
+        except (RuntimeError, PSDataIncomplete):
             result_item = None
         if result_item is not None:
             _LOGGER.info(
                 "Search all successful with match in Region: {}"
                 .format(region))
             return result_item
-        raise PSDataIncomplete
+        return None
 
     @property
     def is_running(self):
