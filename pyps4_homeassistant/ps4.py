@@ -15,7 +15,7 @@ from .errors import (NotReady, PSDataIncomplete,
                      UnknownButton, LoginFailed)
 from .media_art import (async_get_ps_store_requests,
                         get_lang, parse_data, COUNTRIES,
-                        async_prepare_tumbler, ResultItem)
+                        async_prepare_tumbler)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -257,7 +257,7 @@ class Ps4():
 
             await session.close()
 
-            if result_item is not None and result_item == type(ResultItem):
+            if result_item is not None):
                 _LOGGER.debug("Found Title: %s, URL: %s",
                               result_item.name, result_item.cover_art)
                 self.ps_name = result_item.name
