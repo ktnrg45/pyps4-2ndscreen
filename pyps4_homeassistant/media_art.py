@@ -147,6 +147,7 @@ async def async_prepare_tumbler(
                 return None
 
             if title[char_index] not in next_chars:
+                _LOGGER.debug("Starting Tumbler")
                 return await async_tumbler_search(
                     current_chars, next_chars, remaining_chars,
                     title_id, region, session)
@@ -202,11 +203,9 @@ async def fetch(url, params, session):
     """Get Request."""
     from aiohttp.client_exceptions import ContentTypeError
     try:
-        if session.closed:
-            return None
         async with session.get(url, params=params, timeout=3) as response:
             return await response.json()
-    except (asyncio.TimeoutError, ContentTypeError, RuntimeError):
+    except (asyncio.TimeoutError, ContentTypeError):
         return None
 
 
