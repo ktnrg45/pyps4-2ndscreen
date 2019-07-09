@@ -85,10 +85,10 @@ async def _get_tests():
         tests.append(test)
     await asyncio.gather(*tests)
 
-    # Test one Item for search_all
-    search_all = asyncio.ensure_future(
-        test_search_all(TEST_LIST[2][0], TEST_LIST[2][1]))
-    await search_all
+#     # Test one Item for search_all
+#     search_all = asyncio.ensure_future(
+#         test_search_all(TEST_LIST[2][0], TEST_LIST[2][1]))
+#     await search_all
 
 
 def main():
