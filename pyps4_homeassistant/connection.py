@@ -521,7 +521,9 @@ class TCPProtocol(asyncio.Protocol):
         task = self.add_task(task_name, self.send, msg)
         asyncio.ensure_future(task)
         if running_id != title_id:
-            self.loop.call_later(1.0, self._send_remote_control_request, 16)
+            msg = _get_remote_control_request(16, 0)
+            self.loop.call_later(
+                1.0, self._send_remote_control_request, msg, 16)
 
     async def remote_control(self, operation, hold_time=0):
         """Remote Control."""
