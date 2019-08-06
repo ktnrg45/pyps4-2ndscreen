@@ -20,6 +20,7 @@ STATUS_REQUEST = b'0c000000120000000000000000000000'
 RANDOM_SEED = \
     b'\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 TIMEOUT = 5
+PS_DELAY = 1.9
 
 PUBLIC_KEY = (
     '-----BEGIN PUBLIC KEY-----\n'
@@ -406,6 +407,7 @@ class TCPProtocol(asyncio.Protocol):
         self.connection = ps4.connection
         self.task = None
         self.task_available = asyncio.Event()
+        self.ps_delay = None
 
     def connection_made(self, transport):
         """When connected."""
@@ -544,9 +546,13 @@ class TCPProtocol(asyncio.Protocol):
 
         # For 'PS' command.
         if operation == 128:
+            if self.ps_delay is None:
+                ps_delay = PS_DELAY
+            else:
+                ps_delay = self.ps_delay
             # Even more time sensitive. Delay of 1 Second needed.
             self.loop.call_later(
-                1.0, self.sync_send, _get_remote_control_close_request())
+                ps_delay, self.sync_send, _get_remote_control_close_request())
 
         # Don't handle or wait for a response
         self.task_available.set()
