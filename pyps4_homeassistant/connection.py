@@ -20,7 +20,7 @@ STATUS_REQUEST = b'0c000000120000000000000000000000'
 RANDOM_SEED = \
     b'\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 TIMEOUT = 5
-PS_DELAY = 1.9
+PS_DELAY = 1
 
 PUBLIC_KEY = (
     '-----BEGIN PUBLIC KEY-----\n'
@@ -51,8 +51,8 @@ def _handle_response(command, msg):
     """Return Pass/Fail for sent message."""
     pass_response = {
         'send_status': [18],
-        'remote_control': [18],
-        'start_title': [11, 18],
+        'remote_control': [18],  # Not right
+        'start_title': [11, 18],  # 18 Not right
         'standby': [27],
         'login': [0, 17]
     }
@@ -65,6 +65,8 @@ def _handle_response(command, msg):
                 return True
             _LOGGER.debug("Login Failed")
             return False
+        if command == 'send_status':
+            return True
 
         response_byte = msg[4]
         _LOGGER.debug("RECV: %s for Command: %s", response_byte, command)
@@ -194,6 +196,18 @@ def _get_remote_control_request(operation, hold_time) -> list:
         msg.append(fmt.build({'op': operation, 'hold_time': 1}))
         msg.append(fmt.build({'op': 256, 'hold_time': 0}))  # Key Off
 
+    return msg
+
+
+def _get_remote_control_open_request():
+    fmt = Struct(
+        'length' / Const(b'\x10\x00\x00\x00'),
+        'type' / Const(b'\x1c\x00\x00\x00'),
+        'op' / Int32ul,
+        'hold_time' / Int32ul,
+    )
+
+    msg = fmt.build({'op': 1024, 'hold_time': 0})  # open RC
     return msg
 
 
@@ -476,7 +490,9 @@ class TCPProtocol(asyncio.Protocol):
         data_hex = binascii.hexlify(data)
         _LOGGER.debug('RX: %s %s', len(data), data_hex)
         if data_hex == STATUS_REQUEST:
-            self._ack_status()
+            if self.task != 'send_status':
+                task = self.add_task('send_status', self._ack_status)
+                asyncio.ensure_future(task)
         elif self.task == 'remote_control':
             pass
         else:
@@ -546,20 +562,25 @@ class TCPProtocol(asyncio.Protocol):
 
         # For 'PS' command.
         if operation == 128:
+            # Even more time sensitive. Delay of around 1 Second needed.
             if self.ps_delay is None:
                 ps_delay = PS_DELAY
             else:
                 ps_delay = self.ps_delay
-            # Even more time sensitive. Delay of 1 Second needed.
             self.loop.call_later(
                 ps_delay, self.sync_send, _get_remote_control_close_request())
+            self.loop.call_later(
+                ps_delay, self._complete_task)
+        else:
+            # Don't handle or wait for a response
+            self._complete_task()
 
-        # Don't handle or wait for a response
-        self.task_available.set()
-
-    def _ack_status(self):
+    async def _ack_status(self):
         """Sends msg in response to heartbeat message."""
         # Update state as well, no need to manage polling now.
         self.ps4.get_status()
-        asyncio.ensure_future(self.send(_get_status_ack()))
+        self.sync_send(_get_status_ack())
+        self.sync_send(_get_remote_control_open_request())
+        self.sync_send(_get_remote_control_close_request())
         _LOGGER.debug("Sending Hearbeat response")
+        self.loop.call_later(0.2, self._complete_task)
