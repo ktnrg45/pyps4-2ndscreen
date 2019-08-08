@@ -3,7 +3,7 @@ import logging
 import asyncio
 import time
 
-import pyps4_homeassistant.ps4 as ps4
+import pyps4_2ndscreen.ps4 as ps4
 
 TEST_LIST = [  # title, titleid, region
     ["Netflix", 'CUSA00129', 'United States'],
