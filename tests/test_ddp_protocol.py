@@ -3,9 +3,9 @@
 import asyncio
 import logging
 
-from pyps4_homeassistant.ddp import async_create_ddp_endpoint
-from pyps4_homeassistant.credential import get_ddp_message
-from pyps4_homeassistant.ps4 import Ps4Async as ps4, STATUS_STANDBY
+from pyps4_2ndscreen.ddp import async_create_ddp_endpoint
+from pyps4_2ndscreen.credential import get_ddp_message
+from pyps4_2ndscreen.ps4 import Ps4Async as ps4, STATUS_STANDBY
 
 logging.basicConfig(level=logging.DEBUG)
 _LOGGER = logging.getLogger(__name__)
