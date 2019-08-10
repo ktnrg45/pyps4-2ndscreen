@@ -18,6 +18,7 @@ Python 3.5/3.6/3.7
 Installation
 --------------------
 It is advised to install the module in a virtual env:
+
 .. code:: bash
     
     python -m venv .
@@ -25,6 +26,7 @@ It is advised to install the module in a virtual env:
     source bin/activate
 
 To install run:
+
 .. code:: bash
 
     pip install pyps4-2ndscreen
@@ -83,7 +85,7 @@ Terminal Command:
 
     pyps4-2ndscreen credentials
 
- If your system does not have setcap utilities your may run the following command:
+If your system does not have setcap utilities your may run the following command:
 
 .. code:: bash
 
@@ -92,6 +94,7 @@ Terminal Command:
 or
 
 Python:
+
 .. code:: python
 
     from pyps4_2ndscreen.credential import Credentials
