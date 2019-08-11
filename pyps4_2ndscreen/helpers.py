@@ -27,7 +27,7 @@ class Helper:
         """Init Class."""
 
     def has_devices(self, host=None):  # noqa: pylint: disable=no-self-use
-        """Return if there are devices that can be discovered."""
+        """Return status if there are devices that can be discovered."""
         from .ddp import Discovery
 
         _LOGGER.debug("Searching for PS4 Devices")
@@ -40,7 +40,10 @@ class Helper:
     def link(self, host, creds, pin, device_name=None):  # noqa: pylint: disable=no-self-use
         """Perform pairing with PS4."""
         from .ps4 import Ps4
+        from .credential import DEFAULT_DEVICE_NAME
 
+        if device_name is None:
+            device_name = DEFAULT_DEVICE_NAME
         ps4 = Ps4(host, creds, device_name=device_name)
         is_ready = True
         is_login = True
@@ -86,32 +89,32 @@ class Helper:
                 return int(port)
             return None
 
-    def check_files(self, file_type):  # noqa: pylint: disable=no-self-use
+    def check_files(self, file_type, file_path=None):  # noqa: pylint: disable=no-self-use
         """Create file if it does not exist."""
+        if file_path is None:
+            file_path = DEFAULT_PATH
+        if not os.path.exists(file_path):
+            os.mkdir(file_path)
         if file_type in FILE_TYPES:
             file_name = FILE_TYPES[file_type]
-            if not os.path.exists(DEFAULT_PATH):
-                os.mkdir(DEFAULT_PATH)
             if not os.path.isfile(file_name):
                 with open(file_name, "w+") as _file_name:
                     json.dump(fp=_file_name, obj={})
                     _file_name.close()
-            return file_name
+        return file_name
 
-    def save_files(self, file_type, data: str):
+    def save_files(self, data: dict, file_type=None, file_name=None):
         """Save file with data dict."""
         if data is None:
             return
-        file_name = self.check_files(file_type)
+        if file_type in FILE_TYPES:
+            file_name = FILE_TYPES[file_type]
         with open(file_name, "r") as _r_file:
             _data = json.load(_r_file)
             _r_file.close()
-        if data not in _data.values():
-            _data['credentials'] = data
 
-            with open(file_name, "w+") as _w_file:
-                json.dump(fp=_w_file, obj=_data)
-                _w_file.close()
-        else:
-            _LOGGER.info('Credentials already saved')
+        _data = data
+        with open(file_name, "w+") as _w_file:
+            json.dump(fp=_w_file, obj=_data)
+            _w_file.close()
         return file_name
