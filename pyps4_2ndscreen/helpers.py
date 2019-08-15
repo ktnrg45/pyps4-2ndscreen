@@ -89,6 +89,17 @@ class Helper:
                 return int(port)
             return None
 
+    def check_data(self, file_type):
+        """Return True if data is present in file."""
+        file_name = self.check_files(file_type)
+        with open(file_name, "r") as _r_file:
+            data = json.load(_r_file)
+            _r_file.close()
+        if data:
+            return True
+        return False
+
+
     def check_files(self, file_type, file_path=None):  # noqa: pylint: disable=no-self-use
         """Create file if it does not exist."""
         if file_path is None:
@@ -101,7 +112,15 @@ class Helper:
                 with open(file_name, "w+") as _file_name:
                     json.dump(fp=_file_name, obj={})
                     _file_name.close()
-        return file_name
+            return file_name
+        return None
+
+    def load_files(self, file_type):
+        file_name = self.check_files(file_type)
+        with open(file_name, "r") as _r_file:
+            data = json.load(_r_file)
+            _r_file.close()
+        return data
 
     def save_files(self, data: dict, file_type=None, file_name=None):
         """Save file with data dict."""
@@ -109,9 +128,7 @@ class Helper:
             return
         if file_type in FILE_TYPES:
             file_name = FILE_TYPES[file_type]
-        with open(file_name, "r") as _r_file:
-            _data = json.load(_r_file)
-            _r_file.close()
+        _data = self.load_files(file_type)
 
         _data = data
         with open(file_name, "w+") as _w_file:
