@@ -8,6 +8,7 @@ import asyncio
 import aiohttp
 
 from .connection import LegacyConnection, AsyncConnection
+from .credential import DEFAULT_DEVICE_NAME
 from .ddp import (get_status, launch, wakeup,
                   get_ddp_launch_message, get_ddp_wake_message)
 from .errors import (NotReady, PSDataIncomplete,
@@ -33,8 +34,6 @@ BUTTONS = {'up': 1,
 
 STATUS_OK = 200
 STATUS_STANDBY = 620
-
-DEFAULT_DEVICE_NAME = 'pyps4-2ndScreen'
 
 
 def delay(seconds):
@@ -232,7 +231,7 @@ class BasePs4():
 class LegacyPs4(BasePs4):
     """Legacy PS4 Class."""
 
-    def __init__(self, host, credential, device_name=None):
+    def __init__(self, host, credential, device_name=DEFAULT_DEVICE_NAME):
         super().__init__(host, credential, device_name)
         self.connection = LegacyConnection(self, credential=self.credential)
 
@@ -366,7 +365,7 @@ class LegacyPs4(BasePs4):
 class Ps4Async(BasePs4):
     """Async Version of Ps4 Class."""
 
-    def __init__(self, host, credential=None, device_name=None):
+    def __init__(self, host, credential=None, device_name=DEFAULT_DEVICE_NAME):
         """Inherit Class."""
         super().__init__(host, credential, device_name)
         self.ddp_protocol = None
