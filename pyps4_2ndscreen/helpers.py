@@ -40,7 +40,7 @@ class Helper:
 
     def link(self, host, creds, pin, device_name=None):
         """Perform pairing with PS4."""
-        from .ps4 import Ps4
+        from .ps4 import LegacyPs4
         from .credential import DEFAULT_DEVICE_NAME
 
         if device_name is None:
