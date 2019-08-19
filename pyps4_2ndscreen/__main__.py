@@ -14,9 +14,7 @@ _LOGGER = logging.getLogger(__name__)
 @click.group()
 @click.version_option()
 def cli():
-    """pyps4-2ndscreen CLI.
-
-    Allows for simple commands from terminal."""
+    """Pyps4-2ndscreen CLI. Allows for simple commands from terminal."""
     logging.basicConfig(level=logging.INFO)
 
 
@@ -88,9 +86,9 @@ def status(ip_address):
     helper = Helper()
     devices = helper.has_devices(ip_address)
     if devices:
-        status = devices[0]
+        d_status = devices[0]
         print("\nGot Status for {}:\n".format(ip_address))
-        for key, value in status.items():
+        for key, value in d_status.items():
             print("{}: {}".format(key, value))
     else:
         print(
@@ -98,9 +96,7 @@ def status(ip_address):
             .format(ip_address))
 
 
-@cli.command(
-    help='Get PSN Credentials. Example: pyps4-2ndscreen credentials'
-)
+@cli.command(help='Get PSN Credentials. Example: pyps4-2ndscreen credentials')
 def credentials():
     """Get and save credentials."""
     _credentials_func()
@@ -135,14 +131,14 @@ def _credentials_func():
 @cli.command(help='Link PS4. Example: pyps4-2ndscreen link 192.0.0.1 credentials')
 @click.argument('ip_address', required=True)
 @click.argument('credentials', default=None, required=False)
-def link(ip_address, credentials):
+def link(ip_address, _credentials):
     """Link or register device with PS4."""
-    _link_func(ip_address, credentials)
+    _link_func(ip_address, _credentials)
 
 
-def _link_func(ip_address, credentials):
+def _link_func(ip_address, _credentials):
     helper = Helper()
-    if credentials is None:
+    if _credentials is None:
         creds_file = helper.check_files('credentials')
         with open(creds_file, "r") as _r_file:
             _data = json.load(_r_file)
@@ -150,7 +146,7 @@ def _link_func(ip_address, credentials):
         if _data.get('credentials') is None:
             print("No credentials in {} and credentials not given.".format(creds_file))
             return False
-        credentials = _data['credentials']
+        _credentials = _data['credentials']
     devices = helper.has_devices(ip_address)
     device_list = [device["host-ip"] for device in devices]
     if ip_address not in device_list:
@@ -162,11 +158,11 @@ def _link_func(ip_address, credentials):
         "On PS4, Go to settings->Mobile App Connection Settings->"
         "Add Device and enter pin that is displayed: > "
     )
-    is_ready, is_login = helper.link(ip_address, credentials, pin)
+    is_ready, is_login = helper.link(ip_address, _credentials, pin)
     if is_ready and is_login:
         print('PS4 Successfully Linked.')
         file_name = helper.check_files('ps4')
-        data = {ip_address: credentials}
+        data = {ip_address: _credentials}
         helper.save_files(data, file_type='ps4', file_name=file_name)
         return True
     print("Linking Failed.")
