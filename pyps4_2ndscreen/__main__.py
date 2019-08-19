@@ -114,10 +114,9 @@ def _credentials_func():
     if error is not None:
         print("Error binding to port. Try again as sudo.")
         return None
-    else:
-        print("With the PS4 2nd Screen app, refresh devices "
-              "and select the device '{}'.".format(DEFAULT_DEVICE_NAME))
-        print("To cancel press 'CTRL + C'.")
+    print("With the PS4 2nd Screen app, refresh devices "
+          "and select the device '{}'.".format(DEFAULT_DEVICE_NAME))
+    print("To cancel press 'CTRL + C'.")
 
     creds = helper.get_creds()
     data = {'credentials': creds}
