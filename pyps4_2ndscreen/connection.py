@@ -263,6 +263,11 @@ class BaseConnection():
         self._cipher = None
         self._decipher = None
 
+    def encrypt_message(self, msg):
+        """Encrypt message."""
+        data = self._cipher.encrypt(msg)
+        return data
+
 
 class LegacyConnection(BaseConnection):
     """Legacy Connection for Legacy PS4 object."""
