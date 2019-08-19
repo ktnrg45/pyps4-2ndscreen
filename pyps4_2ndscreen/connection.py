@@ -35,13 +35,6 @@ PUBLIC_KEY = (
     '-----END PUBLIC KEY-----')
 
 
-def delay(seconds):
-    """Delay in seconds."""
-    start_time = time.time()
-    while time.time() - start_time < seconds:
-        pass
-
-
 def _get_public_key_rsa():
     """Get RSA Key."""
     key = RSA.importKey(PUBLIC_KEY)
@@ -272,6 +265,13 @@ class BaseConnection():
 class LegacyConnection(BaseConnection):
     """Legacy Connection for Legacy PS4 object."""
 
+    # noqa: pylint: disable=no-self-use
+    def delay(self, seconds):
+        """Delay in seconds."""
+        start_time = time.time()
+        while time.time() - start_time < seconds:
+            pass
+
     def connect(self):
         """Open the connection."""
         _LOGGER.debug('Connect')
@@ -373,7 +373,7 @@ class LegacyConnection(BaseConnection):
         # Delay Close RC for PS
         if operation == 128:
             _LOGGER.debug("Delaying RC off for PS Command")
-            delay(1)
+            self.delay(1)
             try:
                 self._send_msg(
                     _get_remote_control_request(operation, hold_time),
@@ -495,7 +495,7 @@ class TCPProtocol(asyncio.Protocol):
         _LOGGER.debug('RX: %s %s', len(data), binascii.hexlify(data))
         if data == STATUS_REQUEST:
             if self.task != 'send_status':
-                task = self.add_task('send_status', self._ack_status)
+                task = self.add_task('send_status', self._ack_status)  # noqa: pylint: disable=assignment-from-no-return
                 asyncio.ensure_future(task)
         elif self.task == 'remote_control':
             pass
@@ -511,7 +511,7 @@ class TCPProtocol(asyncio.Protocol):
         task_name = 'login'
         name = self.ps4.device_name
         msg = _get_login_request(self.ps4.credential, name, pin)
-        task = self.add_task(task_name, self.send, msg)
+        task = self.add_task(task_name, self.send, msg)  # noqa: pylint: disable=assignment-from-no-return
         asyncio.ensure_future(task)
 
     async def standby(self):
@@ -520,7 +520,7 @@ class TCPProtocol(asyncio.Protocol):
             await self.login()
         task_name = 'standby'
         msg = _get_standby_request()
-        task = self.add_task(task_name, self.send, msg)
+        task = self.add_task(task_name, self.send, msg)  # noqa: pylint: disable=assignment-from-no-return
         asyncio.ensure_future(task)
 
     def disconnect(self):
@@ -540,7 +540,7 @@ class TCPProtocol(asyncio.Protocol):
             await self.login()
         task_name = 'start_title'
         msg = _get_boot_request(title_id)
-        task = self.add_task(task_name, self.send, msg)
+        task = self.add_task(task_name, self.send, msg)  # noqa: pylint: disable=assignment-from-no-return
         asyncio.ensure_future(task)
         if running_id != title_id:
             msg = _get_remote_control_request(16, 0)
@@ -553,7 +553,7 @@ class TCPProtocol(asyncio.Protocol):
             await self.login()
         task_name = 'remote_control'
         msg = _get_remote_control_request(operation, hold_time)
-        task = self.add_task(task_name, self._send_remote_control_request,
+        task = self.add_task(task_name, self._send_remote_control_request,  # noqa: pylint: disable=assignment-from-no-return
                              msg, operation)
         asyncio.ensure_future(task)
 
