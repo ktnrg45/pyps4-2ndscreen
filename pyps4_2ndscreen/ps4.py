@@ -228,6 +228,7 @@ class Ps4Legacy(Ps4Base):
         super().__init__(host, credential, device_name)
         self.connection = LegacyConnection(self, credential=self.credential)
 
+    # noqa: pylint: disable=no-self-use
     def delay(self, seconds):
         """Delay in seconds."""
         start_time = time.time()
@@ -317,10 +318,9 @@ class Ps4Legacy(Ps4Base):
                         _LOGGER.warning("Title: %s already started", title_id)
                     self.msg_sending = False
                     return True
-                else:
-                    self.close()
-                    retries += 1
-                    self.delay(1)
+                self.close()
+                retries += 1
+                self.delay(1)
         self.msg_sending = False
         return False
 
