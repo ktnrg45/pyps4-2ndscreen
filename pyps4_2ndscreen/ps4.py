@@ -43,7 +43,7 @@ def delay(seconds):
         pass
 
 
-class BasePs4():
+class Ps4Base():
     """The PS4 object."""
 
     def __init__(self, host, credential,
@@ -228,7 +228,7 @@ class BasePs4():
         return self.ps_name
 
 
-class LegacyPs4(BasePs4):
+class Ps4Legacy(Ps4Base):
     """Legacy PS4 Class."""
 
     def __init__(self, host, credential, device_name=DEFAULT_DEVICE_NAME):
@@ -362,7 +362,7 @@ class LegacyPs4(BasePs4):
                 self.close()
 
 
-class Ps4Async(BasePs4):
+class Ps4Async(Ps4Base):
     """Async Version of Ps4 Class."""
 
     def __init__(self, host, credential=None, device_name=DEFAULT_DEVICE_NAME):
