@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 """Methods for PS4 Object."""
 from __future__ import print_function
-import json
 import logging
 import time
 import asyncio
 
 import aiohttp
 
-from .connection import Connection, AsyncConnection
+from .connection import LegacyConnection, AsyncConnection
 from .ddp import (get_status, launch, wakeup,
                   get_ddp_launch_message, get_ddp_wake_message)
 from .errors import (NotReady, PSDataIncomplete,
@@ -38,11 +37,6 @@ STATUS_STANDBY = 620
 DEFAULT_DEVICE_NAME = 'pyps4-2ndScreen'
 
 
-def opencredential_file(filename):
-    """Open credential file."""
-    return json.load(open(filename))
-
-
 def delay(seconds):
     """Delay in seconds."""
     start_time = time.time()
@@ -50,17 +44,16 @@ def delay(seconds):
         pass
 
 
-class Ps4():
+class BasePs4():
     """The PS4 object."""
 
-    def __init__(self, host, credential=None, credentials_file=None,
+    def __init__(self, host, credential,
                  device_name=DEFAULT_DEVICE_NAME):
         """Initialize the instance.
 
         Keyword arguments:
             host -- the host IP address
             credential -- the credential string
-            credential_file -- credential file in working directory
         """
         self.host = host
         self.credential = None
@@ -71,51 +64,10 @@ class Ps4():
         self.msg_sending = False
         self.status = None
         self.connected = False
-        self.client = None
         self.ps_cover = None
         self.ps_name = None
         self.loggedin = False
-
-        if credential:
-            self.credential = credential
-        if credentials_file:
-            creds = opencredential_file(credentials_file)
-            self.credential = creds['user-credential']
-
-        self.connection = LegacyConnection(
-            self, credential=self.credential)
-
-        if self.client is not None:
-            self.client.add_ps4(ps4=self)
-
-    def _prepare_connection(self):
-        self.launch()
-        delay(0.5)
-        _LOGGER.debug("Connection prepared")
-
-    def open(self):
-        """Open a connection to the PS4."""
-        if self.status is None:
-            self.get_status()
-        if not self.is_running:
-            raise NotReady("PS4 is not On")
-
-        self._prepare_connection()
-        if self.connected is False:
-            self.connection.connect()
-            login = self.connection.login()
-            if login is True:
-                self.connected = True
-                return True
-            return False
-        return True
-
-    def close(self):
-        """Close the connection to the PS4."""
-        self.connection.disconnect()
-        self.connected = False
-        _LOGGER.debug("Disconnecting from PS4 @ %s", self.host)
-        return True
+        self.credential = credential
 
     def get_status(self) -> dict:
         """Get current status info."""
@@ -134,103 +86,6 @@ class Ps4():
                     self.loggedin = False
                 return self.status
             return None
-
-    def launch(self):
-        """Launch."""
-        launch(self.host, self.credential)
-
-    def wakeup(self):
-        """Wakeup."""
-        wakeup(self.host, self.credential)
-        self._power_on = True
-
-    def login(self, pin=None):
-        """Login."""
-        self.open()
-        is_login = self.connection.login(pin)
-        if is_login is False:
-            raise LoginFailed("PS4 Refused Connection")
-        self.close()
-        return is_login
-
-    def standby(self, retry=2):
-        """Standby."""
-        retries = 0
-        while retries < retry:
-            self.open()
-            if self.connection.standby():
-                self.close()
-                return True
-            self.close()
-            retries += 1
-        return False
-
-    def start_title(self, title_id, running_id=None, retry=2):
-        """Start title.
-
-        `title_id`: title to start
-        'running_id': Title currently running,
-        Use to confirm closing of current title.
-        """
-        if self.msg_sending:
-            _LOGGER.warning("PS4 already sending message.")
-            return False
-        retries = 0
-        while retries < retry:
-            self.msg_sending = True
-            if self.open():
-                if self.connection.start_title(title_id):
-
-                    # Auto confirm prompt to close title.
-                    if running_id is not None:
-                        delay(1)
-                        self.remote_control('enter')
-                    elif running_id == title_id:
-                        _LOGGER.warning("Title: %s already started", title_id)
-                    self.msg_sending = False
-                    return True
-                else:
-                    self.close()
-                    retries += 1
-                    delay(1)
-        self.msg_sending = False
-        return False
-
-    def remote_control(self, button_name, hold_time=0):
-        """Send a remote control button press.
-
-        Documentation from ps4-waker source:
-        near as I can tell, here's how this works:
-         - For a simple tap, you send the key with holdTime=0,
-           followed by KEY_OFF and holdTime = 0
-         - For a long press/hold, you still send the key with
-           holdTime=0, the follow it with the key again, but
-           specifying holdTime as the hold duration.
-         - After sending a direction, you should send KEY_OFF
-           to clean it up (since it can just be held forever).
-           Doing this after a long-press of PS just breaks it,
-           however.
-        """
-        if self.msg_sending:
-            _LOGGER.warning("PS4 already sending message.")
-            return
-        self.msg_sending = True
-        button_name = button_name.lower()
-        if button_name not in BUTTONS.keys():
-            raise UnknownButton("Button: {} is not valid".format(button_name))
-        operation = BUTTONS[button_name]
-        if self.open():
-            _LOGGER.debug("Sending RC Command: %s", button_name)
-            if not self.connection.remote_control(operation, hold_time):
-                self.close()
-        self.msg_sending = False
-
-    def send_status(self):
-        """Send connection status to PS4."""
-        if self.connected is True:
-            is_loggedin = self.connection.send_status()
-            if is_loggedin is False:
-                self.close()
 
     async def async_get_ps_store_data(self, title, title_id, region):
         """Get and Parse Responses."""
@@ -374,14 +229,146 @@ class Ps4():
         return self.ps_name
 
 
-class Ps4Async(Ps4):
+class LegacyPs4(BasePs4):
+    """Legacy PS4 Class."""
+
+    def __init__(self, host, credential, device_name=None):
+        super().__init__(host, credential, device_name)
+        self.connection = LegacyConnection(self, credential=self.credential)
+
+    def _prepare_connection(self):
+        self.launch()
+        delay(0.5)
+        _LOGGER.debug("Connection prepared")
+
+    def open(self):
+        """Open a connection to the PS4."""
+        if self.status is None:
+            self.get_status()
+        if not self.is_running:
+            raise NotReady("PS4 is not On")
+
+        self._prepare_connection()
+        if self.connected is False:
+            self.connection.connect()
+            login = self.connection.login()
+            if login is True:
+                self.connected = True
+                return True
+            return False
+        return True
+
+    def close(self):
+        """Close the connection to the PS4."""
+        self.connection.disconnect()
+        self.connected = False
+        _LOGGER.debug("Disconnecting from PS4 @ %s", self.host)
+        return True
+
+    def launch(self):
+        """Launch."""
+        launch(self.host, self.credential)
+
+    def wakeup(self):
+        """Wakeup."""
+        wakeup(self.host, self.credential)
+        self._power_on = True
+
+    def login(self, pin=None):
+        """Login."""
+        self.open()
+        is_login = self.connection.login(pin)
+        if is_login is False:
+            raise LoginFailed("PS4 Refused Connection")
+        self.close()
+        return is_login
+
+    def standby(self, retry=2):
+        """Standby."""
+        retries = 0
+        while retries < retry:
+            self.open()
+            if self.connection.standby():
+                self.close()
+                return True
+            self.close()
+            retries += 1
+        return False
+
+    def start_title(self, title_id, running_id=None, retry=2):
+        """Start title.
+
+        `title_id`: title to start
+        'running_id': Title currently running,
+        Use to confirm closing of current title.
+        """
+        if self.msg_sending:
+            _LOGGER.warning("PS4 already sending message.")
+            return False
+        retries = 0
+        while retries < retry:
+            self.msg_sending = True
+            if self.open():
+                if self.connection.start_title(title_id):
+
+                    # Auto confirm prompt to close title.
+                    if running_id is not None:
+                        delay(1)
+                        self.remote_control('enter')
+                    elif running_id == title_id:
+                        _LOGGER.warning("Title: %s already started", title_id)
+                    self.msg_sending = False
+                    return True
+                else:
+                    self.close()
+                    retries += 1
+                    delay(1)
+        self.msg_sending = False
+        return False
+
+    def remote_control(self, button_name, hold_time=0):
+        """Send a remote control button press.
+
+        Documentation from ps4-waker source:
+        near as I can tell, here's how this works:
+         - For a simple tap, you send the key with holdTime=0,
+           followed by KEY_OFF and holdTime = 0
+         - For a long press/hold, you still send the key with
+           holdTime=0, the follow it with the key again, but
+           specifying holdTime as the hold duration.
+         - After sending a direction, you should send KEY_OFF
+           to clean it up (since it can just be held forever).
+           Doing this after a long-press of PS just breaks it,
+           however.
+        """
+        if self.msg_sending:
+            _LOGGER.warning("PS4 already sending message.")
+            return
+        self.msg_sending = True
+        button_name = button_name.lower()
+        if button_name not in BUTTONS.keys():
+            raise UnknownButton("Button: {} is not valid".format(button_name))
+        operation = BUTTONS[button_name]
+        if self.open():
+            _LOGGER.debug("Sending RC Command: %s", button_name)
+            if not self.connection.remote_control(operation, hold_time):
+                self.close()
+        self.msg_sending = False
+
+    def send_status(self):
+        """Send connection status to PS4."""
+        if self.connected is True:
+            is_loggedin = self.connection.send_status()
+            if is_loggedin is False:
+                self.close()
+
+
+class Ps4Async(BasePs4):
     """Async Version of Ps4 Class."""
 
-    def __init__(self, host, credential=None, credentials_file=None,
-                 device_name=None):
+    def __init__(self, host, credential=None, device_name=None):
         """Inherit Class."""
-        super().__init__(host, credential, credentials_file,
-                         device_name)
+        super().__init__(host, credential, device_name)
         self.ddp_protocol = None
         self.tcp_transport = None
         self.tcp_protocol = None
@@ -395,6 +382,10 @@ class Ps4Async(Ps4):
         """Not Implemented."""
         raise NotImplementedError
 
+    def _prepare_connection(self):
+        self.launch()
+        _LOGGER.debug("Connection prepared")
+
     def get_status(self) -> dict:
         """Get current status info."""
         if self.ddp_protocol is not None:
@@ -406,7 +397,7 @@ class Ps4Async(Ps4):
 
                     # Ensure that connection is closed.
                     if self.tcp_protocol is not None:
-                        asyncio.ensure_future(self.close())
+                        self._close()
 
                 return self.status
             return None
@@ -435,7 +426,7 @@ class Ps4Async(Ps4):
     async def login(self, pin=None):
         """Login."""
         if self.tcp_protocol is None:
-            _LOGGER.info("TCP Protocol does not exist")
+            _LOGGER.info("Login failed: TCP Protocol does not exist")
         else:
             await self.tcp_protocol.login(pin)
 
@@ -444,7 +435,7 @@ class Ps4Async(Ps4):
         if retry is not None:
             _LOGGER.info("Retries not implemented")
         if self.tcp_protocol is None:
-            _LOGGER.info("TCP Protocol does not exist")
+            _LOGGER.info("Standby Failed: TCP Protocol does not exist")
         else:
             await self.tcp_protocol.standby()
             self._power_off = True
