@@ -74,7 +74,7 @@ class Helper:
             return True
         return False
 
-    def port_bind(self, ports):  # noqa: pylint: disable=no-self-use
+    def port_bind(self, ports: list):  # noqa: pylint: disable=no-self-use
         """Try binding to ports."""
         import socket
 
@@ -101,7 +101,7 @@ class Helper:
 
 
     def check_files(self, file_type, file_path=None):  # noqa: pylint: disable=no-self-use
-        """Create file if it does not exist."""
+        """Create file if it does not exist. Return path."""
         if file_path is None:
             file_path = DEFAULT_PATH
         if not os.path.exists(file_path):
@@ -115,7 +115,8 @@ class Helper:
             return file_name
         return None
 
-    def load_files(self, file_type):
+    def load_files(self, file_type) -> dict:
+        """Load data as JSON. Return data."""
         file_name = self.check_files(file_type)
         with open(file_name, "r") as _r_file:
             data = json.load(_r_file)
@@ -123,12 +124,13 @@ class Helper:
         return data
 
     def save_files(self, data: dict, file_type=None, file_name=None):
-        """Save file with data dict."""
+        """Save file with data dict. Return file path."""
         if data is None:
-            return
+            return None
         if file_type in FILE_TYPES:
             file_name = FILE_TYPES[file_type]
-        _data = self.load_files(file_type)
+        else:
+            return None
 
         _data = data
         with open(file_name, "w+") as _w_file:
