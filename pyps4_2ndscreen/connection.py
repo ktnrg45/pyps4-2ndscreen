@@ -236,7 +236,7 @@ def _get_status_ack():
     return msg
 
 
-class Connection():
+class BaseConnection():
     """The TCP connection class."""
 
     def __init__(self, ps4, credential=None, port=997):
@@ -254,6 +254,18 @@ class Connection():
     def set_socket(self, sock):
         """Set socket."""
         self._socket = sock
+
+    def _set_crypto_init_vector(self, init_vector):
+        self._cipher = AES.new(RANDOM_SEED, AES.MODE_CBC, init_vector)
+        self._decipher = AES.new(RANDOM_SEED, AES.MODE_CBC, init_vector)
+
+    def _reset_crypto_init_vector(self):
+        self._cipher = None
+        self._decipher = None
+
+
+class LegacyConnection(BaseConnection):
+    """Legacy Connection for Legacy PS4 object."""
 
     def connect(self):
         """Open the connection."""
@@ -321,14 +333,6 @@ class Connection():
         _LOGGER.debug('RX: %s %s', len(msg), binascii.hexlify(msg))
         return msg
 
-    def _set_crypto_init_vector(self, init_vector):
-        self._cipher = AES.new(RANDOM_SEED, AES.MODE_CBC, init_vector)
-        self._decipher = AES.new(RANDOM_SEED, AES.MODE_CBC, init_vector)
-
-    def _reset_crypto_init_vector(self):
-        self._cipher = None
-        self._decipher = None
-
     def _send_hello_request(self):
         """Send SYN Message."""
         self._send_msg(_get_hello_request())
@@ -382,7 +386,7 @@ class Connection():
         self._send_msg(_get_status_ack(), encrypted=True)
 
 
-class AsyncConnection(Connection):
+class AsyncConnection(BaseConnection):
     """Connection using Asyncio."""
 
     async def async_connect(self, ps4):
