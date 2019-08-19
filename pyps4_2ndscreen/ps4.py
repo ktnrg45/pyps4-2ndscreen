@@ -36,13 +36,6 @@ STATUS_OK = 200
 STATUS_STANDBY = 620
 
 
-def delay(seconds):
-    """Delay in seconds."""
-    start_time = time.time()
-    while time.time() - start_time < seconds:
-        pass
-
-
 class Ps4Base():
     """The PS4 object."""
 
@@ -235,9 +228,15 @@ class Ps4Legacy(Ps4Base):
         super().__init__(host, credential, device_name)
         self.connection = LegacyConnection(self, credential=self.credential)
 
+    def delay(self, seconds):
+        """Delay in seconds."""
+        start_time = time.time()
+        while time.time() - start_time < seconds:
+            pass
+
     def _prepare_connection(self):
         self.launch()
-        delay(0.5)
+        self.delay(0.5)
         _LOGGER.debug("Connection prepared")
 
     def open(self):
@@ -312,7 +311,7 @@ class Ps4Legacy(Ps4Base):
 
                     # Auto confirm prompt to close title.
                     if running_id is not None:
-                        delay(1)
+                        self.delay(1)
                         self.remote_control('enter')
                     elif running_id == title_id:
                         _LOGGER.warning("Title: %s already started", title_id)
@@ -321,7 +320,7 @@ class Ps4Legacy(Ps4Base):
                 else:
                     self.close()
                     retries += 1
-                    delay(1)
+                    self.delay(1)
         self.msg_sending = False
         return False
 
@@ -400,9 +399,7 @@ class Ps4Async(Ps4Base):
 
                 return self.status
             return None
-
-        else:
-            return super().get_status()
+        return super().get_status()
 
     def launch(self):
         """Launch."""
