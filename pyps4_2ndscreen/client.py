@@ -79,7 +79,7 @@ class Client():
         """Callback for PS4 Status Changed."""
         _LOGGER.debug("Callback called by DDP Protocol")
         for ps4 in self.ps4_devices:
-            status = self.ps4.status
+            status = ps4.status
             _LOGGER.info(status)
 
     async def run_client(self):
