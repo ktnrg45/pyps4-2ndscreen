@@ -41,7 +41,7 @@ _LOGGER = logging.getLogger(__name__)
 TEST_HOST = "192.168.0.1"
 TEST_CREDS = "Imatest000"
 
-TEST_PS4 = ps4.AsyncPs4(TEST_HOST, TEST_CREDS)
+TEST_PS4 = ps4.Ps4Async(TEST_HOST, TEST_CREDS)
 
 
 async def test_sample_list(index_num):
