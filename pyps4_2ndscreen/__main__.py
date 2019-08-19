@@ -43,7 +43,8 @@ def client():
     status_client.start()
 
 
-@cli.command(help='Configure a PS4 console. Example: pyps4-2ndscreen configure')
+@cli.command(
+    help='Configure a PS4 console. Example: pyps4-2ndscreen configure')
 def configure():
     """Configure a PS4 console."""
     _configure_func()
@@ -54,7 +55,8 @@ def _configure_func():
     if creds is None:
         return False
     _search_func()
-    ip_address = input("Enter the IP Address for the PS4 you would like to link: > ")
+    ip_address = input(
+        "Enter the IP Address for the PS4 you would like to link: > ")
 
     linked = _link_func(ip_address, creds)
     if not linked:
@@ -79,7 +81,8 @@ def _search_func():
     return device_list
 
 
-@cli.command(help='Get status of PS4. Example: pyps4-2ndscreen status 192.168.0.1')
+@cli.command(
+    help='Get status of PS4. Example: pyps4-2ndscreen status 192.168.0.1')
 @click.argument('ip_address', required=True)
 def status(ip_address):
     """Get Status of PS4."""
@@ -121,14 +124,16 @@ def _credentials_func():
     if creds is not None:
         print("PSN Credentials is: '{}'".format(creds))
         file_name = helper.check_files('credentials')
-        helper.save_files(data=data, file_type='credentials', file_name=file_name)
+        helper.save_files(
+            data=data, file_type='credentials', file_name=file_name)
         print("Credentials saved to: {}".format(file_name))
         return creds
     print("No credentials found. Stopped credential service.")
     return None
 
 
-@cli.command(help='Link PS4. Example: pyps4-2ndscreen link 192.0.0.1 credentials')
+@cli.command(
+    help='Link PS4. Example: pyps4-2ndscreen link 192.0.0.1 credentials')
 @click.argument('ip_address', required=True)
 @click.argument('credentials', default=None, required=False)
 def link(ip_address, _credentials):
@@ -144,7 +149,11 @@ def _link_func(ip_address, _credentials):
             _data = json.load(_r_file)
             _r_file.close()
         if _data.get('credentials') is None:
-            print("No credentials in {} and credentials not given.".format(creds_file))
+
+            print(
+                "No credentials in {} and credentials not given.".format(
+                    creds_file))
+
             return False
         _credentials = _data['credentials']
     devices = helper.has_devices(ip_address)
