@@ -82,7 +82,8 @@ class Ps4():
             creds = opencredential_file(credentials_file)
             self.credential = creds['user-credential']
 
-        self.connection = Connection(self, credential=self.credential)
+        self.connection = LegacyConnection(
+            self, credential=self.credential)
 
         if self.client is not None:
             self.client.add_ps4(ps4=self)
