@@ -79,7 +79,8 @@ class Credentials:
                 if parse_ddp_response(data, 'search') == 'search':
                     _LOGGER.debug("Search from: %s", address)
                     msg = get_ddp_message(STANDBY, self.response)
-                    self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+                    self.sock.setsockopt(
+                        socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
                     try:
                         self.sock.sendto(msg.encode('utf-8'), address)
                     except socket.error:
