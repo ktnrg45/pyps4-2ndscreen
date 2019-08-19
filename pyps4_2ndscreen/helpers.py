@@ -100,7 +100,6 @@ class Helper:
             return True
         return False
 
-
     def check_files(self, file_type, file_path=None):
         """Create file if it does not exist. Return path."""
         if file_path is None:
