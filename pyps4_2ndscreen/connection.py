@@ -16,7 +16,7 @@ from Cryptodome.PublicKey import RSA
 _LOGGER = logging.getLogger(__name__)
 
 TCP_PORT = 997
-STATUS_REQUEST = b'0c000000120000000000000000000000'
+STATUS_REQUEST = b'\x0c\x00\x00\x00\x12\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 RANDOM_SEED = \
     b'\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 TIMEOUT = 5
@@ -487,9 +487,8 @@ class TCPProtocol(asyncio.Protocol):
         self.transport.write(msg)
 
     def _handle(self, data):
-        data_hex = binascii.hexlify(data)
-        _LOGGER.debug('RX: %s %s', len(data), data_hex)
-        if data_hex == STATUS_REQUEST:
+        _LOGGER.debug('RX: %s %s', len(data), binascii.hexlify(data))
+        if data == STATUS_REQUEST:
             if self.task != 'send_status':
                 task = self.add_task('send_status', self._ack_status)
                 asyncio.ensure_future(task)
@@ -541,7 +540,7 @@ class TCPProtocol(asyncio.Protocol):
         if running_id != title_id:
             msg = _get_remote_control_request(16, 0)
             self.loop.call_later(
-                1.0, self._send_remote_control_request, msg, 16)
+                1.0, self._send_remote_control_request_sync, msg, 16)
 
     async def remote_control(self, operation, hold_time=0):
         """Remote Control."""
@@ -555,6 +554,10 @@ class TCPProtocol(asyncio.Protocol):
 
     async def _send_remote_control_request(self, msg, operation):
         """Send messages for remote control."""
+        self._send_remote_control_request_sync(msg, operation)
+
+    def _send_remote_control_request_sync(self, msg, operation):
+        """Sync Wrapper for Remote Control."""
         for message in msg:
             # Messages are time sensitive.
             # Needs to be immediately sent in order.
@@ -580,7 +583,5 @@ class TCPProtocol(asyncio.Protocol):
         # Update state as well, no need to manage polling now.
         self.ps4.get_status()
         self.sync_send(_get_status_ack())
-        self.sync_send(_get_remote_control_open_request())
-        self.sync_send(_get_remote_control_close_request())
         _LOGGER.debug("Sending Hearbeat response")
         self.loop.call_later(0.2, self._complete_task)
