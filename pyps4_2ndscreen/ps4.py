@@ -511,13 +511,15 @@ class Ps4Async(Ps4):
                     raise NotReady("PS4 is not On")
                 try:
                     self._prepare_connection()
-                    self.tcp_transport, self.tcp_protocol =\
+                    tcp_transport, tcp_protocol =\
                         await self.connection.async_connect(self)
                 except (OSError, ConnectionRefusedError):
                     _LOGGER.info("PS4 Refused Connection")
                     self.connected = False
                     self.loggedin = False
                 else:
+                    self.tcp_transport = tcp_transport
+                    self.tcp_protocol = tcp_protocol
                     self.connected = True
                     if self._power_on:
                         if auto_login:
