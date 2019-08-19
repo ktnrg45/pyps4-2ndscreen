@@ -320,11 +320,6 @@ class LegacyConnection(BaseConnection):
         msg = self._recv_msg()
         return _handle_response('send_status', msg)
 
-    def encrypt_message(self, msg):
-        """Encrypt message."""
-        data = self._cipher.encrypt(msg)
-        return data
-
     def _send_msg(self, msg, encrypted=False):
         _LOGGER.debug('TX: %s %s', len(msg), binascii.hexlify(msg))
         if encrypted:
