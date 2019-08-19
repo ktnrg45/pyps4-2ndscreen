@@ -20,13 +20,14 @@ FILE_TYPES = {
 }
 
 
+# noqa: pylint: disable=no-self-use
 class Helper:
-    """Helpers for PS4."""
+    """Helpers for PS4. Used as class for simpler importing."""
 
     def __init__(self):
         """Init Class."""
 
-    def has_devices(self, host=None):  # noqa: pylint: disable=no-self-use
+    def has_devices(self, host=None):
         """Return status if there are devices that can be discovered."""
         from .ddp import Discovery
 
@@ -37,7 +38,7 @@ class Helper:
             _LOGGER.debug("Found PS4 at: %s", device['host-ip'])
         return devices
 
-    def link(self, host, creds, pin, device_name=None):  # noqa: pylint: disable=no-self-use
+    def link(self, host, creds, pin, device_name=None):
         """Perform pairing with PS4."""
         from .ps4 import Ps4
         from .credential import DEFAULT_DEVICE_NAME
@@ -55,7 +56,7 @@ class Helper:
             is_login = False
         return is_ready, is_login
 
-    def get_creds(self, device_name=None):  # noqa: pylint: disable=no-self-use
+    def get_creds(self, device_name=None):
         """Return Credentials."""
         from .credential import Credentials, DEFAULT_DEVICE_NAME
 
@@ -74,7 +75,7 @@ class Helper:
             return True
         return False
 
-    def port_bind(self, ports: list):  # noqa: pylint: disable=no-self-use
+    def port_bind(self, ports: list):
         """Try binding to ports."""
         import socket
 
@@ -100,7 +101,7 @@ class Helper:
         return False
 
 
-    def check_files(self, file_type, file_path=None):  # noqa: pylint: disable=no-self-use
+    def check_files(self, file_type, file_path=None):
         """Create file if it does not exist. Return path."""
         if file_path is None:
             file_path = DEFAULT_PATH
