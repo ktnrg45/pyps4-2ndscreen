@@ -45,7 +45,7 @@ class Helper:
 
         if device_name is None:
             device_name = DEFAULT_DEVICE_NAME
-        ps4 = Ps4(host, creds, device_name=device_name)
+        ps4 = LegacyPs4(host, creds, device_name=device_name)
         is_ready = True
         is_login = True
         try:
