@@ -105,7 +105,8 @@ class Client():
                     ps4.get_status()
                     polled_hosts.append(ps4.host)
 
-                if not ps4.connected and not ps4.is_standby and ps4.is_available:
+                if not ps4.connected and not ps4.is_standby \
+                        and ps4.is_available:
                     try:
                         await ps4.async_connect()
                     except NotReady:
