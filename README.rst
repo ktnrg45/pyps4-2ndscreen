@@ -59,22 +59,6 @@ There are several async/asyncio coroutine functions in this module. These functi
 There are two versions of the Ps4 object/class: Ps4() and Ps4Async(). The Ps4Async version is recommended over the legacy Ps4 version which may be deprecated in the future.
 The difference between the two is that the Ps4() class uses synchronous sockets (socket.socket) while the Ps4Async() class uses asyncio transports and protocols. If using the Async version, a running asyncio event loop is required.
 
-class Ps4Legacy()
---------------------
-.. code:: python
-
-    import pyps4_2ndscreen
-
-    pyps4_2ndscreen.ps4.Ps4Legacy("192.168.0.2", "YourCredentials")
-    
-class Ps4Async()
---------------------
-.. code:: python
-
-    import pyps4_2ndscreen
-
-    pyps4_2ndscreen.ps4.Ps4Async("192.168.0.2", "YourCredentials")
-
 Getting Credentials
 =====================
 
