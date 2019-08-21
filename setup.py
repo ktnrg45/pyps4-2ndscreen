@@ -10,7 +10,7 @@ MIN_PY_VERSION = '.'.join(map(str, version.REQUIRED_PYTHON_VER))
 REQUIRES = list(open('requirements.txt'))
 
 CLASSIFIERS = [
-    'Development Status :: 3 - Alpha',
+    'Development Status :: 4 - Beta',
     'Environment :: Console',
     'License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)',
     'Natural Language :: English',
