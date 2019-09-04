@@ -485,6 +485,8 @@ class Ps4Async(Ps4Base):
             self.tcp_protocol.disconnect()
             self.tcp_transport = None
             self.tcp_protocol = None
+            self.loggedin = False
+            self.connected = False
 
     async def async_connect(self, auto_login=True):
         """Connect."""
