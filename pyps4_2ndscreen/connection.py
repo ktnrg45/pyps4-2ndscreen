@@ -527,12 +527,9 @@ class TCPProtocol(asyncio.Protocol):
         """Close the connection."""
         if self.transport is not None:
             self.transport.close()
-            self.ps4.protocol = None
             self.transport = None
             _LOGGER.debug("Transport @ %s is disconnected", self.ps4.host)
         self.connection._reset_crypto_init_vector()  # noqa: pylint: disable=protected-access
-        self.ps4.loggedin = False
-        self.ps4.connected = False
 
     async def start_title(self, title_id, running_id=None):
         """Start Title."""
