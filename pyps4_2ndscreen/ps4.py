@@ -476,13 +476,13 @@ class Ps4Async(Ps4Base):
 
     async def close(self):
         """Close Transport."""
-        self._close()
+        self.tcp_protocol.disconnect()
 
     def _close(self):
+        """Callback function called by protocol connection lost."""
         if self.tcp_protocol is None:
             _LOGGER.info("TCP Protocol @ %s already disconnected", self.host)
         else:
-            self.tcp_protocol.disconnect()
             self.tcp_transport = None
             self.tcp_protocol = None
             self.loggedin = False
