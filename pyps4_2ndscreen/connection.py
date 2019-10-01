@@ -461,7 +461,7 @@ class TCPProtocol(asyncio.Protocol):
 
     def connection_lost(self, exc):
         """Call if connection lost."""
-        self.ps4._close()
+        self.ps4._closed()
 
     def _complete_task(self):
         self.task = None
