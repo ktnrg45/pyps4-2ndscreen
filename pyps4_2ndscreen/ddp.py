@@ -80,8 +80,6 @@ class DDPProtocol(asyncio.DatagramProtocol):
                 ps4.unreachable = False
                 old_status = ps4.status
                 ps4.status = data
-                if ps4.is_running():
-                    ps4.wakeup_connect.set()
                 if old_status != data:
                     _LOGGER.debug("Status: %s", ps4.status)
                     callback()
