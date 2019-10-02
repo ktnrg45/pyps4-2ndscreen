@@ -57,7 +57,6 @@ class DDPProtocol(asyncio.DatagramProtocol):
             if not ps4.unreachable:
                 _LOGGER.info("PS4 @ %s is unreachable", ps4.host)
                 ps4.unreachable = True
-                ps4._close()  # noqa: pylint: disable=protected-access
             ps4.status = None
             if ps4.host in self.callbacks:
                 callback = self.callbacks[ps4.host].get(ps4)
