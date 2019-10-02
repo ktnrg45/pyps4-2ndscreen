@@ -17,7 +17,7 @@ UDP_PORT = 0
 DDP_PORT = 987
 DDP_VERSION = '00020020'
 
-DEFAULT_POLL_COUNT = 3
+DEFAULT_POLL_COUNT = 5
 
 
 class DDPProtocol(asyncio.DatagramProtocol):
