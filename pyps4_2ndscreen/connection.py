@@ -461,7 +461,7 @@ class TCPProtocol(asyncio.Protocol):
 
     def connection_lost(self, exc):
         """Call if connection lost."""
-        self.ps4._closed()
+        self.ps4._closed()  # noqa: pylint: disable=protected-access
 
     def _complete_task(self):
         self.task = None
