@@ -373,6 +373,8 @@ class Ps4Async(Ps4Base):
         self.task_queue = None
         self.poll_count = 0
         self.unreachable = False
+        self.wakeup_connect = asyncio.Event()
+        self.wakeup_connect.set()
 
         self.connection = AsyncConnection(self, self.credential)
 
@@ -418,6 +420,7 @@ class Ps4Async(Ps4Base):
             self._power_off = False
             self.ddp_protocol.send_msg(
                 self, get_ddp_wake_message(self.credential))
+            asyncio.ensure_future(self.wait_connect())
 
     async def login(self, pin=None):
         """Login."""
@@ -490,6 +493,12 @@ class Ps4Async(Ps4Base):
             self.tcp_protocol = None
             self.loggedin = False
             self.connected = False
+
+    async def wait_connect(self):
+        """Wait for status to be running then connect."""
+        self.wakeup_connect.clear()
+        await self.wakeup_connect.wait()
+        await self.async_connect()
 
     async def async_connect(self, auto_login=True):
         """Connect."""
