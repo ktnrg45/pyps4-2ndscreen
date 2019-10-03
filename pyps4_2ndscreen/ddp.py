@@ -36,6 +36,10 @@ class DDPProtocol(asyncio.DatagramProtocol):
         """Only used for tests."""
         self.port = port
 
+    def set_max_polls(self, poll_count: int):
+        """Set number of unreturned polls neeeded to assume no status."""
+        self.max_polls = poll_count
+
     def connection_made(self, transport):
         """On Connection."""
         self.transport = transport
