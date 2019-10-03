@@ -57,7 +57,7 @@ class DDPProtocol(asyncio.DatagramProtocol):
         ps4.poll_count += 1
 
         # Assume PS4 is not available.
-        if ps4.poll_count >= self.max_polls:
+        if ps4.poll_count > self.max_polls:
             if not ps4.unreachable:
                 _LOGGER.info("PS4 @ %s is unreachable", ps4.host)
                 ps4.unreachable = True
