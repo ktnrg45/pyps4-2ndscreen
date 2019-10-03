@@ -16,7 +16,7 @@ DDP_PORT = 987
 DDP_VERSION = '00020020'
 
 """
-PS4 listens on ports 987 and 997 (Priveleged).
+PS4 listens on ports 987 (Priveleged).
 Must run command on python path:
 "sudo setcap 'cap_net_bind_service=+ep' /usr/bin/python3.5"
 """
@@ -66,28 +66,33 @@ class Credentials:
             timeout)
         while 1:
             try:
-                response = self.sock.recvfrom(1024)
-            except socket.error:
-                self.sock.close()
-            if not response:
-                _LOGGER.info(
-                    "Credential service has timed out with no response.")
-                raise CredentialTimeout
-            data = response[0]
-            address = response[1]
-            if parse_ddp_response(data, 'search') == 'search':
-                _LOGGER.debug("Search from: %s", address)
-                msg = get_ddp_message(STANDBY, self.response)
-                self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
                 try:
-                    self.sock.sendto(msg.encode('utf-8'), address)
+                    response = self.sock.recvfrom(1024)
                 except socket.error:
                     self.sock.close()
-            if parse_ddp_response(data, 'wakeup') == 'wakeup':
-                _LOGGER.debug("Wakeup from: %s", address)
-                creds = get_creds(data)
+                if not response:
+                    _LOGGER.info(
+                        "Credential service has timed out with no response.")
+                    raise CredentialTimeout
+                data = response[0]
+                address = response[1]
+                if parse_ddp_response(data, 'search') == 'search':
+                    _LOGGER.debug("Search from: %s", address)
+                    msg = get_ddp_message(STANDBY, self.response)
+                    self.sock.setsockopt(
+                        socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+                    try:
+                        self.sock.sendto(msg.encode('utf-8'), address)
+                    except socket.error:
+                        self.sock.close()
+                if parse_ddp_response(data, 'wakeup') == 'wakeup':
+                    _LOGGER.debug("Wakeup from: %s", address)
+                    creds = get_creds(data)
+                    self.sock.close()
+                    return creds
+            except KeyboardInterrupt:
                 self.sock.close()
-                return creds
+                return None
         return None
 
 

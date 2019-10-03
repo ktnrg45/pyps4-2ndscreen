@@ -17,7 +17,7 @@ UDP_PORT = 0
 DDP_PORT = 987
 DDP_VERSION = '00020020'
 
-DEFAULT_POLL_COUNT = 3
+DEFAULT_POLL_COUNT = 5
 
 
 class DDPProtocol(asyncio.DatagramProtocol):
@@ -36,6 +36,10 @@ class DDPProtocol(asyncio.DatagramProtocol):
         """Only used for tests."""
         self.port = port
 
+    def set_max_polls(self, poll_count: int):
+        """Set number of unreturned polls neeeded to assume no status."""
+        self.max_polls = poll_count
+
     def connection_made(self, transport):
         """On Connection."""
         self.transport = transport
@@ -53,11 +57,10 @@ class DDPProtocol(asyncio.DatagramProtocol):
         ps4.poll_count += 1
 
         # Assume PS4 is not available.
-        if ps4.poll_count >= self.max_polls:
+        if ps4.poll_count > self.max_polls:
             if not ps4.unreachable:
                 _LOGGER.info("PS4 @ %s is unreachable", ps4.host)
                 ps4.unreachable = True
-                ps4._close()  # noqa: pylint: disable=protected-access
             ps4.status = None
             if ps4.host in self.callbacks:
                 callback = self.callbacks[ps4.host].get(ps4)

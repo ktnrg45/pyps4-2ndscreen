@@ -16,10 +16,12 @@ from Cryptodome.PublicKey import RSA
 _LOGGER = logging.getLogger(__name__)
 
 TCP_PORT = 997
-STATUS_REQUEST = b'0c000000120000000000000000000000'
+STATUS_REQUEST = \
+    b'\x0c\x00\x00\x00\x12\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 RANDOM_SEED = \
     b'\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 TIMEOUT = 5
+PS_DELAY = 1
 
 PUBLIC_KEY = (
     '-----BEGIN PUBLIC KEY-----\n'
@@ -33,13 +35,6 @@ PUBLIC_KEY = (
     '-----END PUBLIC KEY-----')
 
 
-def delay(seconds):
-    """Delay in seconds."""
-    start_time = time.time()
-    while time.time() - start_time < seconds:
-        pass
-
-
 def _get_public_key_rsa():
     """Get RSA Key."""
     key = RSA.importKey(PUBLIC_KEY)
@@ -50,8 +45,8 @@ def _handle_response(command, msg):
     """Return Pass/Fail for sent message."""
     pass_response = {
         'send_status': [18],
-        'remote_control': [18],
-        'start_title': [11, 18],
+        'remote_control': [18],  # Not right
+        'start_title': [11, 18],  # 18 Not right
         'standby': [27],
         'login': [0, 17]
     }
@@ -64,6 +59,8 @@ def _handle_response(command, msg):
                 return True
             _LOGGER.debug("Login Failed")
             return False
+        if command == 'send_status':
+            return True
 
         response_byte = msg[4]
         _LOGGER.debug("RECV: %s for Command: %s", response_byte, command)
@@ -196,6 +193,18 @@ def _get_remote_control_request(operation, hold_time) -> list:
     return msg
 
 
+def _get_remote_control_open_request():
+    fmt = Struct(
+        'length' / Const(b'\x10\x00\x00\x00'),
+        'type' / Const(b'\x1c\x00\x00\x00'),
+        'op' / Int32ul,
+        'hold_time' / Int32ul,
+    )
+
+    msg = fmt.build({'op': 1024, 'hold_time': 0})  # open RC
+    return msg
+
+
 def _get_remote_control_close_request():
     fmt = Struct(
         'length' / Const(b'\x10\x00\x00\x00'),
@@ -220,7 +229,7 @@ def _get_status_ack():
     return msg
 
 
-class Connection():
+class BaseConnection():
     """The TCP connection class."""
 
     def __init__(self, ps4, credential=None, port=997):
@@ -238,6 +247,30 @@ class Connection():
     def set_socket(self, sock):
         """Set socket."""
         self._socket = sock
+
+    def _set_crypto_init_vector(self, init_vector):
+        self._cipher = AES.new(RANDOM_SEED, AES.MODE_CBC, init_vector)
+        self._decipher = AES.new(RANDOM_SEED, AES.MODE_CBC, init_vector)
+
+    def _reset_crypto_init_vector(self):
+        self._cipher = None
+        self._decipher = None
+
+    def encrypt_message(self, msg):
+        """Encrypt message."""
+        data = self._cipher.encrypt(msg)
+        return data
+
+
+class LegacyConnection(BaseConnection):
+    """Legacy Connection for Legacy PS4 object."""
+
+    # noqa: pylint: disable=no-self-use
+    def delay(self, seconds):
+        """Delay in seconds."""
+        start_time = time.time()
+        while time.time() - start_time < seconds:
+            pass
 
     def connect(self):
         """Open the connection."""
@@ -287,11 +320,6 @@ class Connection():
         msg = self._recv_msg()
         return _handle_response('send_status', msg)
 
-    def encrypt_message(self, msg):
-        """Encrypt message."""
-        data = self._cipher.encrypt(msg)
-        return data
-
     def _send_msg(self, msg, encrypted=False):
         _LOGGER.debug('TX: %s %s', len(msg), binascii.hexlify(msg))
         if encrypted:
@@ -304,14 +332,6 @@ class Connection():
             msg = self._decipher.decrypt(msg)
         _LOGGER.debug('RX: %s %s', len(msg), binascii.hexlify(msg))
         return msg
-
-    def _set_crypto_init_vector(self, init_vector):
-        self._cipher = AES.new(RANDOM_SEED, AES.MODE_CBC, init_vector)
-        self._decipher = AES.new(RANDOM_SEED, AES.MODE_CBC, init_vector)
-
-    def _reset_crypto_init_vector(self):
-        self._cipher = None
-        self._decipher = None
 
     def _send_hello_request(self):
         """Send SYN Message."""
@@ -353,7 +373,7 @@ class Connection():
         # Delay Close RC for PS
         if operation == 128:
             _LOGGER.debug("Delaying RC off for PS Command")
-            delay(1)
+            self.delay(1)
             try:
                 self._send_msg(
                     _get_remote_control_request(operation, hold_time),
@@ -366,7 +386,7 @@ class Connection():
         self._send_msg(_get_status_ack(), encrypted=True)
 
 
-class AsyncConnection(Connection):
+class AsyncConnection(BaseConnection):
     """Connection using Asyncio."""
 
     async def async_connect(self, ps4):
@@ -406,6 +426,7 @@ class TCPProtocol(asyncio.Protocol):
         self.connection = ps4.connection
         self.task = None
         self.task_available = asyncio.Event()
+        self.ps_delay = None
 
     def connection_made(self, transport):
         """When connected."""
@@ -440,7 +461,7 @@ class TCPProtocol(asyncio.Protocol):
 
     def connection_lost(self, exc):
         """Call if connection lost."""
-        self.disconnect()
+        self.ps4._closed()  # noqa: pylint: disable=protected-access
 
     def _complete_task(self):
         self.task = None
@@ -471,10 +492,11 @@ class TCPProtocol(asyncio.Protocol):
         self.transport.write(msg)
 
     def _handle(self, data):
-        data_hex = binascii.hexlify(data)
-        _LOGGER.debug('RX: %s %s', len(data), data_hex)
-        if data_hex == STATUS_REQUEST:
-            self._ack_status()
+        _LOGGER.debug('RX: %s %s', len(data), binascii.hexlify(data))
+        if data == STATUS_REQUEST:
+            if self.task != 'send_status':
+                task = self.add_task('send_status', self._ack_status)  # noqa: pylint: disable=assignment-from-no-return
+                asyncio.ensure_future(task)
         elif self.task == 'remote_control':
             pass
         else:
@@ -489,7 +511,7 @@ class TCPProtocol(asyncio.Protocol):
         task_name = 'login'
         name = self.ps4.device_name
         msg = _get_login_request(self.ps4.credential, name, pin)
-        task = self.add_task(task_name, self.send, msg)
+        task = self.add_task(task_name, self.send, msg)  # noqa: pylint: disable=assignment-from-no-return
         asyncio.ensure_future(task)
 
     async def standby(self):
@@ -498,19 +520,16 @@ class TCPProtocol(asyncio.Protocol):
             await self.login()
         task_name = 'standby'
         msg = _get_standby_request()
-        task = self.add_task(task_name, self.send, msg)
+        task = self.add_task(task_name, self.send, msg)  # noqa: pylint: disable=assignment-from-no-return
         asyncio.ensure_future(task)
 
     def disconnect(self):
         """Close the connection."""
         if self.transport is not None:
             self.transport.close()
-            self.ps4.protocol = None
             self.transport = None
             _LOGGER.debug("Transport @ %s is disconnected", self.ps4.host)
         self.connection._reset_crypto_init_vector()  # noqa: pylint: disable=protected-access
-        self.ps4.loggedin = False
-        self.ps4.connected = False
 
     async def start_title(self, title_id, running_id=None):
         """Start Title."""
@@ -518,12 +537,12 @@ class TCPProtocol(asyncio.Protocol):
             await self.login()
         task_name = 'start_title'
         msg = _get_boot_request(title_id)
-        task = self.add_task(task_name, self.send, msg)
+        task = self.add_task(task_name, self.send, msg)  # noqa: pylint: disable=assignment-from-no-return
         asyncio.ensure_future(task)
         if running_id != title_id:
             msg = _get_remote_control_request(16, 0)
             self.loop.call_later(
-                1.0, self._send_remote_control_request, msg, 16)
+                1.0, self._send_remote_control_request_sync, msg, 16)
 
     async def remote_control(self, operation, hold_time=0):
         """Remote Control."""
@@ -531,12 +550,16 @@ class TCPProtocol(asyncio.Protocol):
             await self.login()
         task_name = 'remote_control'
         msg = _get_remote_control_request(operation, hold_time)
-        task = self.add_task(task_name, self._send_remote_control_request,
+        task = self.add_task(task_name, self._send_remote_control_request,  # noqa: pylint: disable=assignment-from-no-return
                              msg, operation)
         asyncio.ensure_future(task)
 
     async def _send_remote_control_request(self, msg, operation):
         """Send messages for remote control."""
+        self._send_remote_control_request_sync(msg, operation)
+
+    def _send_remote_control_request_sync(self, msg, operation):
+        """Sync Wrapper for Remote Control."""
         for message in msg:
             # Messages are time sensitive.
             # Needs to be immediately sent in order.
@@ -544,16 +567,23 @@ class TCPProtocol(asyncio.Protocol):
 
         # For 'PS' command.
         if operation == 128:
-            # Even more time sensitive. Delay of 1 Second needed.
+            # Even more time sensitive. Delay of around 1 Second needed.
+            if self.ps_delay is None:
+                ps_delay = PS_DELAY
+            else:
+                ps_delay = self.ps_delay
             self.loop.call_later(
-                1.0, self.sync_send, _get_remote_control_close_request())
+                ps_delay, self.sync_send, _get_remote_control_close_request())
+            self.loop.call_later(
+                ps_delay, self._complete_task)
+        else:
+            # Don't handle or wait for a response
+            self._complete_task()
 
-        # Don't handle or wait for a response
-        self.task_available.set()
-
-    def _ack_status(self):
+    async def _ack_status(self):
         """Sends msg in response to heartbeat message."""
         # Update state as well, no need to manage polling now.
         self.ps4.get_status()
-        asyncio.ensure_future(self.send(_get_status_ack()))
+        self.sync_send(_get_status_ack())
         _LOGGER.debug("Sending Hearbeat response")
+        self.loop.call_later(0.2, self._complete_task)
