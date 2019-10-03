@@ -112,10 +112,10 @@ References:
 
 .. _ps4-waker: https://github.com/dhleong/ps4-waker
 
-.. |BuildStatus| image:: https://travis-ci.org/ktnrg45/pyps4-homeassistant.png?branch=master
-                 :target: https://travis-ci.org/ktnrg45/pyps4-homeassistant
-.. |PyPiVersion| image:: https://badge.fury.io/py/pyps4-homeassistant.svg
-                 :target: http://badge.fury.io/py/pyps4-homeassistant
-.. |PyPiPythonVersions| image:: https://img.shields.io/pypi/pyversions/pyps4-homeassistant.svg
+.. |BuildStatus| image:: https://travis-ci.org/ktnrg45/pyps4-2ndscreen.png?branch=master
+                 :target: https://travis-ci.org/ktnrg45/pyps4-2ndscreen
+.. |PyPiVersion| image:: https://badge.fury.io/py/pyps4-2ndscreen.svg
+                 :target: http://badge.fury.io/py/pyps4-2ndscreen
+.. |PyPiPythonVersions| image:: https://img.shields.io/pypi/pyversions/pyps4-2ndscreen.svg
                         :alt: Python versions
-                        :target: http://badge.fury.io/py/pyps4-homeassistant
+                        :target: http://badge.fury.io/py/pyps4-2ndscreen
