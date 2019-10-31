@@ -13,7 +13,7 @@ Also note if cover art is not found or is incorrect.
 Symbols in the title are important, don't forget to include them.
 
 **Title of Media**: eg. "Call of Duty™"
+
 **SKU ID**: eg. "CUSA00123"
+
 **Region**: eg. "United States"
-
-
