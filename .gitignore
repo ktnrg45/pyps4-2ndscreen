@@ -1,5 +1,4 @@
 # Ignore files
-home-assistant/**
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
