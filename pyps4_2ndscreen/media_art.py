@@ -50,6 +50,37 @@ TYPE_LIST = {
 
 FORMATS = ['chars', 'chars+', 'orig', 'tumbler']
 
+BASE_IMAGE_URL = """https://store.playstation.com
+                    /store/api/chihiro/00_09_000/container/us/en/999/"""
+
+PINNED_TITLES = {
+    'CUSA01780': {
+        'name': 'Spotify',
+        'sku_id': 'EP4950-CUSA01780_00-US00000000000000',
+        'url': '/1559667794000/image',
+        'type': 'App',
+    }
+}
+
+
+def _get_pinned_data(data: dict):
+    """Format pinned data as if retrieved from request."""
+    result_data = {
+        'name': data['name'],
+        'default-sku-id': data['sku_id'],
+        'game-content-type': data['type'],
+        'thumbnail-url-base': '{}{}{}'.format(
+            BASE_IMAGE_URL, data['sku_id'], data['url']),
+    }
+    return {'attributes': result_data}
+
+
+def get_pinned_item(data: dict):
+    """Return a pinned ResultItem using pinned data."""
+    result_data = _get_pinned_data(data)
+    item = ResultItem(result_data, TYPE_LIST['en'])
+    return item
+
 
 def get_region(region):
     """Validate and format region."""
