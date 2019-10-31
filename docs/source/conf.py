@@ -14,7 +14,9 @@ import os
 import sys
 import sphinx_rtd_theme
 
-sys.path.insert(0, os.path.abspath('../pyps4-2ndscreen'))
+from pyps4_2ndscreen.__version__ import __version__ as version
+
+sys.path.insert(0, os.path.abspath('../../pyps4-2ndscreen'))
 
 
 # -- Project information -----------------------------------------------------
@@ -24,7 +26,7 @@ copyright = '2019, ktnrg45'
 author = 'ktnrg45'
 
 # The full version, including alpha/beta/rc tags
-release = '1.0.0'
+release = version
 
 
 # -- General configuration ---------------------------------------------------
@@ -34,6 +36,7 @@ release = '1.0.0'
 # ones.
 extensions = [
     'sphinx_rtd_theme',
+    'sphinx.ext.autodoc',
 ]
 
 # Add any paths that contain templates here, relative to this directory.

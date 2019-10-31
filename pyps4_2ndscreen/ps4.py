@@ -333,20 +333,7 @@ class Ps4Legacy(Ps4Base):
         return False
 
     def remote_control(self, button_name, hold_time=0):
-        """Send a remote control button press.
-
-        Documentation from ps4-waker source:
-        near as I can tell, here's how this works:
-         - For a simple tap, you send the key with holdTime=0,
-           followed by KEY_OFF and holdTime = 0
-         - For a long press/hold, you still send the key with
-           holdTime=0, the follow it with the key again, but
-           specifying holdTime as the hold duration.
-         - After sending a direction, you should send KEY_OFF
-           to clean it up (since it can just be held forever).
-           Doing this after a long-press of PS just breaks it,
-           however.
-        """
+        """Send a remote control button press."""
         if self.msg_sending:
             _LOGGER.warning("PS4 already sending message.")
             return

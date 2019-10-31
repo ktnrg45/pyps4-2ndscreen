@@ -1,0 +1,6 @@
+#!/bin/sh
+# Builds Docs. Run from root directory.
+cd docs
+make html
+git add ./build
+git push
