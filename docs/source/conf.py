@@ -14,8 +14,6 @@ import os
 import sys
 import sphinx_rtd_theme
 
-from pyps4_2ndscreen.__version__ import __version__ as version
-
 sys.path.insert(0, os.path.abspath('../../pyps4-2ndscreen'))
 
 os.system('python ../../setup.py install')
@@ -23,6 +21,7 @@ os.system('python ../../setup.py install')
 
 # -- Project information -----------------------------------------------------
 
+from pyps4_2ndscreen.__version__ import __version__ as version
 project = 'pyps4-2ndscreen'
 copyright = '2019, ktnrg45'
 author = 'ktnrg45'
