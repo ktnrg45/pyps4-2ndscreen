@@ -15,7 +15,8 @@ from .errors import (NotReady, PSDataIncomplete,
                      UnknownButton, LoginFailed)
 from .media_art import (async_get_ps_store_requests,
                         get_lang, parse_data, COUNTRIES,
-                        async_prepare_tumbler)
+                        async_prepare_tumbler, PINNED_TITLES,
+                        get_pinned_item)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -81,6 +82,13 @@ class Ps4Base():
 
     async def async_get_ps_store_data(self, title, title_id, region):
         """Get and Parse Responses."""
+        # Check if title is a pinned title first and return.
+        pinned = None
+        pinned = PINNED_TITLES.get(title_id)
+        if pinned is not None:
+            return get_pinned_item(pinned)
+
+        # Conduct Search Requests.
         lang = get_lang(region)
         _LOGGER.debug("Starting search request")
         async with aiohttp.ClientSession() as session:
