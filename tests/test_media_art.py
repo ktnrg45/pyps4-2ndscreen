@@ -6,6 +6,7 @@ import time
 import pyps4_2ndscreen.ps4 as ps4
 
 TEST_LIST = [  # title, titleid, region
+    ['Spotify', 'CUSA01780', 'United Kingdom'],
     ["Netflix", 'CUSA00129', 'United States'],
     ["Shadow of the Colossus", "CUSA08804", "Taiwan"],
     ["Fortnite", "CUSA07669", "Spain"],
@@ -35,7 +36,7 @@ TEST_LIST = [  # title, titleid, region
     ["Marvel's Spider-Man", 'CUSA11995', 'Russia']
 ]
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 _LOGGER = logging.getLogger(__name__)
 
 TEST_HOST = "192.168.0.1"
