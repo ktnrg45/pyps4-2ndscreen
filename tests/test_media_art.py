@@ -6,7 +6,7 @@ import time
 import pyps4_2ndscreen.ps4 as ps4
 
 TEST_LIST = [  # title, titleid, region
-    ['Spotify', 'CUSA01780', 'United Kingdom'],
+    ["Spotify", 'CUSA01780', 'United Kingdom'],
     ["Netflix", 'CUSA00129', 'United States'],
     ["Shadow of the Colossus", "CUSA08804", "Taiwan"],
     ["Fortnite", "CUSA07669", "Spain"],
@@ -33,6 +33,7 @@ TEST_LIST = [  # title, titleid, region
     ["Uncharted: The Nathan Drake Collection™", 'CUSA02320', 'United States'],
     ["NHL™ 18", 'CUSA07580', 'France'],
     ["Days Gone", 'CUSA08966', 'United States'],
+    ["Battlefield™ V", 'CUSA08670', 'Portugal'],
     ["Marvel's Spider-Man", 'CUSA11995', 'Russia']
 ]
 
