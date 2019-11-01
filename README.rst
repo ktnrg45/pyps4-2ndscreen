@@ -3,6 +3,8 @@ PyPS4-2ndScreen
 
 |BuildStatus| |PypiVersion| |PyPiPythonVersions|
 
+`Documentation <https://pyps4-2ndscreen.readthedocs.io/>`_
+
 Description
 --------------------
 A full Python implementation based on the Node.js package, ps4-waker.
