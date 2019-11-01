@@ -3,7 +3,7 @@ PyPS4-2ndScreen
 
 |BuildStatus| |PypiVersion| |PyPiPythonVersions|
 
-`Documentation <https://pyps4-2ndscreen.readthedocs.io/>`_
+|Docs|
 
 Description
 --------------------
@@ -94,3 +94,6 @@ References
 .. |PyPiPythonVersions| image:: https://img.shields.io/pypi/pyversions/pyps4-2ndscreen.svg
                         :alt: Python versions
                         :target: http://badge.fury.io/py/pyps4-2ndscreen
+.. |Docs| image:: https://readthedocs.org/projects/pyps4-2ndscreen/badge/?version=dev
+          :target: https://pyps4-2ndscreen.readthedocs.io/en/dev/?badge=dev
+          :alt: Documentation Status
