@@ -18,8 +18,10 @@ sys.path.insert(0, os.path.abspath('../../'))
 
 
 # -- Project information -----------------------------------------------------
+os.system('pip install -r {}/requirements.txt'.format(sys.path[0]))
 
 from pyps4_2ndscreen.__version__ import __version__ as version
+
 project = 'pyps4-2ndscreen'
 copyright = '2019, ktnrg45'
 author = 'ktnrg45'
