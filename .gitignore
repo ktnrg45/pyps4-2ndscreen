@@ -10,6 +10,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
+bin/
 build/
 develop-eggs/
 dist/
@@ -18,8 +19,10 @@ eggs/
 .eggs/
 lib/
 lib64/
+lib64
 parts/
 sdist/
+share/
 var/
 wheels/
 *.egg-info/
@@ -67,6 +70,7 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/build
 
 # PyBuilder
 target/
@@ -91,6 +95,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+pyvenv.cfg
 
 # Spyder project settings
 .spyderproject
