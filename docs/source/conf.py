@@ -14,9 +14,7 @@ import os
 import sys
 import sphinx_rtd_theme
 
-sys.path.insert(0, os.path.abspath('../../pyps4-2ndscreen'))
-
-os.system('python ../../setup.py install')
+sys.path.insert(0, os.path.abspath('../../'))
 
 
 # -- Project information -----------------------------------------------------

@@ -3,12 +3,11 @@
 """Setup for pyps4-2ndscreen."""
 
 from setuptools import setup, find_packages
-from pathlib import Path
 import pyps4_2ndscreen.__version__ as version
 
 MIN_PY_VERSION = '.'.join(map(str, version.REQUIRED_PYTHON_VER))
 
-REQUIRES = list(open(Path('requirements.txt')))
+REQUIRES = list(open('requirements.txt'))
 
 CLASSIFIERS = [
     'Development Status :: 4 - Beta',
