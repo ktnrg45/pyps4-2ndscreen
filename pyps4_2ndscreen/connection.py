@@ -500,19 +500,28 @@ class TCPProtocol(asyncio.Protocol):
         elif self.task == 'remote_control':
             pass
         else:
-            if self.callback(self.task, data):
+            success = self.callback(self.task, data)
+            if success:
                 _LOGGER.debug("Command successful: %s", self.task)
                 if self.task == 'login':
                     self.ps4.loggedin = True
                 self._complete_task()
+            else:
+                if self.task == 'login':
+                    self.ps4.loggedin = False
+                    _LOGGER.info("Failed to login, Closing connection")
+                    self.disconnect()
 
     async def login(self, pin=None):
         """Login."""
-        task_name = 'login'
-        name = self.ps4.device_name
-        msg = _get_login_request(self.ps4.credential, name, pin)
-        task = self.add_task(task_name, self.send, msg)  # noqa: pylint: disable=assignment-from-no-return
-        asyncio.ensure_future(task)
+        if not self.task == 'login':  # Only schedule one login task.
+            task_name = 'login'
+            name = self.ps4.device_name
+            msg = _get_login_request(self.ps4.credential, name, pin)
+            task = self.add_task(task_name, self.send, msg)  # noqa: pylint: disable=assignment-from-no-return
+            asyncio.ensure_future(task)
+        else:
+            _LOGGER.debug("Login Task already scheduled")
 
     async def standby(self):
         """Standby."""
@@ -535,11 +544,13 @@ class TCPProtocol(asyncio.Protocol):
         """Start Title."""
         if not self.ps4.loggedin:
             await self.login()
+            await asyncio.sleep(2)  # Delay to allow time to login.
         task_name = 'start_title'
         msg = _get_boot_request(title_id)
         task = self.add_task(task_name, self.send, msg)  # noqa: pylint: disable=assignment-from-no-return
-        asyncio.ensure_future(task)
-        if running_id != title_id:
+        await task
+
+        if running_id is not None and running_id != title_id:
             msg = _get_remote_control_request(16, 0)
             self.loop.call_later(
                 1.0, self._send_remote_control_request_sync, msg, 16)
