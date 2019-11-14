@@ -419,7 +419,8 @@ class Ps4Async(Ps4Base):
         if self.tcp_protocol is None:
             _LOGGER.info("Login failed: TCP Protocol does not exist")
         else:
-            await self.tcp_protocol.login(pin)
+            power_on = self._power_on
+            await self.tcp_protocol.login(pin, power_on)
 
     async def standby(self, retry=None):
         """Standby."""
