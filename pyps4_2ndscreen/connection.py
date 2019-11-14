@@ -426,6 +426,7 @@ class TCPProtocol(asyncio.Protocol):
         self.connection = ps4.connection
         self.task = None
         self.task_available = asyncio.Event()
+        self.login_success = asyncio.Event()
         self.ps_delay = None
 
     def connection_made(self, transport):
@@ -505,6 +506,7 @@ class TCPProtocol(asyncio.Protocol):
                 _LOGGER.debug("Command successful: %s", self.task)
                 if self.task == 'login':
                     self.ps4.loggedin = True
+                    self.login_success.set()
                 self._complete_task()
             else:
                 if self.task == 'login':
@@ -512,14 +514,25 @@ class TCPProtocol(asyncio.Protocol):
                     _LOGGER.info("Failed to login, Closing connection")
                     self.disconnect()
 
-    async def login(self, pin=None):
+    async def login(self, pin=None, power_on=False):
         """Login."""
         if not self.task == 'login':  # Only schedule one login task.
+            self.login_success.clear()
             task_name = 'login'
             name = self.ps4.device_name
             msg = _get_login_request(self.ps4.credential, name, pin)
             task = self.add_task(task_name, self.send, msg)  # noqa: pylint: disable=assignment-from-no-return
-            asyncio.ensure_future(task)
+            await task
+            await self.login_success.wait()
+            await asyncio.sleep(1)
+
+            # If not powering on, Send PS to switch user screens.
+            if not power_on:
+                msg = _get_remote_control_request(128, 0)
+                self._send_remote_control_request_sync(msg, 128)
+
+            # Delay to allow time to login/switch users.
+            await asyncio.sleep(2)
         else:
             _LOGGER.debug("Login Task already scheduled")
 
@@ -544,12 +557,12 @@ class TCPProtocol(asyncio.Protocol):
         """Start Title."""
         if not self.ps4.loggedin:
             await self.login()
-            await asyncio.sleep(2)  # Delay to allow time to login.
         task_name = 'start_title'
         msg = _get_boot_request(title_id)
         task = self.add_task(task_name, self.send, msg)  # noqa: pylint: disable=assignment-from-no-return
-        await task
+        asyncio.ensure_future(task)
 
+        await self.task_available.wait()
         if running_id is not None and running_id != title_id:
             msg = _get_remote_control_request(16, 0)
             self.loop.call_later(
