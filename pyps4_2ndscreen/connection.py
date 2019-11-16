@@ -514,7 +514,7 @@ class TCPProtocol(asyncio.Protocol):
                     _LOGGER.info("Failed to login, Closing connection")
                     self.disconnect()
 
-    async def login(self, pin=None, power_on=False):
+    async def login(self, pin=None, power_on=False, delay=2):
         """Login."""
         if not self.task == 'login':  # Only schedule one login task.
             self.login_success.clear()
@@ -524,7 +524,7 @@ class TCPProtocol(asyncio.Protocol):
             task = self.add_task(task_name, self.send, msg)  # noqa: pylint: disable=assignment-from-no-return
             await task
             await self.login_success.wait()
-            await asyncio.sleep(1)
+            await asyncio.sleep(delay)
 
             # If not powering on, Send PS to switch user screens.
             if not power_on:
@@ -532,7 +532,7 @@ class TCPProtocol(asyncio.Protocol):
                 self._send_remote_control_request_sync(msg, 128)
 
             # Delay to allow time to login/switch users.
-            await asyncio.sleep(2)
+            await asyncio.sleep(delay)
         else:
             _LOGGER.debug("Login Task already scheduled")
 
