@@ -377,10 +377,12 @@ class Ps4Async(Ps4Base):
         raise NotImplementedError
 
     def _prepare_connection(self):
+        """Send launch msg."""
         self.launch()
         _LOGGER.debug("Connection prepared")
 
     def set_login_delay(self, value: int):
+        """Set delay for login."""
         self._login_delay = value
 
     def get_status(self) -> dict:
@@ -424,7 +426,7 @@ class Ps4Async(Ps4Base):
             _LOGGER.info("Login failed: TCP Protocol does not exist")
         else:
             power_on = self._power_on
-            await self.tcp_protocol.login(pin, power_on)
+            await self.tcp_protocol.login(pin, power_on, self.login_delay)
 
     async def standby(self, retry=None):
         """Standby."""
