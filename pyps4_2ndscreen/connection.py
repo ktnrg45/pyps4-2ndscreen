@@ -15,13 +15,15 @@ from Cryptodome.PublicKey import RSA
 
 _LOGGER = logging.getLogger(__name__)
 
+TIMEOUT = 5
+PS_DELAY = 1
+DEFAULT_LOGIN_DELAY = 1
 TCP_PORT = 997
+
 STATUS_REQUEST = \
     b'\x0c\x00\x00\x00\x12\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 RANDOM_SEED = \
     b'\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-TIMEOUT = 5
-PS_DELAY = 1
 
 PUBLIC_KEY = (
     '-----BEGIN PUBLIC KEY-----\n'
@@ -514,7 +516,7 @@ class TCPProtocol(asyncio.Protocol):
                     _LOGGER.info("Failed to login, Closing connection")
                     self.disconnect()
 
-    async def login(self, pin=None, power_on=False, delay=2):
+    async def login(self, pin=None, power_on=False, delay=DEFAULT_LOGIN_DELAY):
         """Login."""
         if not self.task == 'login':  # Only schedule one login task.
             self.login_success.clear()

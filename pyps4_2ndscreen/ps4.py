@@ -7,7 +7,7 @@ import asyncio
 
 import aiohttp
 
-from .connection import LegacyConnection, AsyncConnection
+from .connection import LegacyConnection, AsyncConnection, DEFAULT_LOGIN_DELAY
 from .credential import DEFAULT_DEVICE_NAME
 from .ddp import (get_status, launch, wakeup,
                   get_ddp_launch_message, get_ddp_wake_message)
@@ -362,6 +362,7 @@ class Ps4Async(Ps4Base):
     def __init__(self, host, credential=None, device_name=DEFAULT_DEVICE_NAME):
         """Inherit Class."""
         super().__init__(host, credential, device_name)
+        self._login_delay = DEFAULT_LOGIN_DELAY
         self.ddp_protocol = None
         self.tcp_transport = None
         self.tcp_protocol = None
@@ -378,6 +379,9 @@ class Ps4Async(Ps4Base):
     def _prepare_connection(self):
         self.launch()
         _LOGGER.debug("Connection prepared")
+
+    def set_login_delay(self, value: int):
+        self._login_delay = value
 
     def get_status(self) -> dict:
         """Get current status info."""
@@ -514,3 +518,7 @@ class Ps4Async(Ps4Base):
                         if auto_login:
                             await self.login()
                     self._power_on = False
+
+    @property
+    def login_delay(self):
+        return self._login_delay
