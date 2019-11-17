@@ -523,4 +523,5 @@ class Ps4Async(Ps4Base):
 
     @property
     def login_delay(self):
+        """Return login delay value."""
         return self._login_delay
