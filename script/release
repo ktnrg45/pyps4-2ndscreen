@@ -10,14 +10,17 @@ OWNER="ktnrg45"
 REPOSITORY="pyps4-2ndscreen"
 
 git checkout dev
+git reset HEAD
 git pull
-git merge master
 rm -rf dist
 python3 setup.py sdist bdist_wheel
 python3 -m twine check dist/*
 python3 -m twine upload dist/* --skip-existing
 
 git checkout master
+git reset HEAD
+git merge dev
 read -p "Enter release message: " msg
 API_JSON=$(printf '{"tag_name": "%s","target_commitish": "master","name": "%s","body": "%s","draft": false,"prerelease": false}' $VERSION $VERSION $msg)
 curl -H "Authorization: token $access_token" --data "$API_JSON" https://api.github.com/repos/:"$OWNER"/:"$REPOSITORY"/releases
+git checkout dev
