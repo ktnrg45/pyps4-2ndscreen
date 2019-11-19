@@ -20,6 +20,7 @@ python3 -m twine upload dist/* --skip-existing
 git checkout master
 git reset HEAD
 git merge dev
+git push
 read -p "Enter release message: " msg
 API_JSON=$(printf '{"tag_name": "%s","target_commitish": "master","name": "%s","body": "%s","draft": false,"prerelease": false}' $VERSION $VERSION $msg)
 url="https://api.github.com/repos/$OWNER/$REPOSITORY/releases"
