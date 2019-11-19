@@ -20,4 +20,4 @@ python3 -m twine upload dist/* --skip-existing
 git checkout master
 read -p "Enter release message: " msg
 API_JSON=$(printf '{"tag_name": "%s","target_commitish": "master","name": "%s","body": "%s","draft": false,"prerelease": false}' $VERSION $VERSION $msg)
-curl --data "$API_JSON" https://api.github.com/repos/:"$OWNER"/:"$REPOSITORY"/releases?access_token=:"$access_token"
+curl -H "Authorization: token $access_token" --data "$API_JSON" https://api.github.com/repos/:"$OWNER"/:"$REPOSITORY"/releases
