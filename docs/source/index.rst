@@ -8,6 +8,11 @@
    readme
 
 .. toctree::
+   :maxdepth: 2
+
+   usage
+
+.. toctree::
    :glob:
    :maxdepth: 2
    :caption: Reference
