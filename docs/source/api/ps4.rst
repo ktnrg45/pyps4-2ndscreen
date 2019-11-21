@@ -10,4 +10,4 @@ PS4
         :members:
     
     .. autoclass:: Ps4Legacy
-    :members:
+        :members:
