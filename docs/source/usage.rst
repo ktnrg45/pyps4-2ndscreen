@@ -9,6 +9,35 @@ There are several async/asyncio coroutine functions in this module. These functi
 There are two versions of the Ps4 object/class: Ps4() and Ps4Async(). The Ps4Async version is recommended over the legacy Ps4 version which may be deprecated in the future.
 The difference between the two is that the Ps4() class uses synchronous sockets (socket.socket) while the Ps4Async() class uses asyncio transports and protocols. If using the Async version, a running asyncio event loop is required.
 
+Using Ps4Async Example
+========================
+
+- First start an asyncio event loop in the main thread.
+
+.. code:: python
+
+    import asyncio
+
+    task = asyncio.ensure_future(YourProgram())
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete()
+
+- Next you need to init the Device Discovery Protocol. This will enable you to get regular status updates.
+
+.. code:: python
+
+    from pyps4_2ndscreen.ddp import async_create_ddp_endpoint
+
+    _, ddp_protocol = await async_create_ddp_endpoint()
+
+- Then you can instantiate the Ps4Async class.
+
+.. code:: python
+
+    ip_address = '192.168.0.3'
+    creds = 'yourcredentials'
+    ps4 = Ps4Async(ip_address, creds)
+
 Getting Credentials
 =====================
 
