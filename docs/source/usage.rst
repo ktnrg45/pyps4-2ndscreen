@@ -2,7 +2,7 @@ Usage
 =====================
 API should be accessed initially like the following examples.
 
-Most functions can be accessed from the high-level PS4 object. You will need to pass in th IP address of your PS4 and your PSN credentials.
+Most functions can be accessed from the high-level PS4 object. You will need to pass in the IP address of your PS4 and your PSN credentials.
 
 There are several async/asyncio coroutine functions in this module. These functions should be accessed with an Asyncio loop.
 
@@ -30,13 +30,15 @@ Using Ps4Async Example
 
     _, ddp_protocol = await async_create_ddp_endpoint()
 
-- Then you can instantiate the Ps4Async class.
+- Then you can instantiate the Ps4Async class and assign the ddp_protocol object to the ps4 object.
 
 .. code:: python
 
     ip_address = '192.168.0.3'
     creds = 'yourcredentials'
     ps4 = Ps4Async(ip_address, creds)
+    ps4.ddp_protocol = ddp_protocol
+
 
 Getting Credentials
 =====================
