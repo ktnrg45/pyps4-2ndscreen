@@ -16,6 +16,10 @@ UDP_PORT = 0
 
 DDP_PORT = 987
 DDP_VERSION = '00020020'
+DDP_TYPE_SEARCH = 'SRCH'
+DDP_TYPE_LAUNCH = 'LAUNCH'
+DDP_TYPE_WAKEUP = 'WAKEUP'
+DDP_MSG_TYPES = (DDP_TYPE_SEARCH, DDP_TYPE_LAUNCH, DDP_TYPE_WAKEUP)
 
 DEFAULT_POLL_COUNT = 5
 
@@ -133,8 +137,11 @@ async def async_create_ddp_endpoint():
 
 def get_ddp_message(msg_type, data=None):
     """Get DDP message."""
+    if msg_type not in DDP_MSG_TYPES:
+        raise TypeError(
+            "DDP MSG type: '{}' is not a valid type".format(msg_type))
     msg = u'{} * HTTP/1.1\n'.format(msg_type)
-    if data:
+    if data is not None:
         for key, value in data.items():
             msg += '{}:{}\n'.format(key, value)
     msg += 'device-discovery-protocol-version:{}\n'.format(DDP_VERSION)
