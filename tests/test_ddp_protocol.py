@@ -2,6 +2,7 @@
 """Mock actual PS4 device/server. Tests for DDP Protocol."""
 import asyncio
 import logging
+import pytest
 
 from pyps4_2ndscreen.ddp import async_create_ddp_endpoint
 from pyps4_2ndscreen.credential import get_ddp_message
@@ -25,7 +26,7 @@ MOCK_RESPONSE = {
     'host-request-port': MOCK_PORT
 }
 
-TIMEOUT = 1
+TIMEOUT = 3
 
 """There are 3 PS4 objects to test, representing 2 PS4 consoles
 1. A PS4 object
@@ -61,164 +62,108 @@ class MockDDPProtocol():
         self.transport = None
 
 
-class TestPS4DDPServer():
-    """Class for tests."""
-
-    def __init__(self):
-        """Init."""
-        self.mock_protocol = None
-        self.mock_protocol2 = None
-        self.mock_client_protocol = None
-        self.mock_ps4 = None
-        self.mock_ps4_creds = None
-        self.mock_ps4_host = None
-        self.mock_status_ps4 = None
-        self.mock_status_ps4_creds = None
-        self.mock_status_ps4_host = None
-        self.tests_ran = 0
-
-    def stop_tests(self):
-        """Close all transports."""
-        self.mock_protocol.close()
-        self.mock_protocol2.close()
-        self.mock_client_protocol.close()
-
-    def mock_callback(self):
-        """Mock Status callback"""
-        self.mock_status_ps4 = self.mock_ps4.status
-        _LOGGER.debug("Callback called: %s", self.mock_ps4.host)
-
-    def mock_callback_creds(self):
-        """Mock Status callback for PS4 with different creds"""
-        self.mock_status_ps4_creds = self.mock_ps4_creds.status
-        _LOGGER.debug(
-            "Callback called: %s : Creds", self.mock_ps4_creds.host)
-
-    def mock_callback_host(self):
-        """Mock Status callback for PS4 with different IP."""
-        self.mock_status_ps4_host = self.mock_ps4_host.status
-        _LOGGER.debug("Callback called: %s", self.mock_ps4_host.host)
-
-    async def start_mock_ps4(self, mock_addr):
-        """Start a Mock PS4 Server."""
-        mock_loop = asyncio.get_event_loop()
-        mock_server = mock_loop.create_datagram_endpoint(
-            lambda: MockDDPProtocol(), local_addr=(mock_addr, MOCK_PORT),  # noqa: pylint: disable=unnecessary-lambda
-            reuse_address=True, reuse_port=True, allow_broadcast=True)
-        _, mock_protocol = await mock_loop.create_task(mock_server)
-        return mock_protocol
-
-    async def start_tests(self):
-        """Start Tests."""
-
-        _, self.mock_client_protocol = await async_create_ddp_endpoint()
-        assert self.mock_client_protocol.port == 987
-        # Change port to use unpriviliged port.
-        self.mock_client_protocol._set_write_port(MOCK_PORT)  # noqa: pylint: disable=protected-access
-        assert self.mock_client_protocol.port == MOCK_PORT
-        self.mock_protocol = await self.start_mock_ps4(MOCK_HOST)
-        self.mock_protocol2 = await self.start_mock_ps4(MOCK_HOST2)
-
-        self.mock_ps4 = ps4(MOCK_HOST, MOCK_CREDS)
-        self.mock_ps4.ddp_protocol = self.mock_client_protocol
-
-        self.mock_ps4_creds = ps4(MOCK_HOST, MOCK_CREDS2)
-        self.mock_ps4_creds.ddp_protocol = self.mock_client_protocol
-
-        self.mock_ps4_host = ps4(MOCK_HOST2, MOCK_CREDS)
-        self.mock_ps4_host.ddp_protocol = self.mock_client_protocol
-
-        # Run Tests.
-
-        self.test_callback_add()
-        assert len(self.mock_client_protocol.callbacks) == 2
-        assert len(self.mock_client_protocol.callbacks[MOCK_HOST]) == 2
-        assert len(self.mock_client_protocol.callbacks[MOCK_HOST2]) == 1
-        self.tests_ran += 1
-
-        self.test_ps4()
-        _LOGGER.debug("Test 1")
-        await asyncio.sleep(TIMEOUT)
-        assert self.mock_status_ps4['status_code'] == STATUS_STANDBY
-        self.tests_ran += 1
-
-        _LOGGER.debug("Test 2")
-        self.test_ps4_creds()
-        await asyncio.sleep(TIMEOUT)
-        assert self.mock_status_ps4['status_code'] == STATUS_STANDBY
-        assert self.mock_status_ps4_creds['status_code'] == STATUS_STANDBY
-        self.tests_ran += 1
-
-        _LOGGER.debug("Test 3")
-        self.test_ps4_host()
-        await asyncio.sleep(TIMEOUT)
-        assert self.mock_status_ps4['status_code'] == STATUS_STANDBY
-        assert self.mock_status_ps4_creds['status_code'] == STATUS_STANDBY
-        assert self.mock_status_ps4_host['status_code'] == STATUS_STANDBY
-        self.tests_ran += 1
-
-        self.test_callback_remove()
-        assert len(self.mock_client_protocol.callbacks) == 0
-        self.tests_ran += 1
-
-        assert self.tests_ran == 5
-
-        self.stop_tests()
-
-    def test_callback_add(self):
-        """Test that Callbacks are added."""
-        self.mock_client_protocol.add_callback(
-            self.mock_ps4, self.mock_callback)
-        self.mock_client_protocol.add_callback(
-            self.mock_ps4_creds, self.mock_callback_creds)
-        self.mock_client_protocol.add_callback(
-            self.mock_ps4_host, self.mock_callback_host)
-
-    def test_callback_remove(self):
-        """Test that PS4 objects and callback are removed."""
-        self.mock_client_protocol.remove_callback(
-            self.mock_ps4, self.mock_callback)
-        self.mock_client_protocol.remove_callback(
-            self.mock_ps4_creds, self.mock_callback_creds)
-        self.mock_client_protocol.remove_callback(
-            self.mock_ps4_host, self.mock_callback_host)
-
-    def test_reset(self):
-        """Reset Tests."""
-        self.mock_ps4.status = None
-        self.mock_ps4_creds.status = None
-        self.mock_ps4_host.status = None
-        self.mock_status_ps4 = None
-        self.mock_status_ps4_creds = None
-        self.mock_status_ps4_host = None
-
-    def test_ps4(self):
-        """Test status update for a PS4 Device."""
-        self.test_reset()
-        self.mock_ps4.get_status()
-
-    def test_ps4_creds(self):
-        """Test status updates for two ps4 objects with
-        different creds for the same PS4 Device."""
-        self.test_reset()
-        self.mock_ps4.get_status()
-        self.mock_ps4_creds.get_status()
-
-    def test_ps4_host(self):
-        """Test status updates for two ps4 objects with
-        different creds for the same PS4 Device and a 2nd PS4 Device."""
-        self.test_reset()
-        self.mock_ps4.get_status()
-        self.mock_ps4_creds.get_status()
-        self.mock_ps4_host.get_status()
-
-
-def main():
-    """Setup tests."""
+async def start_mock_ps4(mock_addr):
+    """Start a Mock PS4 Server."""
     mock_loop = asyncio.get_event_loop()
-    tests = TestPS4DDPServer()
-    mock_loop.run_until_complete(tests.start_tests())
+    mock_server = mock_loop.create_datagram_endpoint(
+        lambda: MockDDPProtocol(), local_addr=(mock_addr, MOCK_PORT),  # noqa: pylint: disable=unnecessary-lambda
+        reuse_port=True, allow_broadcast=True)
+    _, mock_protocol = await mock_loop.create_task(mock_server)
+    return mock_protocol
 
 
-if __name__ == "__main__":
-    main()
+async def start_mock_instance():
+    """Start Tests."""
+    _, mock_client_protocol = await async_create_ddp_endpoint()
+    assert mock_client_protocol.port == 987
+    # Change port to use unpriviliged port.
+    mock_client_protocol._set_write_port(MOCK_PORT)  # noqa: pylint: disable=protected-access
+    assert mock_client_protocol.port == MOCK_PORT
+    mock_protocol1 = await start_mock_ps4(MOCK_HOST)
+    mock_protocol2 = await start_mock_ps4(MOCK_HOST2)
+
+    mock_ps4 = ps4(MOCK_HOST, MOCK_CREDS)
+    mock_ps4.ddp_protocol = mock_client_protocol
+
+    mock_ps4_creds = ps4(MOCK_HOST, MOCK_CREDS2)
+    mock_ps4_creds.ddp_protocol = mock_client_protocol
+
+    mock_ps4_host = ps4(MOCK_HOST2, MOCK_CREDS)
+    mock_ps4_host.ddp_protocol = mock_client_protocol
+
+    return (
+        mock_client_protocol,
+        (mock_ps4, mock_ps4_creds, mock_ps4_host),
+        (mock_protocol1, mock_protocol2),
+    )
+
+
+def _add_callbacks(client_protocol, ps4_obj, callbacks):
+    client_protocol.add_callback(
+        ps4_obj[0], callbacks[0])
+    client_protocol.add_callback(
+        ps4_obj[1], callbacks[1])
+    client_protocol.add_callback(
+        ps4_obj[2], callbacks[2])
+
+
+class CBStatus():
+    def __init__(self, ps4_obj):
+        self.ps40 = ps4_obj[0]
+        self.ps41 = ps4_obj[1]
+        self.ps42 = ps4_obj[2]
+        self.status0 = None
+        self.status1 = None
+        self.status2 = None
+
+    def _update0(self):
+        self.status0 = self.ps40.status
+
+    def _update1(self):
+        self.status1 = self.ps41.status
+
+    def _update2(self):
+        self.status2 = self.ps42.status
+
+
+@pytest.mark.asyncio
+async def test_status():
+    """Test status update for a PS4 Devices."""
+    mock_client_protocol, mock_ps4s, mock_devices = await start_mock_instance()
+    mock_ps4 = mock_ps4s[0]
+    mock_ps4_creds = mock_ps4s[1]
+    mock_ps4_host = mock_ps4s[2]
+
+    _status = CBStatus(mock_ps4s)
+    mock_callbacks = (_status._update0, _status._update1, _status._update2)
+    _add_callbacks(mock_client_protocol, mock_ps4s, mock_callbacks)
+
+    assert len(mock_client_protocol.callbacks) == 2  # 2 PS4 Devices.
+    assert len(mock_client_protocol.callbacks[MOCK_HOST]) == 2  # noqa: 2 Callbacks for 2 PS4 Object.
+    assert len(mock_client_protocol.callbacks[MOCK_HOST2]) == 1  # noqa: 1 Callback for other PS4 device.
+
+    mock_ps4.get_status()
+    mock_ps4_creds.get_status()
+    mock_ps4_host.get_status()
+    await asyncio.sleep(TIMEOUT)
+    assert mock_ps4.status is not None
+    assert _status.status0['status_code'] == STATUS_STANDBY
+    assert mock_ps4_creds.status is not None
+    assert _status.status1['status_code'] == STATUS_STANDBY
+    assert mock_ps4_host.status is not None
+    assert _status.status2['status_code'] == STATUS_STANDBY
+
+    mock_client_protocol.remove_callback(
+        mock_ps4, mock_callbacks[0])
+    assert len(mock_client_protocol.callbacks[MOCK_HOST]) == 1
+    # Should be 1 callback for this PS4 device.
+    mock_client_protocol.remove_callback(
+        mock_ps4_creds, mock_callbacks[1])
+    # Device should be removed since no callbacks remaining.
+    assert len(mock_client_protocol.callbacks) == 1
+    mock_client_protocol.remove_callback(
+        mock_ps4_host, mock_callbacks[2])
+    assert len(mock_client_protocol.callbacks) == 0
+
+    mock_devices[0].close()
+    mock_devices[1].close()

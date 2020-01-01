@@ -8,12 +8,13 @@ python:
 install:
   - pip install -r requirements.txt
   - pip install flake8==3.3.0 pylint==2.3.0
+  - pip install pytest-asyncio==0.10.0
   - python setup.py install
 script:
   - flake8 --exclude __init__.py pyps4_2ndscreen
   - pylint pyps4_2ndscreen
   - python tests/test_media_art.py
-  - python tests/test_ddp_protocol.py
+  - pytest tests/test_ddp_protocol.py
 branches:
   only:
   - master
