@@ -89,11 +89,9 @@ def test_get_status():
             MOCK_DDP_RESPONSE.encode('utf-8'),
             (MOCK_HOST, MOCK_RANDOM_PORT)),
     ) as mock_send:
-        devices = ddp.get_status(host=MOCK_HOST)
+        parsed = ddp.get_status(host=MOCK_HOST)
 
     assert len(mock_send.mock_calls) == 1
-    assert len(devices) == 1
-    parsed = devices[0]
 
     for key, value in parsed.items():
         assert key in MOCK_DDP_DICT
