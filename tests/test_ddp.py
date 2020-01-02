@@ -70,15 +70,22 @@ MOCK_DDP_RESPONSE = '''
 def test_ddp_messages():
     """Test that DDP messages to send are correct."""
     msg = ddp.get_ddp_search_message()
-    assert msg == MOCK_DDP_MESSAGE.format(ddp.DDP_TYPE_SEARCH, MOCK_DDP_VER)
+    msg = msg.split('\n')
+    for item in msg:
+        assert item in MOCK_DDP_MESSAGE.format(
+            ddp.DDP_TYPE_SEARCH, MOCK_DDP_VER)
 
     cred_data = MOCK_DDP_CRED_DATA.format(MOCK_CREDS, MOCK_DDP_VER)
 
     msg = ddp.get_ddp_launch_message(MOCK_CREDS)
-    assert msg == MOCK_DDP_MESSAGE.format(ddp.DDP_TYPE_LAUNCH, cred_data)
+    msg = msg.split('\n')
+    for item in msg:
+        assert item in MOCK_DDP_MESSAGE.format(ddp.DDP_TYPE_LAUNCH, cred_data)
 
     msg = ddp.get_ddp_wake_message(MOCK_CREDS)
-    assert msg == MOCK_DDP_MESSAGE.format(ddp.DDP_TYPE_WAKEUP, cred_data)
+    msg = msg.split('\n')
+    for item in msg:
+        assert item in MOCK_DDP_MESSAGE.format(ddp.DDP_TYPE_WAKEUP, cred_data)
 
 
 def test_get_status():
