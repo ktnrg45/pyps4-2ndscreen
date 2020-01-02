@@ -12,8 +12,7 @@ install:
 script:
   - flake8 --exclude __init__.py pyps4_2ndscreen
   - pylint pyps4_2ndscreen
-  - python tests/test_media_art.py
-  - pytest tests/test_ddp_protocol.py
+  - pytest tests/
 branches:
   only:
   - master
