@@ -10,25 +10,28 @@ import aiohttp
 CLIENT_ID = "ba495a24-818c-472b-b12d-ff231c1b5745"
 CLIENT_SECRET = "mvaiZkRsAsI1IBkY"
 
-LOGIN_URL = '''https://auth.api.sonyentertainmentnetwork.com/2.0/oauth/authorize
-               ?service_entity=urn:service-entity:psn
-               &response_type=code&client_id={}
-               &redirect_uri=https://remoteplay.dl.playstation.net/remoteplay/redirect
-               &scope=psn:clientapp
-               &request_locale=en_US&ui=pr
-               &service_logo=ps
-               &layout_type=popup
-               &smcid=remoteplay
-               &prompt=always
-               &PlatformPrivacyWs1=minimal
-               &no_captcha=true&'''.format(CLIENT_ID)
+LOGIN_URL = (
+    'https://auth.api.sonyentertainmentnetwork.com/'
+    '2.0/oauth/authorize'
+    '?service_entity=urn:service-entity:psn'
+    '&response_type=code&client_id={}'
+    '&redirect_uri=https://remoteplay.dl.playstation.net/remoteplay/redirect'
+    '&scope=psn:clientapp'
+    '&request_locale=en_US&ui=pr'
+    '&service_logo=ps'
+    '&layout_type=popup'
+    '&smcid=remoteplay'
+    '&prompt=always'
+    '&PlatformPrivacyWs1=minimal'
+    '&no_captcha=true&'.format(CLIENT_ID)
+)
 
 TOKEN_URL = "https://auth.api.sonyentertainmentnetwork.com/2.0/oauth/token"
-TOKEN_BODY = '''
-                grant_type=authorization_code
-                &code={}
-                &redirect_uri=https://remoteplay.dl.playstation.net/remoteplay/redirect&
-            '''
+TOKEN_BODY = (
+    'grant_type=authorization_code'
+    '&code={}'
+    '&redirect_uri=https://remoteplay.dl.playstation.net/remoteplay/redirect&'
+)
 HEADERS = {
     "Content-Type": "application/x-www-form-urlencoded"
 }
@@ -131,16 +134,18 @@ def _format_user_id(user_id: str, encoding='base64'):
 
 
 def _prompt():
-    msg = """Go to the url below in a web browser,
-             log into your PSN Account,
-             then copy + paste the URL of the page that shows 'redirect'.
-             \r\n\r\n{} \r\n\r\n Enter Redirect URL > """.format(LOGIN_URL)
+    msg = (
+        "\r\n\r\nGo to the url below in a web browser, "
+        "log into your PSN Account, "
+        "then copy and paste the URL of the page that shows 'redirect'."
+        "\r\n\r\n{} \r\n\r\nEnter Redirect URL >".format(LOGIN_URL)
+    )
 
     redirect_url = input(msg)
     if redirect_url is not None:
         account_info = get_user_account(redirect_url)
         user_id = account_info.get('credentials')
-        print("Your account id is: '{}'".format(user_id))
+        print("\r\n\r\nYour account id is: '{}'".format(user_id))
 
 
 if __name__ == '__main__':
