@@ -53,6 +53,7 @@ def get_user_account(redirect_url: str, loop=None):
 
 
 async def async_get_user_account(redirect_url: str) -> dict:
+    """Asyncio coroutine to get user account."""
     code = _parse_redirect_url(redirect_url)
     if code is None:
         return None
@@ -105,14 +106,14 @@ def _parse_redirect_url(redirect_url):
     code_url = urlparse(redirect_url)
     query = parse_qs(code_url.query)
     code = query.get('code')
-    if code is None or len(code) <= 0:
+    if code is None:
         _LOGGER.error("Code not in query")
         return None
     code = code[0]
-    if len(code) <= 0:
+    if len(code) <= 1:
         _LOGGER.error("Code is too short")
         return None
-    _LOGGER.debug(f"Got Code: {code}")
+    _LOGGER.debug("Got Auth Code: %s", code)
     return code
 
 
