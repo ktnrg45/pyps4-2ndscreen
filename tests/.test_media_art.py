@@ -2,6 +2,7 @@
 import logging
 import asyncio
 import time
+import pytest
 
 import pyps4_2ndscreen.ps4 as ps4
 
@@ -46,8 +47,7 @@ TEST_CREDS = "Imatest000"
 TEST_PS4 = ps4.Ps4Async(TEST_HOST, TEST_CREDS)
 
 
-async def test_sample_list(index_num):
-    """Test sample list with asyncio."""
+async def _get_cover_art(index_num):
     start = time.time()
     test_item = TEST_LIST.index(index_num)
     item = TEST_LIST[test_item]
@@ -58,20 +58,21 @@ async def test_sample_list(index_num):
     result_item = await TEST_PS4.async_get_ps_store_data(
         title, title_id, region)
     if result_item is None:
-        result_item = await test_search_all(title, title_id)
+        result_item = await TEST_PS4.async_search_all_ps_data(
+            title, title_id)
     if result_item is not None:
         _LOGGER.info(
             "Result %s: %s",
             TEST_LIST.index(index_num), result_item.name)
+        _LOGGER.debug("Cover URL: %s", result_item.cover_art)
 
     assert result_item is not None
     elapsed = time.time() - start
     _LOGGER.info("Retrieved in %s seconds", elapsed)
 
 
-async def test_search_all(title, title_id):
+async def _search_all(title, title_id):
     start = time.time()
-
     result_item = await TEST_PS4.async_search_all_ps_data(
         title, title_id)
     elapsed = time.time() - start
@@ -80,16 +81,36 @@ async def test_search_all(title, title_id):
     return result_item
 
 
+@pytest.mark.asyncio
+async def test_search_all():
+    """Test Search All method"""
+    title = TEST_LIST[2][0]
+    title_id = TEST_LIST[2][1]
+    result_item = await _search_all(title, title_id)
+    assert result_item is not None
+    return result_item
+
+
+@pytest.mark.asyncio
+async def test_sample_list():
+    """Test sample list with asyncio."""
+    tests = []
+    for index_num in TEST_LIST:
+        test = _get_cover_art(index_num)
+        tests.append(test)
+    await asyncio.gather(*tests)
+
+
 async def _get_tests():
     tests = []
     for index_num in TEST_LIST:
-        test = test_sample_list(index_num)
+        test = _get_cover_art(index_num)
         tests.append(test)
     await asyncio.gather(*tests)
 
     # Test one Item for search_all
     search_all = asyncio.ensure_future(
-        test_search_all(TEST_LIST[2][0], TEST_LIST[2][1]))
+        _search_all(TEST_LIST[2][0], TEST_LIST[2][1]))
     await search_all
 
 
