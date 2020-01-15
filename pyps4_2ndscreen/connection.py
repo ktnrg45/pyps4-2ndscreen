@@ -18,6 +18,7 @@ _LOGGER = logging.getLogger(__name__)
 TIMEOUT = 5
 PS_DELAY = 1
 DEFAULT_LOGIN_DELAY = 1
+DEFAULT_HEARTBEAT_TIMEOUT = 15
 TCP_PORT = 997
 
 STATUS_REQUEST = \
@@ -430,12 +431,15 @@ class TCPProtocol(asyncio.Protocol):
         self.task_available = asyncio.Event()
         self.login_success = asyncio.Event()
         self.ps_delay = None
+        self.heartbeat_timeout = DEFAULT_HEARTBEAT_TIMEOUT
+        self._last_heartbeat = None
 
     def connection_made(self, transport):
         """When connected."""
         self.transport = cast(asyncio.Transport, transport)
         self.ps4.connected = True
         _LOGGER.debug("PS4 Transport Connected @ %s", self.ps4.host)
+        self.loop.call_later(self.heartbeat_timeout, self._check_heartbeat)
 
         if self.ps4.task_queue is not None:
             valid_initial_tasks = {'start_title': self.start_title,
@@ -609,7 +613,24 @@ class TCPProtocol(asyncio.Protocol):
     async def _ack_status(self):
         """Sends msg in response to heartbeat message."""
         # Update state as well, no need to manage polling now.
+        self._last_heartbeat = time.time()
         self.ps4.get_status()
         self.sync_send(_get_status_ack())
         _LOGGER.debug("Sending Hearbeat response")
         self.loop.call_later(0.2, self._complete_task)
+
+    def _check_heartbeat(self):
+        hb_delta = self.heartbeat_delta
+        _LOGGER.debug("Heartbeat Delta: %s", hb_delta)
+        if hb_delta > self.heartbeat_timeout:
+            _LOGGER.error("Timed out waiting for PS4 heartbeat status")
+            self.ps4._close()  # noqa: pylint: disable=protected-access
+        else:
+            self.loop.call_later(self.heartbeat_timeout, self._check_heartbeat)
+
+    @property
+    def heartbeat_delta(self) -> float:
+        """Return time delta in seconds from last hearbeat."""
+        if self._last_heartbeat is None:
+            return time.time()
+        return time.time() - self._last_heartbeat
