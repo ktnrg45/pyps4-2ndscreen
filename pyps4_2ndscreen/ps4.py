@@ -38,16 +38,20 @@ STATUS_STANDBY = 620
 
 
 class Ps4Base():
-    """The PS4 object."""
+    """The PS4 object.
+
+    :param host: The host PS4 IP address
+    :type: host: str
+    :param credential: The credentials of a PSN account
+    :type: credential: str
+    :param device_name: Name for device
+    :type: device_name: str, optional
+    """
 
     def __init__(self, host, credential,
                  device_name=DEFAULT_DEVICE_NAME):
-        """Initialize the instance.
+        """Initialize the instance."""
 
-        Keyword arguments:
-            host -- the host IP address
-            credential -- the credential string
-        """
         self.host = host
         self.credential = None
         self.device_name = device_name

@@ -1,16 +1,21 @@
+*********
 Usage
-=====================
+*********
+
 API should be accessed initially like the following examples.
 
 Most functions can be accessed from the high-level PS4 object. You will need to pass in the IP address of your PS4 and your PSN credentials.
 
 There are several async/asyncio coroutine functions in this module. These functions should be accessed with an Asyncio loop.
 
-There are two versions of the Ps4 object/class: Ps4() and Ps4Async(). The Ps4Async version is recommended over the legacy Ps4 version which may be deprecated in the future.
-The difference between the two is that the Ps4() class uses synchronous sockets (socket.socket) while the Ps4Async() class uses asyncio transports and protocols. If using the Async version, a running asyncio event loop is required.
+There are two versions of the Ps4 object/class: :class:`pyps4_2ndscreen.ps4.Ps4Legacy` and :class:`pyps4_2ndscreen.ps4.Ps4Async`. The :class:`pyps4_2ndscreen.ps4.Ps4Async` version is recommended over the :class:`pyps4_2ndscreen.ps4.Ps4Legacy` version which may be deprecated in the future.
+The difference between the two is that the :class:`pyps4_2ndscreen.ps4.Ps4Legacy` class uses synchronous sockets (socket.socket) while the :class:`pyps4_2ndscreen.ps4.Ps4Async` class uses asyncio transports and protocols. If using the Async version, a running asyncio event loop is required.
 
 Using Ps4Async Example
 ========================
+
+Initializing
+----------------------
 
 - First start an asyncio event loop in the main thread.
 
@@ -38,6 +43,71 @@ Using Ps4Async Example
     creds = 'yourcredentials'
     ps4 = Ps4Async(ip_address, creds)
     ps4.ddp_protocol = ddp_protocol
+
+
+Getting Status
+---------------
+
+Status messages include various details such as the PS4 Standby/On status and the current game playing.
+
+To get the status of the PS4 simply call:
+
+.. code:: python
+
+    status = ps4.get_status()
+
+
+Controlling
+-----------
+
+To turn on from standby call:
+
+.. code:: python
+
+    ps4.launch()
+
+
+In order to control the PS4 in other ways, you have to login as a registered PSN user on your PS4.
+
+- First you should connect. This merely connects a TCP connection with the PS4. Sometimes the PS4 will refuse the connection, especially right after turning it on.
+
+.. code:: python
+
+    await ps4.async_connect()
+
+- Then you can login.
+
+.. code:: python
+
+    await ps4.login()
+
+
+The following are supported actions. (Logging in should be handled automatically):
+
+- Turning Off
+
+.. code:: python
+
+    await ps4.standby()
+
+- Launching a game or an app
+
+.. code:: python
+
+    await ps4.start_title('CUS10000')
+
+- Navigation functions
+
+.. code:: python
+
+    await ps4.remote_control('ps')
+
+
+To logout we simply drop the connection.
+
+.. code:: python
+
+    await ps4.close()
 
 
 Getting Credentials
