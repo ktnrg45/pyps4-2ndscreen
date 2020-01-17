@@ -186,13 +186,11 @@ def _get_remote_control_request(operation, hold_time) -> list:
         msg.append(fmt.build({'op': 1024, 'hold_time': 0}))  # Open RC
         msg.append(fmt.build({'op': operation, 'hold_time': hold_time}))
         msg.append(fmt.build({'op': 256, 'hold_time': 0}))  # Key Off
-        msg.append(fmt.build({'op': 2048, 'hold_time': 0}))  # Close RC
+        # msg.append(fmt.build({'op': 2048, 'hold_time': 0}))  # Close RC
     else:  # PS
         msg.append(fmt.build({'op': 1024, 'hold_time': 0}))  # Open RC
-        msg.append(fmt.build({'op': operation, 'hold_time': hold_time}))
-        msg.append(fmt.build({'op': operation, 'hold_time': 1}))
-        msg.append(fmt.build({'op': 256, 'hold_time': 0}))  # Key Off
-
+        msg.append(fmt.build({'op': operation, 'hold_time': 0}))
+        msg.append(fmt.build({'op': operation, 'hold_time': hold_time + 500}))
     return msg
 
 
@@ -217,6 +215,18 @@ def _get_remote_control_close_request():
     )
 
     msg = fmt.build({'op': 2048, 'hold_time': 0})  # Close RC
+    return msg
+
+
+def _get_remote_control_key_off_request():
+    fmt = Struct(
+        'length' / Const(b'\x10\x00\x00\x00'),
+        'type' / Const(b'\x1c\x00\x00\x00'),
+        'op' / Int32ul,
+        'hold_time' / Int32ul,
+    )
+
+    msg = fmt.build({'op': 256, 'hold_time': 0})  # Key Off
     return msg
 
 
@@ -603,7 +613,8 @@ class TCPProtocol(asyncio.Protocol):
             else:
                 ps_delay = self.ps_delay
             self.loop.call_later(
-                ps_delay, self.sync_send, _get_remote_control_close_request())
+                ps_delay, self.sync_send,
+                _get_remote_control_key_off_request())
             self.loop.call_later(
                 ps_delay, self._complete_task)
         else:
@@ -623,7 +634,8 @@ class TCPProtocol(asyncio.Protocol):
         hb_delta = self.heartbeat_delta
         _LOGGER.debug("Heartbeat Delta: %s", hb_delta)
         if hb_delta > self.heartbeat_timeout:
-            _LOGGER.error("Timed out waiting for PS4 heartbeat status")
+            _LOGGER.error(
+                "Timed out waiting for PS4 heartbeat status; Closing...")
             self.ps4._close()  # noqa: pylint: disable=protected-access
         else:
             self.loop.call_later(self.heartbeat_timeout, self._check_heartbeat)

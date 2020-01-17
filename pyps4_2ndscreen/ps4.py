@@ -20,18 +20,23 @@ from .media_art import (async_get_ps_store_requests,
 
 _LOGGER = logging.getLogger(__name__)
 
-BUTTONS = {'up': 1,
-           'down': 2,
-           'right': 4,
-           'left': 8,
-           'enter': 16,
-           'back': 32,
-           'option': 64,
-           'ps': 128,
-           'key_off': 256,
-           'cancel': 512,
-           'open_rc': 1024,
-           'close_rc': 2048}
+BUTTONS = {
+    'up': 1,
+    'down': 2,
+    'right': 4,
+    'left': 8,
+    'enter': 16,
+    'back': 32,
+    'option': 64,
+    'ps': 128,
+    'ps_hold': 128,
+    'key_off': 256,
+    'cancel': 512,
+    'open_rc': 1024,
+    'close_rc': 2048
+}
+
+PS_HOLD_TIME = 2000
 
 STATUS_OK = 200
 STATUS_STANDBY = 620
@@ -39,19 +44,14 @@ STATUS_STANDBY = 620
 
 class Ps4Base():
     """The PS4 object.
-
     :param host: The host PS4 IP address
-    :type: host: str
     :param credential: The credentials of a PSN account
-    :type: credential: str
     :param device_name: Name for device
-    :type: device_name: str, optional
     """
 
-    def __init__(self, host, credential,
+    def __init__(self, host: str, credential: str,
                  device_name=DEFAULT_DEVICE_NAME):
         """Initialize the instance."""
-
         self.host = host
         self.credential = None
         self.device_name = device_name
@@ -345,6 +345,8 @@ class Ps4Legacy(Ps4Base):
         button_name = button_name.lower()
         if button_name not in BUTTONS.keys():
             raise UnknownButton("Button: {} is not valid".format(button_name))
+        if button_name == 'ps_hold':
+            hold_time = PS_HOLD_TIME
         operation = BUTTONS[button_name]
         if self.open():
             _LOGGER.debug("Sending RC Command: %s", button_name)
@@ -467,6 +469,8 @@ class Ps4Async(Ps4Base):
         if button_name not in BUTTONS.keys():
             raise UnknownButton(
                 "Button: {} is not valid".format(button_name))
+        if button_name == 'ps_hold':
+            hold_time = PS_HOLD_TIME
         operation = BUTTONS[button_name]
 
         if self.tcp_protocol is None:
