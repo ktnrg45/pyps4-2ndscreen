@@ -137,9 +137,11 @@ def _get_login_request(credential, name=None, pin=None):
     name = name.encode()
 
     config = {
-        'app_label': b'PlayStation'.ljust(256, b'\x00'),
+        # This label appears in the notification when logging in.
+        'app_label': name.ljust(256, b'\x00'),
         'account_id': credential.encode().ljust(64, b'\x00'),
         'os_version': b'4.4'.ljust(16, b'\x00'),
+        # Used when linking, will be the name of device in settings.
         'model': name.ljust(16, b'\x00'),
         'pin_code': pin.ljust(16, b'\x00'),
     }
