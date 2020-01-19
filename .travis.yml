@@ -1,4 +1,3 @@
-sudo: False
 language: python
 python:
   - "3.5"
@@ -12,7 +11,7 @@ install:
 script:
   - flake8 --exclude __init__.py pyps4_2ndscreen
   - pylint pyps4_2ndscreen
-  - pytest tests/
+  - py.test --cov-report=xml --cov=pyps4_2ndscreen tests/
 branches:
   only:
   - master
