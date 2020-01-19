@@ -184,15 +184,19 @@ def _get_remote_control_request(operation, hold_time) -> list:
     )
     # Prebuild required remote messages."""
     msg = []
+    msg.append(fmt.build({'op': 1024, 'hold_time': 0}))  # Open RC
+
     if operation != 128:
-        msg.append(fmt.build({'op': 1024, 'hold_time': 0}))  # Open RC
         msg.append(fmt.build({'op': operation, 'hold_time': hold_time}))
         msg.append(fmt.build({'op': 256, 'hold_time': 0}))  # Key Off
         # msg.append(fmt.build({'op': 2048, 'hold_time': 0}))  # Close RC
+
     else:  # PS
-        msg.append(fmt.build({'op': 1024, 'hold_time': 0}))  # Open RC
         msg.append(fmt.build({'op': operation, 'hold_time': 0}))
         msg.append(fmt.build({'op': operation, 'hold_time': hold_time + 500}))
+        if hold_time == 0:
+            msg.append(fmt.build({'op': 256, 'hold_time': 0}))  # Key Off
+
     return msg
 
 
@@ -593,30 +597,32 @@ class TCPProtocol(asyncio.Protocol):
         task_name = 'remote_control'
         msg = _get_remote_control_request(operation, hold_time)
         task = self.add_task(task_name, self._send_remote_control_request,  # noqa: pylint: disable=assignment-from-no-return
-                             msg, operation)
+                             msg, operation, hold_time)
         asyncio.ensure_future(task)
 
-    async def _send_remote_control_request(self, msg, operation):
+    async def _send_remote_control_request(self, msg, operation, hold_time=0):
         """Send messages for remote control."""
-        self._send_remote_control_request_sync(msg, operation)
+        self._send_remote_control_request_sync(msg, operation, hold_time)
 
-    def _send_remote_control_request_sync(self, msg, operation):
+    def _send_remote_control_request_sync(self, msg, operation, hold_time=0):
         """Sync Wrapper for Remote Control."""
         for message in msg:
             # Messages are time sensitive.
             # Needs to be immediately sent in order.
             self.sync_send(message)
 
-        # For 'PS' command.
-        if operation == 128:
-            # Even more time sensitive. Delay of around 1 Second needed.
+        # For 'PS Hold' command.
+        if operation == 128 and hold_time != 0:
+            # End command using key_off.
             if self.ps_delay is None:
                 ps_delay = PS_DELAY
             else:
                 ps_delay = self.ps_delay
             self.loop.call_later(
-                ps_delay, self.sync_send,
-                _get_remote_control_key_off_request())
+                ps_delay,
+                self.sync_send,
+                _get_remote_control_key_off_request()
+            )
             self.loop.call_later(
                 ps_delay, self._complete_task)
         else:
