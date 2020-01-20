@@ -16,7 +16,7 @@ from .errors import (NotReady, PSDataIncomplete,
 from .media_art import (async_get_ps_store_requests,
                         get_lang, parse_data, COUNTRIES,
                         async_prepare_tumbler, PINNED_TITLES,
-                        get_pinned_item)
+                        get_pinned_item, ResultItem)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -44,6 +44,7 @@ STATUS_STANDBY = 620
 
 class Ps4Base():
     """The PS4 object.
+
     :param host: The host PS4 IP address
     :param credential: The credentials of a PSN account
     :param device_name: Name for device
@@ -51,7 +52,6 @@ class Ps4Base():
 
     def __init__(self, host: str, credential: str,
                  device_name=DEFAULT_DEVICE_NAME):
-        """Initialize the instance."""
         self.host = host
         self.credential = None
         self.device_name = device_name
@@ -67,7 +67,7 @@ class Ps4Base():
         self.credential = credential
 
     def get_status(self) -> dict:
-        """Get current status info."""
+        """Return current status info."""
         import socket
 
         try:
@@ -84,8 +84,9 @@ class Ps4Base():
                 return self.status
             return None
 
-    async def async_get_ps_store_data(self, title, title_id, region):
-        """Get and Parse Responses."""
+    async def async_get_ps_store_data(
+        self, title: str, title_id: str, region: str) -> ResultItem:
+        """Return title data from PS Store."""
         # Check if title is a pinned title first and return.
         pinned = None
         pinned = PINNED_TITLES.get(title_id)
@@ -234,7 +235,7 @@ class Ps4Base():
 
 
 class Ps4Legacy(Ps4Base):
-    """Legacy PS4 Class."""
+    """Legacy PS4 Class. Sync Version."""
 
     def __init__(self, host, credential, device_name=DEFAULT_DEVICE_NAME):
         super().__init__(host, credential, device_name)
