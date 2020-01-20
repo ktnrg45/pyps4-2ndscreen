@@ -16,3 +16,5 @@ branches:
   only:
   - master
   - dev
+after_success:
+  - codecov
