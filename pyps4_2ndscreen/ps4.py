@@ -85,7 +85,7 @@ class Ps4Base():
             return None
 
     async def async_get_ps_store_data(
-        self, title: str, title_id: str, region: str) -> ResultItem:
+            self, title: str, title_id: str, region: str) -> ResultItem:
         """Return title data from PS Store."""
         # Check if title is a pinned title first and return.
         pinned = None
