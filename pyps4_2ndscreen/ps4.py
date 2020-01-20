@@ -255,8 +255,7 @@ class Ps4Legacy(Ps4Base):
 
     def open(self):
         """Open a connection to the PS4."""
-        if self.status is None:
-            self.get_status()
+        self.get_status()
         if not self.is_running:
             raise NotReady("PS4 is not On")
 
