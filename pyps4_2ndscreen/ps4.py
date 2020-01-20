@@ -463,8 +463,12 @@ class Ps4Async(Ps4Base):
         else:
             await self.tcp_protocol.start_title(title_id, running_id)
 
-    async def remote_control(self, button_name, hold_time=0):
-        """Remote Control."""
+    async def remote_control(self, button_name: str, hold_time=0):
+        """Send remote control command.
+
+        :param button_name: Button to send to PS4.
+        :param hold_time: Time to hold in millis. Only affects PS command.
+        """
         button_name = button_name.lower()
         if button_name not in BUTTONS.keys():
             raise UnknownButton(

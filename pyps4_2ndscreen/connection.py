@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""TCP Handling for PS4."""
-from __future__ import print_function
+"""TCP Connection Handling for PS4."""
 
 import binascii
 import logging
@@ -16,7 +15,7 @@ from Cryptodome.PublicKey import RSA
 _LOGGER = logging.getLogger(__name__)
 
 TIMEOUT = 5
-PS_DELAY = 1
+PS_DELAY = 0.2
 DEFAULT_LOGIN_DELAY = 1
 DEFAULT_HEARTBEAT_TIMEOUT = 15
 TCP_PORT = 997
@@ -175,27 +174,26 @@ def _get_boot_request(title_id):
     return msg
 
 
-def _get_remote_control_request(operation, hold_time) -> list:
+def _get_remote_control_request(operation: int, hold_time: int) -> list:
+    """Return list of remote control command packets."""
     fmt = Struct(
         'length' / Const(b'\x10\x00\x00\x00'),
         'type' / Const(b'\x1c\x00\x00\x00'),
         'op' / Int32ul,
         'hold_time' / Int32ul,
     )
-    # Prebuild required remote messages."""
+    # Prebuild required remote messages.
     msg = []
     msg.append(fmt.build({'op': 1024, 'hold_time': 0}))  # Open RC
 
-    if operation != 128:
+    if operation == 128:
+        msg.append(fmt.build({'op': operation, 'hold_time': 0}))
+        msg.append(fmt.build({'op': operation, 'hold_time': hold_time}))
+
+    else:
         msg.append(fmt.build({'op': operation, 'hold_time': hold_time}))
         msg.append(fmt.build({'op': 256, 'hold_time': 0}))  # Key Off
         # msg.append(fmt.build({'op': 2048, 'hold_time': 0}))  # Close RC
-
-    else:  # PS
-        msg.append(fmt.build({'op': operation, 'hold_time': 0}))
-        msg.append(fmt.build({'op': operation, 'hold_time': hold_time + 500}))
-        if hold_time == 0:
-            msg.append(fmt.build({'op': 256, 'hold_time': 0}))  # Key Off
 
     return msg
 
@@ -611,16 +609,23 @@ class TCPProtocol(asyncio.Protocol):
             # Needs to be immediately sent in order.
             self.sync_send(message)
 
-        # For 'PS Hold' command.
-        if operation == 128 and hold_time != 0:
-            # End command using key_off.
-            if self.ps_delay is None:
-                ps_delay = PS_DELAY
+        # For 'PS' command.
+        if operation == 128:
+
+            # PS tap is unreliable/needs specific delay?
+            if hold_time == 0:
+                if self.ps_delay is None:
+                    ps_delay = PS_DELAY
+                else:
+                    ps_delay = self.ps_delay
+
+            # Delay for PS hold.
             else:
-                ps_delay = self.ps_delay
+                ps_delay = 1
+
+            # End command using key_off.
             self.loop.call_later(
-                ps_delay,
-                self.sync_send,
+                ps_delay, self.sync_send,
                 _get_remote_control_key_off_request()
             )
             self.loop.call_later(
@@ -639,10 +644,11 @@ class TCPProtocol(asyncio.Protocol):
         self.loop.call_later(0.2, self._complete_task)
 
     def _check_heartbeat(self):
+        """Check if heartbeat msg is overdue and schedule next check."""
         hb_delta = self.heartbeat_delta
         _LOGGER.debug("Heartbeat Delta: %s", hb_delta)
         if hb_delta > self.heartbeat_timeout:
-            _LOGGER.error(
+            _LOGGER.warning(
                 "Timed out waiting for PS4 heartbeat status; Closing...")
             self.ps4._close()  # noqa: pylint: disable=protected-access
         else:
