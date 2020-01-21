@@ -451,13 +451,13 @@ class TCPProtocol(asyncio.Protocol):
         self.ps_delay = None
         self.heartbeat_timeout = DEFAULT_HEARTBEAT_TIMEOUT
         self._last_heartbeat = None
+        self._hb_handler = None
 
     def connection_made(self, transport):
         """When connected."""
         self.transport = cast(asyncio.Transport, transport)
         self.ps4.connected = True
         _LOGGER.debug("PS4 Transport Connected @ %s", self.ps4.host)
-        self.loop.call_later(self.heartbeat_timeout, self._check_heartbeat)
 
         if self.ps4.task_queue is not None:
             valid_initial_tasks = {'start_title': self.start_title,
@@ -486,7 +486,11 @@ class TCPProtocol(asyncio.Protocol):
 
     def connection_lost(self, exc):
         """Call if connection lost."""
+        if self._hb_handler is not None:
+            self._hb_handler.cancel()
         self.ps4._closed()  # noqa: pylint: disable=protected-access
+        self.ps4 = None
+        self.connection = None
 
     def _complete_task(self):
         self.task = None
@@ -646,21 +650,23 @@ class TCPProtocol(asyncio.Protocol):
         self.sync_send(_get_status_ack())
         _LOGGER.debug("Sending Hearbeat response")
         self.loop.call_later(0.2, self._complete_task)
+        self._hb_handler = self.loop.create_task(self._check_heartbeat())
 
-    def _check_heartbeat(self):
+    async def _check_heartbeat(self):
         """Check if heartbeat msg is overdue and schedule next check."""
+        await asyncio.sleep(self.heartbeat_timeout)
         hb_delta = self.heartbeat_delta
+        if hb_delta is None:
+            return
         _LOGGER.debug("Heartbeat Delta: %s", hb_delta)
         if hb_delta > self.heartbeat_timeout:
             _LOGGER.warning(
                 "Timed out waiting for PS4 heartbeat status; Closing...")
             self.ps4._close()  # noqa: pylint: disable=protected-access
-        else:
-            self.loop.call_later(self.heartbeat_timeout, self._check_heartbeat)
 
     @property
     def heartbeat_delta(self) -> float:
         """Return time delta in seconds from last hearbeat."""
         if self._last_heartbeat is None:
-            return time.time()
+            return None
         return time.time() - self._last_heartbeat
