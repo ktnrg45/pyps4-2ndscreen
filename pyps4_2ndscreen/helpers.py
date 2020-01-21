@@ -54,6 +54,7 @@ class Helper:
             is_ready = False
         except LoginFailed:
             is_login = False
+        ps4.close()
         return is_ready, is_login
 
     def get_creds(self, device_name=None):

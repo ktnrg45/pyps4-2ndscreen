@@ -76,13 +76,12 @@ class Ps4Base():
             _LOGGER.debug("PS4 @ %s status timed out", self.host)
             self.status = None
             return self.status
-        else:
-            if self.status is not None:
-                if self.is_standby:
-                    self.connected = False
-                    self.loggedin = False
-                return self.status
-            return None
+        if self.status is not None:
+            if self.is_standby:
+                self.connected = False
+                self.loggedin = False
+            return self.status
+        return None
 
     async def async_get_ps_store_data(
             self, title: str, title_id: str, region: str) -> ResultItem:
@@ -237,8 +236,11 @@ class Ps4Base():
 class Ps4Legacy(Ps4Base):
     """Legacy PS4 Class. Sync Version."""
 
-    def __init__(self, host, credential, device_name=DEFAULT_DEVICE_NAME):
+    def __init__(
+            self, host, credential,
+            device_name=DEFAULT_DEVICE_NAME, auto_close=True):
         super().__init__(host, credential, device_name)
+        self.auto_close = auto_close
         self.connection = LegacyConnection(self, credential=self.credential)
 
     # noqa: pylint: disable=no-self-use
@@ -260,19 +262,16 @@ class Ps4Legacy(Ps4Base):
             raise NotReady("PS4 is not On")
 
         self._prepare_connection()
-        if self.connected is False:
+        if not self.connected:
             self.connection.connect()
-            login = self.connection.login()
-            if login is True:
-                self.connected = True
-                return True
-            return False
-        return True
+        self.connected = True
 
     def close(self):
         """Close the connection to the PS4."""
         self.connection.disconnect()
         self.connected = False
+        self.loggedin = False
+        self.msg_sending = False
         _LOGGER.debug("Disconnecting from PS4 @ %s", self.host)
         return True
 
@@ -285,54 +284,51 @@ class Ps4Legacy(Ps4Base):
         wakeup(self.host, self.credential)
         self._power_on = True
 
-    def login(self, pin=None):
+    def login(self, pin=None) -> bool:
         """Login."""
+        if self.loggedin:
+            return True
         self.open()
         is_login = self.connection.login(pin)
-        if is_login is False:
+        if not is_login:
+            self.close()
             raise LoginFailed("PS4 Refused Connection")
-        self.close()
+        self.loggedin = True
         return is_login
 
-    def standby(self, retry=2):
+    def standby(self):
         """Standby."""
-        retries = 0
-        while retries < retry:
-            self.open()
+        if self.login():
             if self.connection.standby():
                 self.close()
                 return True
-            self.close()
-            retries += 1
+        self.close()
         return False
 
-    def start_title(self, title_id, running_id=None, retry=2):
+    def start_title(self, title_id, running_id=None):
         """Start title.
 
-        `title_id`: title to start
-        'running_id': Title currently running,
-        Use to confirm closing of current title.
+        Close current title if title_id is running_id
+
+        :param title_id: Title to start; CUSA00000
+        :param running_id: Title currently running
         """
         if self.msg_sending:
             _LOGGER.warning("PS4 already sending message.")
             return False
-        retries = 0
-        while retries < retry:
-            self.msg_sending = True
-            if self.open():
-                if self.connection.start_title(title_id):
-
-                    # Auto confirm prompt to close title.
-                    if running_id is not None:
-                        self.delay(1)
-                        self.remote_control('enter')
-                    elif running_id == title_id:
-                        _LOGGER.warning("Title: %s already started", title_id)
-                    self.msg_sending = False
-                    return True
-                self.close()
-                retries += 1
-                self.delay(1)
+        self.msg_sending = True
+        if self.login():
+            if self.connection.start_title(title_id):
+                # Auto confirm prompt to close title.
+                if running_id is not None:
+                    self.delay(1)
+                    self.remote_control('enter')
+                elif running_id == title_id:
+                    _LOGGER.warning("Title: %s already started", title_id)
+                self.msg_sending = False
+                if self.auto_close:
+                    self.close()
+                return True
         self.msg_sending = False
         return False
 
@@ -340,7 +336,7 @@ class Ps4Legacy(Ps4Base):
         """Send a remote control button press."""
         if self.msg_sending:
             _LOGGER.warning("PS4 already sending message.")
-            return
+            return False
         self.msg_sending = True
         button_name = button_name.lower()
         if button_name not in BUTTONS.keys():
@@ -348,18 +344,21 @@ class Ps4Legacy(Ps4Base):
         if button_name == 'ps_hold':
             hold_time = PS_HOLD_TIME
         operation = BUTTONS[button_name]
-        if self.open():
+        if self.login():
             _LOGGER.debug("Sending RC Command: %s", button_name)
-            if not self.connection.remote_control(operation, hold_time):
+            self.connection.remote_control(operation, hold_time)
+            self.msg_sending = False
+            if self.auto_close:
                 self.close()
-        self.msg_sending = False
+        return True
 
     def send_status(self):
         """Send connection status to PS4."""
-        if self.connected is True:
-            is_loggedin = self.connection.send_status()
-            if is_loggedin is False:
-                self.close()
+        if self.connected and self.loggedin:
+            self.connection.send_status()
+            return True
+        _LOGGER.error("PS4 is not connected")
+        return False
 
 
 class Ps4Async(Ps4Base):

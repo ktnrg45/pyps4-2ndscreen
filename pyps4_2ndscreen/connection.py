@@ -341,7 +341,11 @@ class LegacyConnection(BaseConnection):
         _LOGGER.debug('TX: %s %s', len(msg), binascii.hexlify(msg))
         if encrypted:
             msg = self.encrypt_message(msg)
-        self._socket.send(msg)
+        try:
+            self._socket.send(msg)
+        except BrokenPipeError:
+            _LOGGER.error("Connection error")
+            self.ps4.close()
 
     def _recv_msg(self, decrypt=True):
         msg = self._socket.recv(1024)
@@ -393,7 +397,7 @@ class LegacyConnection(BaseConnection):
             self.delay(1)
             try:
                 self._send_msg(
-                    _get_remote_control_request(operation, hold_time),
+                    _get_remote_control_key_off_request(),
                     encrypted=True)
             except (socket.error, socket.timeout):
                 _LOGGER.debug("Failed to send Remote Close MSG")
