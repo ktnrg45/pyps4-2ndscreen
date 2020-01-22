@@ -19,7 +19,6 @@ MOCK_NAME = "ha_ps4_name"
 MOCK_HOST = "192.168.0.2"
 MOCK_HOST_NAME = "Fake PS4"
 MOCK_HOST_ID = "A0000A0AA000"
-MOCK_HOST_VERSION = "09879011"
 MOCK_HOST_TYPE = "PS4"
 MOCK_STATUS_REST = "Server Standby"
 MOCK_STATUS_ON = "Ok"
@@ -44,13 +43,13 @@ MOCK_DDP_DICT = {
     "host-ip": MOCK_HOST,
     "host-request-port": MOCK_TCP_PORT,
     "running-app-name": MOCK_TITLE_NAME,
-    "running-app-id": MOCK_TITLE_ID,
+    "running-app-titleid": MOCK_TITLE_ID,
     "host-id": MOCK_HOST_ID,
     "host-name": MOCK_HOST_NAME,
     "status": MOCK_STATUS_ON,
     "status_code": MOCK_ON_CODE,
     "device-discovery-protocol-version": MOCK_DDP_VERSION,
-    "system-version": MOCK_HOST_VERSION,
+    "system-version": MOCK_SYSTEM_VERSION,
 }
 
 MOCK_DDP_RESPONSE = '''
@@ -60,7 +59,7 @@ MOCK_DDP_RESPONSE = '''
     host-name:{}\n
     host-request-port:{}\n
     running-app-name:{}\n
-    running-app-id:{}\n
+    running-app-titleid:{}\n
     device-discovery-protocol-version:{}\n
     system-version:{}\n
 '''.format(
