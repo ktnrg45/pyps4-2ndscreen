@@ -18,7 +18,6 @@ CLASSIFIERS = [
     'Programming Language :: Python :: 3.5',
     'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
-    'Programming Language :: Python :: 3.8',
     'Topic :: Software Development :: Libraries :: Python Modules',
 ]
 
@@ -36,7 +35,7 @@ setup(name='pyps4_2ndscreen',
       url='https://github.com/ktnrg45/pyps4-2ndscreen',
       license='LGPLv2+',
       classifiers=CLASSIFIERS,
-      keywords='playstation sony ps4',
+      keywords='playstation sony ps4 2nd screen 2ndscreen',
       install_requires=REQUIRES,
       python_requires='>={}'.format(MIN_PY_VERSION),
       test_suite='tests',
