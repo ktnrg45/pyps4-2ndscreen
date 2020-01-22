@@ -40,7 +40,9 @@ class Client():
             _, self.ddp_protocol = await async_create_ddp_endpoint()
 
             for device in self.ps4_devices:
-                await self.loop.run_in_executor(None, device.get_status)
+                status = await self.loop.run_in_executor(
+                    None, device.get_status)
+                _LOGGER.info(status)
                 device.set_protocol(self.ddp_protocol)
                 device.add_callback(self.status_callback)
 
@@ -87,7 +89,7 @@ class Client():
         # Create DDP transport for status updates.
         if self.ddp_protocol is None:
             await self.init_ps4()
-            _LOGGER.debug("Client Started")
+            _LOGGER.info("Client Started")
 
         if self.running:
             await self.status_handler()

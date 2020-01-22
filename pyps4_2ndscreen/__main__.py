@@ -11,11 +11,70 @@ from .client import Client
 _LOGGER = logging.getLogger(__name__)
 
 
+def _get_ps4(ip_address):
+    from .ps4 import Ps4Legacy
+    helper = Helper()
+    is_data = helper.check_data('ps4')
+    if not is_data:
+        print("No configuration found. Configure PS4 then retry.")
+        return None
+    data = helper.load_files('ps4')
+    if len(data) > 1 and ip_address is None:
+        print("Multiple PS4 configs found. Specify IP Address.")
+        return None
+    if ip_address is None:
+        for key, value in data.items():
+            ip_address = key
+            creds = value
+    else:
+        creds = data.get(ip_address)
+    _ps4 = Ps4Legacy(ip_address, creds)
+    return _ps4
+
+
 @click.group()
 @click.version_option()
 def cli():
     """Pyps4-2ndscreen CLI. Allows for simple commands from terminal."""
     logging.basicConfig(level=logging.INFO)
+
+
+@cli.command(help='Wakeup PS4. Example: pyps4-2ndscreen wakeup')
+@click.argument('ip_address', required=False)
+def wakeup(ip_address=None):
+    """Wakeup PS4"""
+    _ps4 = _get_ps4(ip_address)
+    if _ps4 is not None:
+        _ps4.wakeup()
+
+
+@cli.command(help='Place PS4 in Standby. Example: pyps4-2ndscreen standby')
+@click.argument('ip_address', required=False)
+def standby(ip_address=None):
+    """Standby."""
+    _ps4 = _get_ps4(ip_address)
+    if _ps4 is not None:
+        _ps4.standby()
+
+
+@cli.command(help='Send Remote Control. Example: pyps4-2ndscreen control ps')
+@click.argument('command', required=True)
+@click.argument('ip_address', required=False)
+def control(command, ip_address=None):
+    """Send remote control."""
+    _ps4 = _get_ps4(ip_address)
+    if _ps4 is not None:
+        _ps4.remote_control(command)
+
+
+@cli.command(help='Start title. Example: pyps4-2ndscreen start CUSA10000')
+@click.argument('title_id', required=True)
+@click.argument('ip_address', required=False)
+def start(title_id, ip_address=None):
+    """Start Title."""
+    _ps4 = _get_ps4(ip_address)
+    if _ps4 is not None:
+        _ps4.start_title(title_id)
 
 
 @cli.command(help='Run polling status client. Example: pyps4-2ndscreen client')

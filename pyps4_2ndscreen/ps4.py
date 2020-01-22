@@ -390,6 +390,17 @@ class Ps4Async(Ps4Base):
         """Set delay for login."""
         self._login_delay = value
 
+    def set_protocol(self, ddp_protocol):
+        """Attach DDP protocol."""
+        self.ddp_protocol = ddp_protocol
+
+    def add_callback(self, callback):
+        """Add status updated callback."""
+        if self.ddp_protocol is None:
+            _LOGGER.error("DDP protocol is not set")
+        else:
+            self.ddp_protocol.add_callback(self, callback)
+
     def get_status(self) -> dict:
         """Get current status info."""
         if self.ddp_protocol is not None:
