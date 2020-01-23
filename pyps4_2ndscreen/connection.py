@@ -15,7 +15,7 @@ from Cryptodome.PublicKey import RSA
 _LOGGER = logging.getLogger(__name__)
 
 TIMEOUT = 5
-PS_DELAY = 0.2
+PS_DELAY = 0.5
 DEFAULT_LOGIN_DELAY = 1
 DEFAULT_HEARTBEAT_TIMEOUT = 15
 TCP_PORT = 997
@@ -176,61 +176,45 @@ def _get_boot_request(title_id):
 
 def _get_remote_control_request(operation: int, hold_time: int) -> list:
     """Return list of remote control command packets."""
+    msg = []
+    # Prebuild required remote messages.
+
+    if operation == 128:
+        msg.append(_get_remote_control_msg(operation, 0))
+        msg.append(_get_remote_control_msg(operation, hold_time))
+
+    else:
+        msg.append(_get_remote_control_msg(operation, hold_time))
+        msg.append(_get_remote_control_key_off_request())
+
+    return msg
+
+
+def _get_remote_control_msg(operation: int, hold_time: int) -> bytes:
+    """Return remote control command msg."""
     fmt = Struct(
         'length' / Const(b'\x10\x00\x00\x00'),
         'type' / Const(b'\x1c\x00\x00\x00'),
         'op' / Int32ul,
         'hold_time' / Int32ul,
     )
-    # Prebuild required remote messages.
-    msg = []
-    msg.append(fmt.build({'op': 1024, 'hold_time': 0}))  # Open RC
 
-    if operation == 128:
-        msg.append(fmt.build({'op': operation, 'hold_time': 0}))
-        msg.append(fmt.build({'op': operation, 'hold_time': hold_time}))
-
-    else:
-        msg.append(fmt.build({'op': operation, 'hold_time': hold_time}))
-        msg.append(fmt.build({'op': 256, 'hold_time': 0}))  # Key Off
-        # msg.append(fmt.build({'op': 2048, 'hold_time': 0}))  # Close RC
-
+    msg = fmt.build({'op': operation, 'hold_time': hold_time})
     return msg
 
 
 def _get_remote_control_open_request():
-    fmt = Struct(
-        'length' / Const(b'\x10\x00\x00\x00'),
-        'type' / Const(b'\x1c\x00\x00\x00'),
-        'op' / Int32ul,
-        'hold_time' / Int32ul,
-    )
-
-    msg = fmt.build({'op': 1024, 'hold_time': 0})  # open RC
+    msg = _get_remote_control_msg(1024, 0)
     return msg
 
 
 def _get_remote_control_close_request():
-    fmt = Struct(
-        'length' / Const(b'\x10\x00\x00\x00'),
-        'type' / Const(b'\x1c\x00\x00\x00'),
-        'op' / Int32ul,
-        'hold_time' / Int32ul,
-    )
-
-    msg = fmt.build({'op': 2048, 'hold_time': 0})  # Close RC
+    msg = _get_remote_control_msg(2048, 0)
     return msg
 
 
-def _get_remote_control_key_off_request():
-    fmt = Struct(
-        'length' / Const(b'\x10\x00\x00\x00'),
-        'type' / Const(b'\x1c\x00\x00\x00'),
-        'op' / Int32ul,
-        'hold_time' / Int32ul,
-    )
-
-    msg = fmt.build({'op': 256, 'hold_time': 0})  # Key Off
+def _get_remote_control_key_off_request(hold_time=0):
+    msg = _get_remote_control_msg(256, hold_time)
     return msg
 
 
@@ -554,6 +538,7 @@ class TCPProtocol(asyncio.Protocol):
             await self.login_success.wait()
             await asyncio.sleep(delay)
 
+            self.sync_send(_get_remote_control_open_request())  # Open RC
             # If not powering on, Send PS to switch user screens.
             if not power_on:
                 msg = _get_remote_control_request(128, 0)
