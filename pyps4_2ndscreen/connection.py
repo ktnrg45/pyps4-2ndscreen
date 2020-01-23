@@ -539,7 +539,7 @@ class TCPProtocol(asyncio.Protocol):
             else:
                 if self.task == 'login':
                     self.ps4.loggedin = False
-                    _LOGGER.info("Failed to login, Closing connection")
+                    _LOGGER.error("Failed to login, Closing connection")
                     self.disconnect()
 
     async def login(self, pin=None, power_on=False, delay=DEFAULT_LOGIN_DELAY):
