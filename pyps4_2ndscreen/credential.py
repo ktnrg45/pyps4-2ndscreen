@@ -1,7 +1,14 @@
-# -*- coding: utf-8 -*-
 """Credential fetcher for 2nd Screen app."""
 import logging
 import socket
+
+from .ddp import (
+    DDP_PORT,
+    DDP_VERSION,
+    DDP_TYPE_SEARCH,
+    DDP_TYPE_WAKEUP,
+    UDP_IP,
+)
 
 from .errors import CredentialTimeout, UnknownDDPResponse
 
@@ -10,10 +17,7 @@ _LOGGER = logging.getLogger(__name__)
 DEFAULT_DEVICE_NAME = 'pyps4-2ndScreen'
 STANDBY = '620 Server Standby'
 HOST_ID = '1234567890AB'
-UDP_IP = '0.0.0.0'
 REQ_PORT = 997
-DDP_PORT = 987
-DDP_VERSION = '00020020'
 
 """
 PS4 listens on ports 987 (Priveleged).
@@ -45,7 +49,7 @@ class Credentials:
             _LOGGER.error("Failed to create socket")
             return
         sock.settimeout(3)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         try:
             sock.bind((UDP_IP, DDP_PORT))
         except socket.error as error:
@@ -62,7 +66,7 @@ class Credentials:
         address = None
         response = None
         _LOGGER.info(
-            "Starting Credential Service with Timeout of %s seconds.",
+            "Starting Credential Service with Timeout of %s seconds",
             timeout)
         while 1:
             try:
@@ -72,7 +76,7 @@ class Credentials:
                     self.sock.close()
                 if not response:
                     _LOGGER.info(
-                        "Credential service has timed out with no response.")
+                        "Credential service has timed out with no response")
                     raise CredentialTimeout
                 data = response[0]
                 address = response[1]
@@ -110,10 +114,10 @@ def parse_ddp_response(response, listen_type):
     """Parse the response."""
     rsp = response.decode('utf-8')
     if listen_type == 'search':
-        if 'SRCH' in rsp:
+        if DDP_TYPE_SEARCH in rsp:
             return 'search'
     elif listen_type == 'wakeup':
-        if 'WAKEUP' in rsp:
+        if DDP_TYPE_WAKEUP in rsp:
             return 'wakeup'
     else:
         raise UnknownDDPResponse
