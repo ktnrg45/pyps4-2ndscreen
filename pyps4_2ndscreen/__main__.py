@@ -6,7 +6,6 @@ import json
 import click
 
 from .helpers import Helper
-from .client import Client
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -75,31 +74,6 @@ def start(title_id, ip_address=None):
     _ps4 = _get_ps4(ip_address)
     if _ps4 is not None:
         _ps4.start_title(title_id)
-
-
-@cli.command(help='Run polling status client. Example: pyps4-2ndscreen client')
-def client():
-    """Run Status Client"""
-    helper = Helper()
-    is_data = helper.check_data('ps4')
-    if not is_data:
-        _input = input(
-            "No Config found. Enter 'Y' to configure: > ")
-        if _input.upper() == 'Y':
-            config_successful = _configure_func()
-            if not config_successful:
-                return
-        else:
-            return
-
-    data = helper.load_files('ps4')
-    status_client = Client()
-    for ip_address in data:
-        creds = data[ip_address]
-        status_client.add_ps4(ip_address, creds)
-    print("Starting Status Client")
-    print("To cancel press 'CTRL + C'.")
-    status_client.start()
 
 
 @cli.command(
