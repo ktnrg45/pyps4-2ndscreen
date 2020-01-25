@@ -19,15 +19,17 @@ STANDBY = '620 Server Standby'
 HOST_ID = '1234567890AB'
 REQ_PORT = 997
 
-"""
-PS4 listens on ports 987 (Priveleged).
-Must run command on python path:
-"sudo setcap 'cap_net_bind_service=+ep' /usr/bin/python3.5"
-"""
+PARSE_TYPE_SEARCH = 'search'
+PARSE_TYPE_WAKEUP = 'wakeup'
 
 
 class Credentials:
-    """The PS4 Credentials object. Masquerades as a PS4 to get credentials."""
+    """The PS4 Credentials object. Masquerades as a PS4 to get credentials.
+
+    PS4 listens on ports 987 (Priveleged).
+    Must run command on python path:
+    "sudo setcap 'cap_net_bind_service=+ep' /usr/bin/python3.5"
+    """
 
     def __init__(self, device_name=DEFAULT_DEVICE_NAME):
         """Init Cred Server."""
@@ -70,6 +72,7 @@ class Credentials:
             timeout)
         while 1:
             try:
+                parse_type = None
                 try:
                     response = self.sock.recvfrom(1024)
                 except socket.error:
@@ -80,7 +83,11 @@ class Credentials:
                     raise CredentialTimeout
                 data = response[0]
                 address = response[1]
-                if parse_ddp_response(data, 'search') == 'search':
+                try:
+                    parse_type = parse_ddp_response(data)
+                except UnknownDDPResponse:
+                    _LOGGER.warning("Received unknown DDP Response")
+                if parse_type == PARSE_TYPE_SEARCH:
                     _LOGGER.debug("Search from: %s", address)
                     msg = get_ddp_message(STANDBY, self.response)
                     self.sock.setsockopt(
@@ -89,7 +96,7 @@ class Credentials:
                         self.sock.sendto(msg.encode('utf-8'), address)
                     except socket.error:
                         self.sock.close()
-                if parse_ddp_response(data, 'wakeup') == 'wakeup':
+                elif parse_type == PARSE_TYPE_WAKEUP:
                     _LOGGER.debug("Wakeup from: %s", address)
                     creds = get_creds(data)
                     self.sock.close()
@@ -110,18 +117,14 @@ def get_ddp_message(status, data=None):
     return msg
 
 
-def parse_ddp_response(response, listen_type):
+def parse_ddp_response(response):
     """Parse the response."""
     rsp = response.decode('utf-8')
-    if listen_type == 'search':
-        if DDP_TYPE_SEARCH in rsp:
-            return 'search'
-    elif listen_type == 'wakeup':
-        if DDP_TYPE_WAKEUP in rsp:
-            return 'wakeup'
-    else:
-        raise UnknownDDPResponse
-    return None
+    if DDP_TYPE_SEARCH in rsp:
+        return 'search'
+    if DDP_TYPE_WAKEUP in rsp:
+        return 'wakeup'
+    raise UnknownDDPResponse
 
 
 def get_creds(response):

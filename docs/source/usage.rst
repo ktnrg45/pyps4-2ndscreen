@@ -11,6 +11,10 @@ There are several async/asyncio coroutine functions in this module. These functi
 There are two versions of the Ps4 object/class: :class:`pyps4_2ndscreen.ps4.Ps4Legacy` and :class:`pyps4_2ndscreen.ps4.Ps4Async`. The :class:`pyps4_2ndscreen.ps4.Ps4Async` version is recommended over the :class:`pyps4_2ndscreen.ps4.Ps4Legacy` version which may be deprecated in the future.
 The difference between the two is that the :class:`pyps4_2ndscreen.ps4.Ps4Legacy` class uses synchronous sockets (socket.socket) while the :class:`pyps4_2ndscreen.ps4.Ps4Async` class uses asyncio transports and protocols. If using the Async version, a running asyncio event loop is required.
 
+:class:`pyps4_2ndscreen.ps4.Ps4Legacy` is suited for running single commands.
+
+:class:`pyps4_2ndscreen.ps4.Ps4Async` is best suited for a runtime environment/application.
+
 Using Ps4Async Example
 ========================
 
@@ -39,10 +43,12 @@ Initializing
 
 .. code:: python
 
+    from pyps4_2ndscreen.ps4 import Ps4Async
+
     ip_address = '192.168.0.3'
     creds = 'yourcredentials'
     ps4 = Ps4Async(ip_address, creds)
-    ps4.ddp_protocol = ddp_protocol
+    ps4.set_protocol(ddp_protocol)
 
 
 Getting Status
@@ -56,6 +62,14 @@ To get the status of the PS4 simply call:
 
     status = ps4.get_status()
 
+When the PS4 console is on and you have assigned the DDP Protocol to the Ps4 instance, you can add a callback to be called when the PS4 status updates. The callback must be a callable with no arguments.
+
+.. code:: python
+
+    ps4.add_callback(YourCallback)
+
+The DDP protocol will now handle polling the PS4 console. However, when the PS4 goes into standby or is turned off, you will have to poll the PS4 yourself.
+
 
 Controlling
 -----------
@@ -64,7 +78,7 @@ To turn on from standby call:
 
 .. code:: python
 
-    ps4.launch()
+    ps4.wakeup()
 
 
 In order to control the PS4 in other ways, you have to login as a registered PSN user on your PS4.
@@ -109,6 +123,42 @@ To logout we simply drop the connection.
 
     await ps4.close()
 
+
+Getting Title Information
+--------------------------
+The PS4 object provides a coroutine to fetch information of a title from the PSN store.
+You will need the following information:
+- The title ID
+- The title name
+- PSN Region of title
+
+The first two can be retreived from the status dictionary like so.
+
+.. code:: python
+
+    status = ps4.status
+    title_id = status.get('running-app-titleid')
+    title_name = status.get('running-app-name')
+
+The PSN region needs to be a key in the following dictionary. You can verify like below:
+
+.. code:: python
+
+    from pyps4_2ndscreen.media_art import COUNTRIES
+
+    def check_region():
+        YourRegion = 'United States'
+        if YourRegion in COUNTRIES:
+            return True
+        return False
+
+
+You can call the search coroutine now and retrieve info like the url for the cover:
+
+.. code:: python
+
+    result = await ps4.async_get_ps_store_data(title_name, title_id, YourRegion)
+    cover = result.cover_art
 
 Getting Credentials
 =====================
