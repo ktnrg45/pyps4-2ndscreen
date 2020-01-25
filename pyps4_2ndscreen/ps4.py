@@ -94,6 +94,7 @@ class Ps4Base():
 
         # Conduct Search Requests.
         lang = get_lang(region)
+        result_item = None
         _LOGGER.debug("Starting search request")
         async with aiohttp.ClientSession() as session:
             responses = await async_get_ps_store_requests(
@@ -320,10 +321,10 @@ class Ps4Legacy(Ps4Base):
         if self.login():
             if self.connection.start_title(title_id):
                 # Auto confirm prompt to close title.
-                if running_id is not None:
+                if running_id != title_id:
                     self.delay(1)
                     self.remote_control('enter')
-                elif running_id == title_id:
+                else:
                     _LOGGER.warning("Title: %s already started", title_id)
                 self.msg_sending = False
                 if self.auto_close:
@@ -350,7 +351,8 @@ class Ps4Legacy(Ps4Base):
             self.msg_sending = False
             if self.auto_close:
                 self.close()
-        return True
+            return True
+        return False
 
     def send_status(self):
         """Send connection status to PS4."""
@@ -391,11 +393,17 @@ class Ps4Async(Ps4Base):
         self._login_delay = value
 
     def set_protocol(self, ddp_protocol):
-        """Attach DDP protocol."""
+        """Attach DDP protocol.
+
+        :param ddp_protocol: :class: `pyps4_2ndscreen.ddp.DDPProtocol`
+        """
         self.ddp_protocol = ddp_protocol
 
-    def add_callback(self, callback):
-        """Add status updated callback."""
+    def add_callback(self, callback: callable):
+        """Add status updated callback.
+
+        :param callback: Callback to call on status updated; No args
+        """
         if self.ddp_protocol is None:
             _LOGGER.error("DDP protocol is not set")
         else:
@@ -406,7 +414,7 @@ class Ps4Async(Ps4Base):
         if self.ddp_protocol is not None:
             self.ddp_protocol.send_msg(self)
             if self.status is not None:
-                if self.is_standby:
+                if not self.is_running:
                     self.connected = False
                     self.loggedin = False
 
@@ -419,7 +427,7 @@ class Ps4Async(Ps4Base):
         return super().get_status()
 
     def launch(self):
-        """Launch."""
+        """Send Launch Message."""
         if self.ddp_protocol is None:
             _LOGGER.error("DDP Protocol does not exist/Not ready")
         else:
@@ -427,7 +435,7 @@ class Ps4Async(Ps4Base):
                 self, get_ddp_launch_message(self.credential))
 
     def wakeup(self):
-        """Wakeup."""
+        """Wakeup PS4."""
         if self.ddp_protocol is None:
             _LOGGER.error("DDP Protocol does not exist")
         else:
@@ -437,31 +445,36 @@ class Ps4Async(Ps4Base):
                 self, get_ddp_wake_message(self.credential))
 
     async def login(self, pin=None):
-        """Login."""
+        """Login to PS4.
+
+        :param pin: PIN as string if linking/pairing
+        """
         if self.tcp_protocol is None:
             _LOGGER.info("Login failed: TCP Protocol does not exist")
         else:
             power_on = self._power_on
             await self.tcp_protocol.login(pin, power_on, self.login_delay)
 
-    async def standby(self, retry=None):
-        """Standby."""
-        if retry is not None:
-            _LOGGER.info("Retries not implemented")
+    async def standby(self):
+        """Place PS4 in Standby."""
         if self.tcp_protocol is None:
             _LOGGER.info("Standby Failed: TCP Protocol does not exist")
         else:
             await self.tcp_protocol.standby()
             self._power_off = True
 
-    async def start_title(self, title_id, running_id=None, retry=None):
-        """Start title."""
+    async def start_title(self, title_id, running_id=None):
+        """Start title. Is coroutine.
+
+        Close current title if title_id is running_id
+
+        :param title_id: Title to start; CUSA00000
+        :param running_id: Title currently running
+        """
         if running_id is None:
             if self.running_app_titleid is not None:
                 running_id = self.running_app_titleid
 
-        if retry is not None:
-            _LOGGER.info("Retries not implemented")
         if self.tcp_protocol is None:
             _LOGGER.info("TCP Protocol does not exist")
 
@@ -474,7 +487,7 @@ class Ps4Async(Ps4Base):
             await self.tcp_protocol.start_title(title_id, running_id)
 
     async def remote_control(self, button_name: str, hold_time=0):
-        """Send remote control command.
+        """Send remote control command. Is coroutine.
 
         :param button_name: Button to send to PS4.
         :param hold_time: Time to hold in millis. Only affects PS command.
@@ -499,11 +512,11 @@ class Ps4Async(Ps4Base):
             await self.tcp_protocol.remote_control(operation, hold_time)
 
     async def close(self):
-        """Close Transport."""
-        if self.tcp_protocol is not None:
-            self.tcp_protocol.disconnect()
+        """Async Wrapper for _close()"""
+        self._close()
 
     def _close(self):
+        """Close Transport."""
         if self.tcp_protocol is not None:
             self.tcp_protocol.disconnect()
 
@@ -511,11 +524,10 @@ class Ps4Async(Ps4Base):
         """Callback function called by protocol connection lost."""
         if self.tcp_protocol is None:
             _LOGGER.info("TCP Protocol @ %s already disconnected", self.host)
-        else:
-            self.tcp_transport = None
-            self.tcp_protocol = None
-            self.loggedin = False
-            self.connected = False
+        self.tcp_transport = None
+        self.tcp_protocol = None
+        self.loggedin = False
+        self.connected = False
 
     async def async_connect(self, auto_login=True):
         """Connect."""
