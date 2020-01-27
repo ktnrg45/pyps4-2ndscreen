@@ -8,7 +8,7 @@ import time
 import asyncio
 from typing import cast
 
-from construct import (Bytes, Const, Int32ul, Padding, Struct)
+from construct import (Bytes, Const, Int32ul, Padding, Struct, Container)
 from Cryptodome.Cipher import AES, PKCS1_OAEP
 from Cryptodome.PublicKey import RSA
 
@@ -37,14 +37,18 @@ PUBLIC_KEY = (
     '-----END PUBLIC KEY-----')
 
 
-def _get_public_key_rsa():
-    """Get RSA Key."""
+def _get_public_key_rsa() -> RSA.RsaKey:
+    """Return RSA Key."""
     key = RSA.importKey(PUBLIC_KEY)
     return key.publickey()
 
 
-def _handle_response(command, msg):
-    """Return Pass/Fail for sent message."""
+def _handle_response(command: str, msg: bytes) -> bool:
+    """Return Pass/Fail for sent message.
+
+    :param command: command to handle
+    :param msg: Msg received
+    """
     pass_response = {
         'send_status': [18],
         'remote_control': [18],  # Not right
@@ -72,7 +76,8 @@ def _handle_response(command, msg):
     return True
 
 
-def _get_hello_request():
+def _get_hello_request() -> bytes:
+    """Return hello request packet."""
     fmt = Struct(
         'length' / Const(b'\x1c\x00\x00\x00'),
         'type' / Const(b'\x70\x63\x63\x6f'),
@@ -84,7 +89,8 @@ def _get_hello_request():
     return msg
 
 
-def _parse_hello_request(msg):
+def _parse_hello_request(msg: bytes) -> Container:
+    """Parse hello response packet."""
     fmt = Struct(
         'length' / Int32ul,
         'type' / Int32ul,
@@ -97,7 +103,8 @@ def _parse_hello_request(msg):
     return data
 
 
-def _get_handshake_request(seed):
+def _get_handshake_request(seed: bytes) -> bytes:
+    """Return handshake request from received seed."""
     fmt = Struct(
         'length' / Const(b'\x18\x01\x00\x00'),
         'type' / Const(b'\x20\x00\x00\x00'),
@@ -115,7 +122,14 @@ def _get_handshake_request(seed):
     return msg
 
 
-def _get_login_request(credential, name=None, pin=None):
+def _get_login_request(
+        credential: str, name=None, pin=None) -> bytes:
+    """Return Login Request.
+
+    :param credential: 64 char sha256 hash of PSN account ID
+    :param name: Name that will be used for model and app_label
+    :param pin: 8 digit pin as str
+    """
     fmt = Struct(
         'length' / Const(b'\x80\x01\x00\x00'),
         'type' / Const(b'\x1e\x00\x00\x00'),
@@ -151,7 +165,8 @@ def _get_login_request(credential, name=None, pin=None):
     return msg
 
 
-def _get_standby_request():
+def _get_standby_request() -> bytes:
+    """Return standby packet."""
     fmt = Struct(
         'length' / Const(b'\x08\x00\x00\x00'),
         'type' / Const(b'\x1a\x00\x00\x00'),
@@ -162,7 +177,11 @@ def _get_standby_request():
     return msg
 
 
-def _get_boot_request(title_id):
+def _get_boot_request(title_id: str) -> bytes:
+    """Return boot packet.
+
+    :param title_id: Title ID to boot; CUSA00000
+    """
     fmt = Struct(
         'length' / Const(b'\x18\x00\x00\x00'),
         'type' / Const(b'\x0a\x00\x00\x00'),
@@ -175,7 +194,11 @@ def _get_boot_request(title_id):
 
 
 def _get_remote_control_request(operation: int, hold_time: int) -> list:
-    """Return list of remote control command packets."""
+    """Return list of remote control command packets.
+
+    :param operation: Operation to perform
+    :param hold_time: Time to hold in millis
+    """
     msg = []
     # Prebuild required remote messages.
 
@@ -203,22 +226,26 @@ def _get_remote_control_msg(operation: int, hold_time: int) -> bytes:
     return msg
 
 
-def _get_remote_control_open_request():
+def _get_remote_control_open_request() -> bytes:
+    """Return RC Open packet."""
     msg = _get_remote_control_msg(1024, 0)
     return msg
 
 
-def _get_remote_control_close_request():
+def _get_remote_control_close_request() -> bytes:
+    """Return RC Close packet."""
     msg = _get_remote_control_msg(2048, 0)
     return msg
 
 
-def _get_remote_control_key_off_request(hold_time=0):
+def _get_remote_control_key_off_request(hold_time=0) -> bytes:
+    """Return RC Key Off Packet."""
     msg = _get_remote_control_msg(256, hold_time)
     return msg
 
 
-def _get_status_ack():
+def _get_status_ack() -> bytes:
+    """Return Status Ack packet."""
     fmt = Struct(
         'length' / Const(b'\x0c\x00\x00\x00'),
         'type' / Const(b'\x14\x00\x00\x00'),
@@ -231,7 +258,13 @@ def _get_status_ack():
 
 
 class BaseConnection():
-    """The TCP connection class."""
+    """The TCP connection class.
+
+    Represents a connection to a PS4 Device.
+    :param ps4: PS4 object to attach to.
+    :param credential: PSN credentials to use.
+    :param port: Remote port to connect to.
+    """
 
     def __init__(self, ps4, credential=None, port=997):
         """Init Class."""
@@ -395,7 +428,10 @@ class AsyncConnection(BaseConnection):
     """Connection using Asyncio."""
 
     async def async_connect(self, ps4):
-        """Create asyncio TCP connection."""
+        """Create asyncio TCP connection.
+        
+        :param ps4: PS4Async Object to attach to.
+        """
         loop = asyncio.get_event_loop()
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setblocking(False)
@@ -408,7 +444,11 @@ class AsyncConnection(BaseConnection):
         self.set_socket(protocol)
         return transport, protocol
 
-    async def _async_tcp_handshake(self, sock, loop):
+    async def _async_tcp_handshake(self, sock: socket.socket, loop):
+        """Perform TCP Handshake.
+        :param sock: :class: socket.socket to use.
+        :param loop: Asyncio Loop to use in.
+        """
         await loop.sock_connect(sock, (self._host, TCP_PORT))
         msg = _get_hello_request()
         await loop.sock_sendall(sock, msg)
@@ -420,8 +460,11 @@ class AsyncConnection(BaseConnection):
 
 
 class TCPProtocol(asyncio.Protocol):
-    """Asyncio TCP Protocol."""
+    """Asyncio TCP Protocol.
 
+    :param ps4: PS4Async Object to attach to.
+    :param loop: Asyncio Loop to use in.
+    """
     def __init__(self, ps4, loop):
         """Init."""
         self.loop = loop
@@ -438,7 +481,10 @@ class TCPProtocol(asyncio.Protocol):
         self._hb_handler = None
 
     def connection_made(self, transport):
-        """When connected."""
+        """When connected.
+    
+        :param transport: asyncio.Transport class
+        """
         self.transport = cast(asyncio.Transport, transport)
         self.ps4.connected = True
         _LOGGER.debug("PS4 Transport Connected @ %s", self.ps4.host)
@@ -463,13 +509,19 @@ class TCPProtocol(asyncio.Protocol):
         else:
             self.task_available.set()
 
-    def data_received(self, data):
-        """Call when data received."""
+    def data_received(self, data: bytes):
+        """Call when data received.
+
+        :param data: Bytes Received. 
+        """
         data = self.connection._decipher.decrypt(data)  # noqa: pylint: disable=protected-access
         self._handle(data)
 
-    def connection_lost(self, exc):
-        """Call if connection lost."""
+    def connection_lost(self, exc: Exception):
+        """Call if connection lost.
+
+        :param exc: Exception
+        """
         if self._hb_handler is not None:
             self._hb_handler.cancel()
         self.ps4._closed()  # noqa: pylint: disable=protected-access
@@ -477,11 +529,17 @@ class TCPProtocol(asyncio.Protocol):
         self.connection = None
 
     def _complete_task(self):
+        """Complete task/signal done."""
         self.task = None
         self.task_available.set()
 
-    async def add_task(self, task_name, func, *args):
-        """Add task to queue."""
+    async def add_task(self, task_name: str, func, *args):
+        """Add task to queue.
+
+        :param task_name: Name of task
+        :param func: Callable to call
+        :param args: Tuple of args to pass
+        """
         if args:
             task = func(*args)
         else:
@@ -492,19 +550,29 @@ class TCPProtocol(asyncio.Protocol):
         self.task = task_name
         await task
 
-    async def send(self, msg):
-        """Send Message."""
+    async def send(self, msg: bytes):
+        """Send Message.
+
+        :param msg: Message to send.
+        """
         _LOGGER.debug('TX: %s %s', len(msg), binascii.hexlify(msg))
         msg = self.connection.encrypt_message(msg)
         self.transport.write(msg)
 
-    def sync_send(self, msg):
-        """Send Message synchronously."""
+    def sync_send(self, msg: bytes):
+        """Send Message synchronously.
+
+        :param msg: Message to send.
+        """
         _LOGGER.debug('TX: %s %s', len(msg), binascii.hexlify(msg))
         msg = self.connection.encrypt_message(msg)
         self.transport.write(msg)
 
-    def _handle(self, data):
+    def _handle(self, data: bytes):
+        """Handle messages received.
+
+        :param data: Message to handle.
+        """
         _LOGGER.debug('RX: %s %s', len(data), binascii.hexlify(data))
         if data == STATUS_REQUEST:
             if self.task != 'send_status':
@@ -527,7 +595,12 @@ class TCPProtocol(asyncio.Protocol):
                     self.disconnect()
 
     async def login(self, pin=None, power_on=False, delay=DEFAULT_LOGIN_DELAY):
-        """Login."""
+        """Send Login Command.
+
+        :param pin: Pin to use for linking.
+        :param power_on: True if powering on from standby.
+        :param delay: Delay to wait after logging in.
+        """
         if not self.task == 'login':  # Only schedule one login task.
             self.login_success.clear()
             task_name = 'login'
@@ -550,7 +623,7 @@ class TCPProtocol(asyncio.Protocol):
             _LOGGER.debug("Login Task already scheduled")
 
     async def standby(self):
-        """Standby."""
+        """Send Standby Command."""
         if not self.ps4.loggedin:
             await self.login()
         task_name = 'standby'
@@ -566,8 +639,12 @@ class TCPProtocol(asyncio.Protocol):
             _LOGGER.debug("Transport @ %s is disconnected", self.ps4.host)
         self.connection._reset_crypto_init_vector()  # noqa: pylint: disable=protected-access
 
-    async def start_title(self, title_id, running_id=None):
-        """Start Title."""
+    async def start_title(self, title_id: str, running_id=None):
+        """Send Start Title Command.
+
+        :param title_id: Title Id to boot.
+        :param running_id: Title Id of running title.
+        """
         if not self.ps4.loggedin:
             await self.login()
         task_name = 'start_title'
@@ -581,8 +658,12 @@ class TCPProtocol(asyncio.Protocol):
             self.loop.call_later(
                 1.0, self._send_remote_control_request_sync, msg, 16)
 
-    async def remote_control(self, operation, hold_time=0):
-        """Remote Control."""
+    async def remote_control(self, operation: int, hold_time=0):
+        """Send Remote Control Command.
+
+        :param operation: Operation to perform.
+        :param hold_time: Time to hold in millis.
+        """
         if not self.ps4.loggedin:
             await self.login()
         task_name = 'remote_control'
@@ -591,12 +672,22 @@ class TCPProtocol(asyncio.Protocol):
                              msg, operation, hold_time)
         asyncio.ensure_future(task)
 
-    async def _send_remote_control_request(self, msg, operation, hold_time=0):
-        """Send messages for remote control."""
+    async def _send_remote_control_request(self, msg: list, operation: int, hold_time=0):
+        """Send messages for remote control.
+
+        :param msg: Messages to send
+        :param operation: Operation to perform.
+        :param hold_time: Time to hold in millis.
+        """
         self._send_remote_control_request_sync(msg, operation, hold_time)
 
-    def _send_remote_control_request_sync(self, msg, operation, hold_time=0):
-        """Sync Wrapper for Remote Control."""
+    def _send_remote_control_request_sync(self, msg: list, operation: int, hold_time=0):
+        """Sync Wrapper for Remote Control.
+
+        :param msg: Messages to send
+        :param operation: Operation to perform.
+        :param hold_time: Time to hold in millis.
+        """
         for message in msg:
             # Messages are time sensitive.
             # Needs to be immediately sent in order.
