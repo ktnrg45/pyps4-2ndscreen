@@ -50,8 +50,10 @@ TYPE_LIST = {
 
 FORMATS = ['chars', 'chars+', 'orig', 'tumbler']
 
-BASE_IMAGE_URL = """https://store.playstation.com
-                    /store/api/chihiro/00_09_000/container/us/en/999/"""
+BASE_IMAGE_URL = (
+    "https://store.playstation.com"
+    "/store/api/chihiro/00_09_000/container/us/en/999/"
+)
 
 PINNED_TITLES = {
     'CUSA01780': {
