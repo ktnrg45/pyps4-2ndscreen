@@ -429,7 +429,7 @@ class AsyncConnection(BaseConnection):
 
     async def async_connect(self, ps4):
         """Create asyncio TCP connection.
-        
+
         :param ps4: PS4Async Object to attach to.
         """
         loop = asyncio.get_event_loop()
@@ -482,7 +482,7 @@ class TCPProtocol(asyncio.Protocol):
 
     def connection_made(self, transport):
         """When connected.
-    
+
         :param transport: asyncio.Transport class
         """
         self.transport = cast(asyncio.Transport, transport)
@@ -512,7 +512,7 @@ class TCPProtocol(asyncio.Protocol):
     def data_received(self, data: bytes):
         """Call when data received.
 
-        :param data: Bytes Received. 
+        :param data: Bytes Received.
         """
         data = self.connection._decipher.decrypt(data)  # noqa: pylint: disable=protected-access
         self._handle(data)
@@ -672,7 +672,8 @@ class TCPProtocol(asyncio.Protocol):
                              msg, operation, hold_time)
         asyncio.ensure_future(task)
 
-    async def _send_remote_control_request(self, msg: list, operation: int, hold_time=0):
+    async def _send_remote_control_request(
+            self, msg: list, operation: int, hold_time=0):
         """Send messages for remote control.
 
         :param msg: Messages to send
@@ -681,7 +682,8 @@ class TCPProtocol(asyncio.Protocol):
         """
         self._send_remote_control_request_sync(msg, operation, hold_time)
 
-    def _send_remote_control_request_sync(self, msg: list, operation: int, hold_time=0):
+    def _send_remote_control_request_sync(
+            self, msg: list, operation: int, hold_time=0):
         """Sync Wrapper for Remote Control.
 
         :param msg: Messages to send

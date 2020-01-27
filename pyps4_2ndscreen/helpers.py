@@ -30,7 +30,6 @@ class Helper:
 
     def __init__(self):
         """Init Class."""
-        pass
 
     def has_devices(self, host=None) -> list:
         """Return status if there are devices that can be discovered."""
