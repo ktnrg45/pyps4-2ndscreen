@@ -3,8 +3,12 @@ import logging
 import os
 from pathlib import Path
 import json
+import socket
 
 from .errors import NotReady, LoginFailed
+from .credential import Credentials, DEFAULT_DEVICE_NAME
+from .ddp import Discovery
+from .ps4 import Ps4Legacy
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -26,11 +30,10 @@ class Helper:
 
     def __init__(self):
         """Init Class."""
+        pass
 
-    def has_devices(self, host=None):
+    def has_devices(self, host=None) -> list:
         """Return status if there are devices that can be discovered."""
-        from .ddp import Discovery
-
         _LOGGER.debug("Searching for PS4 Devices")
         discover = Discovery()
         devices = discover.search(host)
@@ -38,28 +41,38 @@ class Helper:
             _LOGGER.debug("Found PS4 at: %s", device['host-ip'])
         return devices
 
-    def link(self, host, creds, pin, device_name=None):
-        """Perform pairing with PS4."""
-        from .ps4 import Ps4Legacy
-        from .credential import DEFAULT_DEVICE_NAME
+    def link(self, host: str, creds: str, pin: str, device_name=None) -> tuple:
+        """Return tuple. Perform pairing with PS4.
+
+        :param host: Host IP Address of PS4 console
+        :param creds: PSN Credential
+        :param pin: 8 digit PIN displayed on PS4 when adding mobile device
+        """
 
         if device_name is None:
             device_name = DEFAULT_DEVICE_NAME
         ps4 = Ps4Legacy(host, creds, device_name=device_name)
         is_ready = True
         is_login = True
-        try:
-            ps4.login(pin)
-        except NotReady:
+        if not pin.isdigit():
+            _LOGGER.error("Pin must be all numbers")
             is_ready = False
-        except LoginFailed:
             is_login = False
-        ps4.close()
+        else:
+            try:
+                ps4.login(pin)
+            except NotReady:
+                is_ready = False
+            except LoginFailed:
+                is_login = False
+            ps4.close()
         return is_ready, is_login
 
     def get_creds(self, device_name=None):
-        """Return Credentials."""
-        from .credential import Credentials, DEFAULT_DEVICE_NAME
+        """Return Credentials.
+
+        :param device_name: Name to display in 2nd Screen App
+        """
 
         if device_name is None:
             device_name = DEFAULT_DEVICE_NAME
@@ -76,10 +89,12 @@ class Helper:
             return True
         return False
 
-    def port_bind(self, ports: list):
-        """Try binding to ports."""
-        import socket
+    def port_bind(self, ports: list) -> int:
+        """Return port that are not able to bind.
 
+        Returns first port that fails.
+        :param ports: Ports to test
+        """
         for port in ports:
             try:
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -91,9 +106,14 @@ class Helper:
                 return int(port)
             return None
 
-    def check_data(self, file_type):
-        """Return True if data is present in file."""
-        file_name = self.check_files(file_type)
+    def check_data(self, file_type=None, file_name=None) -> bool:
+        """Return True if data is present in file.
+
+        :param file_type: Type of file
+        :param file_name: Name of file
+        """
+        if file_name is None:
+            file_name = self.check_files(file_type)
         with open(file_name, "r") as _r_file:
             data = json.load(_r_file)
             _r_file.close()
@@ -101,8 +121,12 @@ class Helper:
             return True
         return False
 
-    def check_files(self, file_type, file_path=None):
-        """Create file if it does not exist. Return path."""
+    def check_files(self, file_type: str, file_path=None) -> str:
+        """Create file if it does not exist. Return full path.
+
+        :param file_type: Type of file
+        :param file_path: Directory of file
+        """
         if file_path is None:
             file_path = DEFAULT_PATH
         if not os.path.exists(file_path):
@@ -116,16 +140,24 @@ class Helper:
             return file_name
         return None
 
-    def load_files(self, file_type) -> dict:
-        """Load data as JSON. Return data."""
+    def load_files(self, file_type: str) -> dict:
+        """Load data as JSON. Return data.
+
+        :param file_type: Type of file
+        """
         file_name = self.check_files(file_type)
         with open(file_name, "r") as _r_file:
             data = json.load(_r_file)
             _r_file.close()
         return data
 
-    def save_files(self, data: dict, file_type=None, file_name=None):
-        """Save file with data dict. Return file path."""
+    def save_files(self, data: dict, file_type=None, file_name=None) -> str:
+        """Save file with data dict. Return file path.
+
+        :param data: Data to save
+        :param file_type: Type of file
+        :param file_name: Name of file
+        """
         if data is None:
             return None
         if file_type in FILE_TYPES:
