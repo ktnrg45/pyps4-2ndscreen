@@ -100,6 +100,6 @@ References
 .. |Docs| image:: https://readthedocs.org/projects/pyps4-2ndscreen/badge/?version=dev
           :target: https://pyps4-2ndscreen.readthedocs.io/en/dev/?badge=dev
           :alt: Documentation Status
-.. |CodeCov| image:: https://codecov.io/gh/ktnrg45/pyps4-2ndscreen/branch/master/graph/badge.svg               
+.. |CodeCov| image:: https://codecov.io/gh/ktnrg45/pyps4-2ndscreen/branch/dev/graph/badge.svg               
              :target: https://codecov.io/gh/ktnrg45/pyps4-2ndscreen/
              :alt: Code Coverage
