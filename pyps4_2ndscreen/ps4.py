@@ -5,18 +5,12 @@ import logging
 import time
 import asyncio
 
-import aiohttp
-
 from .connection import LegacyConnection, AsyncConnection, DEFAULT_LOGIN_DELAY
 from .credential import DEFAULT_DEVICE_NAME
 from .ddp import (get_status, launch, wakeup,
                   get_ddp_launch_message, get_ddp_wake_message)
-from .errors import (NotReady, PSDataIncomplete,
-                     UnknownButton, LoginFailed)
-from .media_art import (async_get_ps_store_requests,
-                        get_lang, parse_data, COUNTRIES,
-                        async_prepare_tumbler, PINNED_TITLES,
-                        get_pinned_item, ResultItem)
+from .errors import NotReady, UnknownButton, LoginFailed
+from .media_art import async_search_ps_store, COUNTRIES, ResultItem
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -86,46 +80,15 @@ class Ps4Base():
     async def async_get_ps_store_data(
             self, title: str, title_id: str, region: str) -> ResultItem:
         """Return title data from PS Store."""
-        # Check if title is a pinned title first and return.
-        pinned = None
-        pinned = PINNED_TITLES.get(title_id)
-        if pinned is not None:
-            return get_pinned_item(pinned)
+        result_item = await async_search_ps_store(title, title_id, region)
+        if result_item is not None:
+            _LOGGER.debug("Found Title: %s, URL: %s",
+                          result_item.name, result_item.cover_art)
+            self.ps_name = result_item.name
+            self.ps_cover = result_item.cover_art
+            return result_item
 
-        # Conduct Search Requests.
-        lang = get_lang(region)
-        result_item = None
-        _LOGGER.debug("Starting search request")
-        async with aiohttp.ClientSession() as session:
-            responses = await async_get_ps_store_requests(
-                title, region, session)
-            for response in responses:
-                try:
-                    result_item = parse_data(response, title_id, lang)
-                except (TypeError, AttributeError):
-                    result_item = None
-                    raise PSDataIncomplete
-                if result_item is not None:
-                    break
-
-            if result_item is None:
-                try:
-                    result_item = await async_prepare_tumbler(
-                        title, title_id, region, session)
-                except (TypeError, AttributeError):
-                    result_item = None
-                    raise PSDataIncomplete
-
-            await session.close()
-
-            if result_item is not None:
-                _LOGGER.debug("Found Title: %s, URL: %s",
-                              result_item.name, result_item.cover_art)
-                self.ps_name = result_item.name
-                self.ps_cover = result_item.cover_art
-                return result_item
-
-            return None
+        return None
 
     async def async_search_all_ps_data(self, title, title_id, timeout=10):
         """Search for title in all regions."""

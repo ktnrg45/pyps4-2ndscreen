@@ -5,7 +5,7 @@ import pytest
 import socket
 from asynctest import CoroutineMock as mock_coro
 from pyps4_2ndscreen import ps4
-from pyps4_2ndscreen.media_art import PINNED_TITLES
+from pyps4_2ndscreen.media_art import PINNED_TITLES, PSDataIncomplete
 from pyps4_2ndscreen.ddp import (
     DDPProtocol,
     get_ddp_launch_message,
@@ -174,46 +174,53 @@ async def test_get_ps_store_data():
     mock_result.cover_art = MOCK_COVER_URL
 
     with patch(
-        "pyps4_2ndscreen.ps4.async_get_ps_store_requests",
+        "pyps4_2ndscreen.media_art.async_get_ps_store_requests",
         new=mock_coro(return_value=[MagicMock()]),
-    ) as mock_call, patch("pyps4_2ndscreen.ps4.parse_data", return_value=mock_result):
-        mock_result_item = await mock_ps4.async_get_ps_store_data(
+    ) as mock_call, patch(
+        "pyps4_2ndscreen.media_art.parse_data", return_value=mock_result
+    ):
+        result_item = await mock_ps4.async_get_ps_store_data(
             MOCK_TITLE_NAME, MOCK_TITLE_ID, MOCK_REGION
         )
         assert len(mock_call.mock_calls) == 1
+        assert result_item.name == mock_result.name
+        assert result_item.cover_art == mock_result.cover_art
         assert mock_ps4.running_app_ps_name == MOCK_TITLE_NAME
         assert mock_ps4.running_app_ps_cover == MOCK_COVER_URL
 
     # Test errors with search
     with patch(
-        "pyps4_2ndscreen.ps4.async_get_ps_store_requests",
+        "pyps4_2ndscreen.media_art.async_get_ps_store_requests",
         new=mock_coro(return_value=[MagicMock()]),
     ) as mock_call, patch(
-        "pyps4_2ndscreen.ps4.parse_data", side_effect=(TypeError, AttributeError)
+        "pyps4_2ndscreen.media_art.parse_data", side_effect=(TypeError, AttributeError)
     ), patch(
-        "pyps4_2ndscreen.ps4.async_prepare_tumbler",
+        "pyps4_2ndscreen.media_art.async_prepare_tumbler",
         new=mock_coro(side_effect=(TypeError, AttributeError)),
     ), pytest.raises(
-        ps4.PSDataIncomplete
+        PSDataIncomplete
     ):
-        mock_result_item = await mock_ps4.async_get_ps_store_data(
+        result_item = await mock_ps4.async_get_ps_store_data(
             MOCK_TITLE_NAME, MOCK_TITLE_ID, MOCK_REGION
         )
         assert len(mock_call.mock_calls) == 1
-        assert mock_result_item is None
+        assert result_item is None
 
     # Test no item found
     with patch(
-        "pyps4_2ndscreen.ps4.async_get_ps_store_requests",
+        "pyps4_2ndscreen.media_art.async_get_ps_store_requests",
         new=mock_coro(return_value=[]),
-    ) as mock_call, patch("pyps4_2ndscreen.ps4.parse_data", return_value=None), patch(
-        "pyps4_2ndscreen.ps4.async_prepare_tumbler", new=mock_coro(return_value=None)
+    ) as mock_call, patch(
+        "pyps4_2ndscreen.media_art.parse_data", return_value=None
+    ), patch(
+        "pyps4_2ndscreen.media_art.async_prepare_tumbler",
+        new=mock_coro(return_value=None),
     ):
-        mock_result_item = await mock_ps4.async_get_ps_store_data(
+        result_item = await mock_ps4.async_get_ps_store_data(
             MOCK_TITLE_NAME, MOCK_TITLE_ID, MOCK_REGION
         )
         assert len(mock_call.mock_calls) == 1
-        assert mock_result_item is None
+        assert result_item is None
 
 
 @pytest.mark.asyncio

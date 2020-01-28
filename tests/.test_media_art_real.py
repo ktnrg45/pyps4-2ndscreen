@@ -64,7 +64,7 @@ async def _get_cover_art(index_num):
         _LOGGER.info(
             "Result %s: %s",
             TEST_LIST.index(index_num), result_item.name)
-        _LOGGER.debug("Cover URL: %s", result_item.cover_art)
+        _LOGGER.info("Cover URL: %s", result_item.cover_art)
 
     assert result_item is not None
     elapsed = time.time() - start

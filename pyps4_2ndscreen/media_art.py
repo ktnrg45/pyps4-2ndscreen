@@ -5,6 +5,8 @@ import asyncio
 import urllib
 import aiohttp
 
+from .errors import PSDataIncomplete
+
 _LOGGER = logging.getLogger(__name__)
 
 DEPRECATED_REGIONS = {'R1': 'en/us', 'R2': 'en/gb',
@@ -46,6 +48,13 @@ TYPE_LIST = {
     'nl': ['Volledige game', 'game', 'PSN-game', 'Bundel', 'App'],
     'pt': ['Jogo completo', 'jogo', 'Jogo da PSN', 'Pacote', 'App'],
     'ru': ['Полная версия', 'Игра', 'Игра PSN', 'Комплект', 'Приложение'],
+}
+
+DEFAULT_HEADERS = {
+    'User-Agent':
+        'Mozilla/5.0 '
+        '(Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+        '(KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36'
 }
 
 FORMATS = ['chars', 'chars+', 'orig', 'tumbler']
@@ -114,13 +123,6 @@ def get_ps_store_url(title, region, reformat='chars', legacy=False,
     import html
     import re
 
-    headers = {
-        'User-Agent':
-            'Mozilla/5.0 '
-            '(Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
-            '(KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36'
-    }
-
     if reformat == 'chars':  # No Special Chars.
         title = re.sub(r'[^A-Za-z0-9\ ]+', '', title)
     elif reformat == 'chars+':  # ignore ' and - and :
@@ -142,7 +144,7 @@ def get_ps_store_url(title, region, reformat='chars', legacy=False,
     if debug:
         _LOGGER.debug(_url)
 
-    url = [_url, headers, region.split('/')[0]]
+    url = [_url, DEFAULT_HEADERS, region.split('/')[0]]
     return url
 
 
@@ -267,6 +269,43 @@ async def async_get_ps_store_requests(title, region,
             responses.append(response)
 
     return responses
+
+
+async def async_search_ps_store(title: str, title_id: str, region: str):
+    """Search PS Store for title data."""
+    # Check if title is a pinned title first and return.
+    pinned = None
+    pinned = PINNED_TITLES.get(title_id)
+    if pinned is not None:
+        return get_pinned_item(pinned)
+
+    # Conduct Search Requests.
+    lang = get_lang(region)
+    result_item = None
+    _LOGGER.debug("Starting search request")
+
+    async with aiohttp.ClientSession() as session:
+        responses = await async_get_ps_store_requests(
+            title, region, session)
+        for response in responses:
+            try:
+                result_item = parse_data(response, title_id, lang)
+            except (TypeError, AttributeError):
+                result_item = None
+                raise PSDataIncomplete
+            if result_item is not None:
+                break
+
+        if result_item is None:
+            try:
+                result_item = await async_prepare_tumbler(
+                    title, title_id, region, session)
+            except (TypeError, AttributeError):
+                result_item = None
+                raise PSDataIncomplete
+
+        await session.close()
+    return result_item
 
 
 def parse_data(result, title_id, lang):
