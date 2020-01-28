@@ -1,3 +1,8 @@
+construct==2.9.45
+pycryptodomex==3.7.2
+aiohttp==3.5.4
+click==7.0
+
 flake8==3.7.9
 pylint==2.3.0
 pytest-asyncio==0.10.0
