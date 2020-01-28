@@ -2,7 +2,7 @@
 """Constants for pyps4-2ndscreen."""
 MAJOR_VERSION = 1
 MINOR_VERSION = 0
-PATCH_VERSION = 5
+PATCH_VERSION = 6
 REQUIRED_PYTHON_VER = (3, 5, 3)
 
 __short_version__ = '{}.{}'.format(MAJOR_VERSION, MINOR_VERSION)
