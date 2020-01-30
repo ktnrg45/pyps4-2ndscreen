@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Media Art Functions."""
 import logging
+from ssl import SSLError
 import asyncio
 import urllib
 import aiohttp
@@ -62,6 +63,18 @@ FORMATS = ['chars', 'chars+', 'orig', 'tumbler']
 BASE_IMAGE_URL = (
     "https://store.playstation.com"
     "/store/api/chihiro/00_09_000/container/us/en/999/"
+)
+
+LEGACY_URL = (
+    'https://store.playstation.com/'
+    'valkyrie-api/{0}/19/faceted-search/'
+    '{1}?query={1}&platform=ps4'
+)
+
+TUMBLER_URL = (
+    'https://store.playstation.com/valkyrie-api/{}/19/'
+    'tumbler-search/{}?suggested_size=9&mode=game'
+    '&platform=ps4'
 )
 
 PINNED_TITLES = {
@@ -126,21 +139,15 @@ def get_ps_store_url(title, region, reformat='chars', legacy=False,
     if reformat == 'chars':  # No Special Chars.
         title = re.sub(r'[^A-Za-z0-9\ ]+', '', title)
     elif reformat == 'chars+':  # ignore ' and - and :
-        title = re.sub(r'[^A-Za-z0-9\-\'\:]+', ' ', title)
+        title = re.sub(r'[^A-Za-z0-9\-\'\: ]+', '', title)
     elif reformat == 'orig':
         pass
-    elif reformat == 'tumbler':
-        pass
-    title = html.escape(title)
+    title = html.escape(title.rstrip())
     title = urllib.parse.quote(title.encode('utf-8'))
     if legacy is True:
-        _url = 'https://store.playstation.com/'\
-            'valkyrie-api/{0}/19/faceted-search/'\
-            '{1}?query={1}&platform=ps4'.format(region, title)
+        _url = LEGACY_URL.format(region, title)
     else:
-        _url = 'https://store.playstation.com/valkyrie-api/{}/19/'\
-               'tumbler-search/{}?suggested_size=9&mode=game'\
-               '&platform=ps4'.format(region, title)
+        _url = TUMBLER_URL.format(region, title)
     if debug:
         _LOGGER.debug(_url)
 
@@ -159,7 +166,7 @@ async def async_prepare_tumbler(
         index = char_index + 1
         current_chars = title[0:index]
         url = get_ps_store_url(
-            current_chars, _region, reformat='tumbler')
+            current_chars, _region, reformat='orig')
         url, params = _format_url(url)
         response = await fetch(url, params, session)
         if response is None:
@@ -206,7 +213,7 @@ async def async_tumbler_search(
         if char not in remaining_chars or char in ignore:
             continue
         next_str = "{}{}".format(current, char)
-        url = get_ps_store_url(next_str, _region, 'tumbler', True)
+        url = get_ps_store_url(next_str, _region, 'orig', True)
         url, params = _format_url(url)
         response = await fetch(url, params, session)
 
@@ -240,7 +247,7 @@ async def fetch(url, params, session):
     try:
         async with session.get(url, params=params, timeout=3) as response:
             return await response.json()
-    except (asyncio.TimeoutError, ContentTypeError):
+    except (asyncio.TimeoutError, ContentTypeError, SSLError):
         return None
 
 
