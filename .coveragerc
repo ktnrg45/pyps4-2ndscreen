@@ -1,0 +1,7 @@
+[run]
+source = pyps4_2ndscreen
+
+omit =
+	pyps4_2ndscreen/__main__.py
+	pyps4_2ndscreen/__version__.py
+	pyps4_2ndscreen/oauth.py

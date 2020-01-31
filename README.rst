@@ -19,7 +19,11 @@ This project/module and I are not affiliated with or endorsed by Sony Interactiv
 Compatibility
 --------------------
 Tested on:
-Python 3.5/3.6/3.7
+
+- Environment: Python 3.5/3.6/3.7/3.8
+
+- Operating System: Debian
+
 
 Installation
 --------------------
