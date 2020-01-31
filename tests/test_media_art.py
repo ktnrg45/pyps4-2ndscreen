@@ -2,11 +2,18 @@
 import html
 import urllib
 import pytest
+import logging
+import asyncio
 from unittest.mock import MagicMock, patch
-from asynctest import CoroutineMock as mock_coro
+
+from asynctest import CoroutineMock as mock_coro, Mock
 
 from pyps4_2ndscreen import media_art as media
 
+logging.basicConfig(level=logging.DEBUG)
+_LOGGER = logging.getLogger(__name__)
+
+MOCK_LANG = "en"
 MOCK_REGION = "US/en"
 MOCK_REGION_NAME = "United States"
 
@@ -15,8 +22,10 @@ MOCK_URL = (
     "US/en/19/UT0007-CUSA00129_00-NETFLIXPOLLUX001/1580172945000/image"
 )
 
+MOCK_TYPE = "App"
 MOCK_TITLE = "Netflix"
 MOCK_TITLE_ID = "CUSA00129"
+MOCK_FULL_ID = "UT0007-CUSA00129_00-NETFLIXPOLLUX001-U099"
 MOCK_DATA = {
     "included": [
         {
@@ -30,10 +39,10 @@ MOCK_DATA = {
                     "url": "",
                 },
                 "content-type": "1",
-                "default-sku-id": "UT0007-CUSA00129_00-NETFLIXPOLLUX001-U099",
+                "default-sku-id": MOCK_FULL_ID,
                 "dob-required": False,
                 "file-size": {"unit": "MB", "value": 26.21},
-                "game-content-type": "App",
+                "game-content-type": MOCK_TYPE,
                 "genres": [],
                 "is-igc-upsell": False,
                 "is-multiplayer-upsell": False,
@@ -96,6 +105,14 @@ MOCK_DATA = {
             }
         }
     ]
+}
+
+MOCK_PARENT_NAME = "Parent"
+MOCK_PARENT_URL = "https://parent_url.com/"
+MOCK_PARENT = {
+    "name": MOCK_PARENT_NAME,
+    "id": MOCK_FULL_ID,
+    "url": MOCK_PARENT_URL,
 }
 
 
@@ -175,6 +192,7 @@ def test_get_url():
 
 @pytest.mark.asyncio
 async def test_search_ps_store():
+    """Test PS store search."""
     with patch(
         "pyps4_2ndscreen.media_art.fetch", new=mock_coro(return_value=MOCK_DATA)
     ):
@@ -183,3 +201,73 @@ async def test_search_ps_store():
         )
     assert result.name == MOCK_TITLE
     assert MOCK_TITLE_ID in result.cover_art
+    assert result.game_type == MOCK_TYPE
+    assert result.sku_id == MOCK_TITLE_ID
+    assert result.parent is None
+
+
+@pytest.mark.asyncio
+async def test_parse_errors():
+    """Test PS store search errors."""
+    with patch(
+        "pyps4_2ndscreen.media_art.parse_data", side_effect=(AttributeError, TypeError)
+    ), pytest.raises(media.PSDataIncomplete):
+        result = await media.async_search_ps_store(
+            MOCK_TITLE, MOCK_TITLE_ID, MOCK_REGION_NAME
+        )
+        assert result is None
+
+
+@pytest.mark.asyncio
+async def test_fetch():
+    """Test fetch coro."""
+    session = Mock()
+    mock_json = Mock()
+    mock_json.json.return_value = asyncio.Future()
+    mock_json.json.return_value.set_result(MOCK_DATA)
+    session.get.return_value = asyncio.Future()
+    session.get.return_value.set_result(mock_json)
+    result = await media.fetch(MagicMock(), MagicMock(), session)
+    assert result == MOCK_DATA
+
+
+def test_parent_item():
+    """Test parent item is returned if present."""
+    data = MOCK_DATA
+    data["included"][0]["attributes"]["parent"] = MOCK_PARENT
+    result = media.parse_data(data, MOCK_TITLE_ID, MOCK_LANG)
+    assert result.name == MOCK_PARENT_NAME
+    assert result.sku_id == MOCK_TITLE_ID
+    assert result.game_type == MOCK_TYPE
+    assert result.cover_art.split("/image")[0] == MOCK_PARENT_URL
+
+
+def test_result_item_missing_data():
+    """Test Parsing with missing keys returns None."""
+    data = MOCK_DATA
+    _data = data["included"][0]["attributes"]
+    _data.pop("game-content-type")
+    _data.pop("default-sku-id")
+    _data.pop("name")
+    _data.pop("thumbnail-url-base")
+    data["included"][0]["attributes"] = _data
+    result = media.parse_data(data, MOCK_TITLE_ID, MOCK_LANG)
+    assert result is None
+
+
+def test_result_item_diff_id():
+    """Test result with different ID returns None."""
+    data = MOCK_DATA
+    data["included"][0]["attributes"]["default-sku-id"] = "CUSA00000"
+    result = media.parse_data(data, MOCK_TITLE_ID, MOCK_LANG)
+    assert result is None
+
+
+def test_parsing_full_id():
+    """Test parsing of full ID."""
+    result = media.parse_id(MOCK_FULL_ID)
+    assert result == MOCK_TITLE_ID
+
+    # Test not full ID returns None
+    result = media.parse_id(MOCK_TITLE_ID)
+    assert result is None

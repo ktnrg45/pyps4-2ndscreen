@@ -245,8 +245,8 @@ async def fetch(url, params, session):
     """Get Request."""
     from aiohttp.client_exceptions import ContentTypeError
     try:
-        async with session.get(url, params=params, timeout=3) as response:
-            return await response.json()
+        response = await session.get(url, params=params, timeout=3)
+        return await response.json()
     except (asyncio.TimeoutError, ContentTypeError, SSLError):
         return None
 
@@ -363,6 +363,15 @@ class ResultItem():
         self.type_list = type_list
         self.data = data['attributes']
 
+    def __repr__(self):
+        return (
+            "<{}.{} Name: {}, SKU ID: {}, Game Type: {}, "
+            "Parent: {}>".format(
+                self.__module__, self.__class__.__name__, self.name,
+                self.sku_id, self.game_type, self.parent is not None,
+            )
+        )
+
     @property
     def name(self):
         """Get Item Name."""
@@ -418,6 +427,15 @@ class ParentItem():
         """Init Class."""
         self.data = data
         self._game_type = game_type
+
+    def __repr__(self):
+        return (
+            "<{}.{} Name: {}, SKU ID: {}, Game Type: {}>"
+            .format(
+                self.__module__, self.__class__.__name__, self.name,
+                self.sku_id, self.game_type,
+            )
+        )
 
     @property
     def name(self):
