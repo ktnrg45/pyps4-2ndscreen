@@ -157,7 +157,7 @@ def _credentials_func():
         print("PSN Credentials is: '{}'".format(creds))
         file_name = helper.check_files('credentials')
         helper.save_files(
-            data=data, file_type='credentials', file_name=file_name)
+            data=data, file_type='credentials')
         print("Credentials saved to: {}".format(file_name))
         return creds
     print("No credentials found. Stopped credential service.")
@@ -204,7 +204,8 @@ def _link_func(ip_address, _credentials):
         print('PS4 Successfully Linked.')
         file_name = helper.check_files('ps4')
         data = {ip_address: _credentials}
-        helper.save_files(data, file_type='ps4', file_name=file_name)
+        helper.save_files(data, file_type='ps4')
+        print("PS4 Data saved to: {}".format(file_name))
         return True
     print("Linking Failed.")
     if not is_ready:

@@ -55,7 +55,6 @@ class Helper:
         is_login = True
         if not pin.isdigit():
             _LOGGER.error("Pin must be all numbers")
-            is_ready = False
             is_login = False
         else:
             try:
@@ -120,14 +119,12 @@ class Helper:
             return True
         return False
 
-    def check_files(self, file_type: str, file_path=None) -> str:
+    def check_files(self, file_type: str) -> str:
         """Create file if it does not exist. Return full path.
 
         :param file_type: Type of file
-        :param file_path: Directory of file
         """
-        if file_path is None:
-            file_path = DEFAULT_PATH
+        file_path = DEFAULT_PATH
         if not os.path.exists(file_path):
             os.mkdir(file_path)
         if file_type in FILE_TYPES:
@@ -150,14 +147,13 @@ class Helper:
             _r_file.close()
         return data
 
-    def save_files(self, data: dict, file_type=None, file_name=None) -> str:
+    def save_files(self, data: dict, file_type=None) -> str:
         """Save file with data dict. Return file path.
 
         :param data: Data to save
         :param file_type: Type of file
-        :param file_name: Name of file
         """
-        if data is None:
+        if not isinstance(data, dict) or not data:
             return None
         if file_type in FILE_TYPES:
             file_name = FILE_TYPES[file_type]
