@@ -1,5 +1,5 @@
 """Tests for pyps4_2ndscreen.ps4."""
-import asyncio
+
 from unittest.mock import patch, MagicMock
 import pytest
 import socket
@@ -11,7 +11,6 @@ from pyps4_2ndscreen.ddp import (
     get_ddp_launch_message,
     get_ddp_wake_message,
 )
-from pyps4_2ndscreen.connection import TCPProtocol
 
 from .test_ddp import (
     MOCK_HOST_ID,
@@ -281,7 +280,7 @@ def test_login():
     """Test Login command."""
     mock_ps4 = ps4.Ps4Legacy(MOCK_HOST, MOCK_CREDS)
     mock_call = mock_ps4.connection.login = MagicMock()
-    mock_connect = mock_ps4.connection.connect = MagicMock(return_value=True)
+    mock_ps4.connection.connect = MagicMock(return_value=True)
     mock_ps4.connection.disconnect = MagicMock()
 
     # Test login with no status raises exception.

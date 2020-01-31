@@ -53,7 +53,7 @@ MOCK_DATA = {
                 "media-list": {
                     "preview": [],
                     "promo": {"images": [], "videos": []},
-                    "screenshots": [{"url": "https://someimage.jpg",},],
+                    "screenshots": [{"url": "https://someimage.jpg"}],
                 },
                 "name": "Netflix",
                 "nsx-confirm-message": "",
