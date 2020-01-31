@@ -465,6 +465,7 @@ class TCPProtocol(asyncio.Protocol):
     :param ps4: PS4Async Object to attach to.
     :param loop: Asyncio Loop to use in.
     """
+
     def __init__(self, ps4, loop):
         """Init."""
         self.loop = loop
@@ -479,6 +480,13 @@ class TCPProtocol(asyncio.Protocol):
         self.heartbeat_timeout = DEFAULT_HEARTBEAT_TIMEOUT
         self._last_heartbeat = None
         self._hb_handler = None
+
+    def __repr__(self):
+        return (
+            "<{}.{} PS4 IP: {}>".format(
+                self.__module__, self.__class__.__name__, self.ps4.host,
+            )
+        )
 
     def connection_made(self, transport):
         """When connected.
@@ -575,9 +583,7 @@ class TCPProtocol(asyncio.Protocol):
         """
         _LOGGER.debug('RX: %s %s', len(data), binascii.hexlify(data))
         if data == STATUS_REQUEST:
-            if self.task != 'send_status':
-                task = self.add_task('send_status', self._ack_status)  # noqa: pylint: disable=assignment-from-no-return
-                asyncio.ensure_future(task)
+            asyncio.ensure_future(self._ack_status())
         elif self.task == 'remote_control':
             pass
         else:
@@ -587,12 +593,12 @@ class TCPProtocol(asyncio.Protocol):
                 if self.task == 'login':
                     self.ps4.loggedin = True
                     self.login_success.set()
-                self._complete_task()
             else:
                 if self.task == 'login':
                     self.ps4.loggedin = False
                     _LOGGER.error("Failed to login, Closing connection")
                     self.disconnect()
+            self._complete_task()
 
     async def login(self, pin=None, power_on=False, delay=DEFAULT_LOGIN_DELAY):
         """Send Login Command.
