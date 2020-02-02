@@ -123,7 +123,7 @@ def _get_handshake_request(seed: bytes) -> bytes:
 
 
 def _get_login_request(
-        credential: str, name=None, pin=None) -> bytes:
+        credential: str, name=None, pin='') -> bytes:
     """Return Login Request.
 
     :param credential: 64 char sha256 hash of PSN account ID
@@ -142,11 +142,7 @@ def _get_login_request(
         'pin_code' / Bytes(16),
     )
 
-    if pin is None:
-        pin = b''
-    else:
-        pin = pin.encode()
-
+    pin = pin.encode()
     name = name.encode()
 
     config = {
@@ -470,6 +466,7 @@ class TCPProtocol(asyncio.Protocol):
         """Init."""
         self.loop = loop
         self.ps4 = ps4
+        self._host = ps4.host
         self.callback = _handle_response
         self.transport = None
         self.connection = ps4.connection
@@ -480,13 +477,6 @@ class TCPProtocol(asyncio.Protocol):
         self.heartbeat_timeout = DEFAULT_HEARTBEAT_TIMEOUT
         self._last_heartbeat = None
         self._hb_handler = None
-
-    def __repr__(self):
-        return (
-            "<{}.{} PS4 IP: {}>".format(
-                self.__module__, self.__class__.__name__, self.ps4.host,
-            )
-        )
 
     def connection_made(self, transport):
         """When connected.
@@ -584,9 +574,7 @@ class TCPProtocol(asyncio.Protocol):
         _LOGGER.debug('RX: %s %s', len(data), binascii.hexlify(data))
         if data == STATUS_REQUEST:
             asyncio.ensure_future(self._ack_status())
-        elif self.task == 'remote_control':
-            pass
-        else:
+        elif self.task != 'remote_control':
             success = self.callback(self.task, data)
             if success:
                 _LOGGER.debug("Command successful: %s", self.task)
@@ -600,7 +588,7 @@ class TCPProtocol(asyncio.Protocol):
                     self.disconnect()
             self._complete_task()
 
-    async def login(self, pin=None, power_on=False, delay=DEFAULT_LOGIN_DELAY):
+    async def login(self, pin='', power_on=False, delay=DEFAULT_LOGIN_DELAY):
         """Send Login Command.
 
         :param pin: Pin to use for linking.
@@ -610,8 +598,8 @@ class TCPProtocol(asyncio.Protocol):
         if not self.task == 'login':  # Only schedule one login task.
             self.login_success.clear()
             task_name = 'login'
-            name = self.ps4.device_name
-            msg = _get_login_request(self.ps4.credential, name, pin)
+            msg = _get_login_request(
+                self.ps4.credential, self.ps4.device_name, pin)
             task = self.add_task(task_name, self.send, msg)  # noqa: pylint: disable=assignment-from-no-return
             await task
             await self.login_success.wait()
@@ -733,20 +721,18 @@ class TCPProtocol(asyncio.Protocol):
         self.ps4.get_status()
         self.sync_send(_get_status_ack())
         _LOGGER.debug("Sending Hearbeat response")
-        self.loop.call_later(0.2, self._complete_task)
         self._hb_handler = self.loop.create_task(self._check_heartbeat())
 
     async def _check_heartbeat(self):
         """Check if heartbeat msg is overdue and schedule next check."""
         await asyncio.sleep(self.heartbeat_timeout)
         hb_delta = self.heartbeat_delta
-        if hb_delta is None:
-            return
-        _LOGGER.debug("Heartbeat Delta: %s", hb_delta)
-        if hb_delta > self.heartbeat_timeout:
-            _LOGGER.warning(
-                "Timed out waiting for PS4 heartbeat status; Closing...")
-            self.ps4._close()  # noqa: pylint: disable=protected-access
+        if hb_delta is not None:
+            _LOGGER.debug("Heartbeat Delta: %s", hb_delta)
+            if hb_delta > self.heartbeat_timeout:
+                _LOGGER.warning(
+                    "Timed out waiting for PS4 heartbeat status; Closing...")
+                self.ps4._close()  # noqa: pylint: disable=protected-access
 
     @property
     def heartbeat_delta(self) -> float:
