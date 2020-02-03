@@ -527,7 +527,7 @@ async def test_async_login():
     mock_ps4.tcp_protocol = mock_tcp
     await mock_ps4.login()
     mock_ps4.tcp_protocol.login.assert_called_once_with(
-        None, mock_ps4._power_on, mock_ps4.login_delay
+        '', mock_ps4._power_on, mock_ps4.login_delay
     )
 
 

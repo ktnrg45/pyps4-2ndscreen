@@ -248,7 +248,7 @@ class Ps4Legacy(Ps4Base):
         wakeup(self.host, self.credential)
         self._power_on = True
 
-    def login(self, pin=None) -> bool:
+    def login(self, pin='') -> bool:
         """Login."""
         if self.loggedin:
             return True
@@ -407,7 +407,7 @@ class Ps4Async(Ps4Base):
             self.ddp_protocol.send_msg(
                 self, get_ddp_wake_message(self.credential))
 
-    async def login(self, pin=None):
+    async def login(self, pin=''):
         """Login to PS4.
 
         :param pin: PIN as string if linking/pairing

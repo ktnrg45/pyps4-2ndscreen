@@ -65,8 +65,6 @@ def _handle_response(command: str, msg: bytes) -> bool:
                 return True
             _LOGGER.debug("Login Failed")
             return False
-        if command == 'send_status':
-            return True
 
         response_byte = msg[4]
         _LOGGER.debug("RECV: %s for Command: %s", response_byte, command)
@@ -123,7 +121,7 @@ def _get_handshake_request(seed: bytes) -> bytes:
 
 
 def _get_login_request(
-        credential: str, name=None, pin='') -> bytes:
+        credential: str, name: str, pin='') -> bytes:
     """Return Login Request.
 
     :param credential: 64 char sha256 hash of PSN account ID
@@ -317,7 +315,7 @@ class LegacyConnection(BaseConnection):
         self._socket.close()
         self._reset_crypto_init_vector()
 
-    def login(self, pin=None):
+    def login(self, pin):
         """Login."""
         _LOGGER.debug('Login')
         self._send_login_request(pin=pin)
@@ -347,8 +345,7 @@ class LegacyConnection(BaseConnection):
         """Send client connection status."""
         _LOGGER.debug('Sending Status: Connected')
         self._send_status_ack()
-        msg = self._recv_msg()
-        return _handle_response('send_status', msg)
+        return True
 
     def _send_msg(self, msg, encrypted=False):
         _LOGGER.debug('TX: %s %s', len(msg), binascii.hexlify(msg))
@@ -374,16 +371,14 @@ class LegacyConnection(BaseConnection):
     def _recv_hello_request(self):
         """Receive ACK."""
         msg = self._recv_msg(decrypt=False)
-        if msg is not None:
-            data = _parse_hello_request(msg)
-            return data
-        return None
+        data = _parse_hello_request(msg)
+        return data
 
     def _send_handshake_request(self, seed):
         """Finish handshake."""
         self._send_msg(_get_handshake_request(seed))
 
-    def _send_login_request(self, pin=None):
+    def _send_login_request(self, pin):
         name = self.ps4.device_name
         msg = _get_login_request(self._credential, name, pin)
         self._send_msg(msg, encrypted=True)
@@ -398,22 +393,21 @@ class LegacyConnection(BaseConnection):
         # Prebuild required remote messages."""
         msg = _get_remote_control_request(operation, hold_time)
 
-        for message in msg:
-            try:
+        try:
+            for message in msg:
                 self._send_msg(message, encrypted=True)
-            except (socket.error, socket.timeout):
-                _LOGGER.debug("Failed to send Remote MSG")
 
-        # Delay Close RC for PS
-        if operation == 128:
-            _LOGGER.debug("Delaying RC off for PS Command")
-            self.delay(1)
-            try:
+            # Delay Close RC for PS
+            if operation == 128:
+                self.delay(1)
                 self._send_msg(
                     _get_remote_control_key_off_request(),
                     encrypted=True)
-            except (socket.error, socket.timeout):
-                _LOGGER.debug("Failed to send Remote Close MSG")
+
+        except (socket.error, socket.timeout):
+            _LOGGER.debug("Failed to send Remote MSG")
+            return False
+        return True
 
     def _send_status_ack(self):
         """Send ACK for connection status."""
@@ -473,7 +467,7 @@ class TCPProtocol(asyncio.Protocol):
         self.task = None
         self.task_available = asyncio.Event()
         self.login_success = asyncio.Event()
-        self.ps_delay = None
+        self.ps_delay = PS_DELAY
         self.heartbeat_timeout = DEFAULT_HEARTBEAT_TIMEOUT
         self._last_heartbeat = None
         self._hb_handler = None
@@ -491,7 +485,6 @@ class TCPProtocol(asyncio.Protocol):
             valid_initial_tasks = {'start_title': self.start_title,
                                    "remote_control": self.remote_control}
             args = None
-
             initial_task = self.ps4.task_queue
             self.ps4.task_queue = None
             args = initial_task[1:]
@@ -500,10 +493,7 @@ class TCPProtocol(asyncio.Protocol):
             if task is not None:
                 _LOGGER.info("Queued command: %s", initial_task)
                 self.task_available.set()
-                if args is not None:
-                    asyncio.ensure_future(task(*args))
-                else:
-                    asyncio.ensure_future(task())
+                asyncio.ensure_future(task(*args))
         else:
             self.task_available.set()
 
@@ -538,10 +528,7 @@ class TCPProtocol(asyncio.Protocol):
         :param func: Callable to call
         :param args: Tuple of args to pass
         """
-        if args:
-            task = func(*args)
-        else:
-            task = func()
+        task = func(*args)
 
         await self.task_available.wait()
         self.task_available.clear()
@@ -694,10 +681,7 @@ class TCPProtocol(asyncio.Protocol):
 
             # PS tap is unreliable/needs specific delay?
             if hold_time == 0:
-                if self.ps_delay is None:
-                    ps_delay = PS_DELAY
-                else:
-                    ps_delay = self.ps_delay
+                ps_delay = self.ps_delay
 
             # Delay for PS hold.
             else:

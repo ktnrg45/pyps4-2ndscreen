@@ -1,7 +1,7 @@
 """Tests for pyps4_2ndscreen.connection."""
 
 import asyncio
-from unittest.mock import MagicMock
+from unittest.mock import patch, MagicMock
 import pytest
 
 from asynctest import CoroutineMock as mock_coro
@@ -124,8 +124,9 @@ MOCK_PIN = '12345678'
 MOCK_NAME = 'name'
 MOCK_TITLE_ID = 'CUSA00000'
 
-MOCK_LOGIN_SUCCESS = b'\x11'
-MOCK_BOOT_SUCCESS = b'\x0b'
+MOCK_LOGIN_SUCCESS = bytes(8) + b'\x11'
+MOCK_BOOT_SUCCESS = bytes(4) + b'\x0b'
+MOCK_STANDBY_SUCCESS = bytes(4) + b'\x1b'
 
 
 def test_pub_key():
@@ -191,7 +192,124 @@ def test_remote_control():
     assert request == MOCK_RC_KEY_OFF
 
 
+def test_wrong_response():
+    """Test wrong response."""
+    assert not c._handle_response('start_title', bytes(8) + b'\x00')
+
+# Legacy Connection Tests
+
+
+def setup_connection():
+    """Setup Connection."""
+    mock_ps4 = MagicMock()
+    mock_ps4.host = MOCK_HOST
+    mock_ps4.credential = MOCK_CREDS
+    mock_ps4.device_name = MOCK_NAME
+    mock_connection = c.LegacyConnection(mock_ps4, MOCK_CREDS)
+    return mock_connection
+
+
+def test_connect():
+    """Test Connect."""
+    mock_connection = setup_connection()
+    mock_connection._send_msg = MagicMock()
+    mock_sock = MagicMock()
+    request = bytes(20) + MOCK_SEED
+    mock_sock.recv.return_value = request
+    with patch(
+        'pyps4_2ndscreen.connection.socket.socket', return_value=mock_sock
+    ):
+        mock_connection.connect()
+    assert len(mock_connection._send_msg.mock_calls) == 2
+
+
+def test_disconnect():
+    """Test disconnect."""
+    mock_connection = setup_connection()
+    mock_connection._socket = MagicMock()
+
+    mock_connection.disconnect()
+    assert len(mock_connection._socket.close.mock_calls) == 1
+
+
+def test_legacy_login():
+    """Test Legacy Login."""
+    mock_connection = setup_connection()
+    mock_connection._cipher = MagicMock()
+    mock_connection._decipher = MagicMock()
+    mock_connection._socket = MagicMock()
+    msg = MOCK_LOGIN_SUCCESS
+    mock_connection._socket.recv.return_value = msg
+    mock_connection._decipher.decrypt.return_value = msg
+    assert mock_connection.login(pin=MOCK_PIN) is True
+
+
+def test_legacy_standby():
+    """Test Legacy Standby."""
+    mock_connection = setup_connection()
+    mock_connection._cipher = MagicMock()
+    mock_connection._socket = MagicMock()
+    msg = MOCK_STANDBY_SUCCESS
+    mock_connection._recv_msg = MagicMock(return_value=msg)
+    assert mock_connection.standby() is True
+
+
+def test_legacy_start_title():
+    """Test Legacy start_title."""
+    mock_connection = setup_connection()
+    mock_connection._cipher = MagicMock()
+    mock_connection._socket = MagicMock()
+    msg = MOCK_BOOT_SUCCESS
+    mock_connection._recv_msg = MagicMock(return_value=msg)
+    assert mock_connection.start_title(MOCK_TITLE_ID) is True
+
+
+def test_legacy_remote_control():
+    """Test Legacy remote control."""
+    mock_connection = setup_connection()
+    mock_connection._send_msg = MagicMock()
+    assert mock_connection.remote_control(16, 0) is True
+    assert len(mock_connection._send_msg.mock_calls) == 2
+
+    # Test PS
+    mock_connection._send_msg = MagicMock()
+    assert mock_connection.remote_control(128, 0) is True
+    assert len(mock_connection._send_msg.mock_calls) == 3
+
+    # Test socket error
+    mock_connection._send_msg = MagicMock(side_effect=c.socket.error)
+    assert mock_connection.remote_control(128, 0) is False
+
+    # Test socket timeout
+    mock_connection._send_msg = MagicMock(side_effect=c.socket.timeout)
+    assert mock_connection.remote_control(128, 0) is False
+
+
+def test_legacy_send_status():
+    """Test Legacy send status."""
+    mock_connection = setup_connection()
+    mock_connection._send_msg = MagicMock()
+    mock_connection.send_status()
+    mock_connection._send_msg.assert_called_once_with(
+        MOCK_STATUS_ACK, encrypted=True)
+
+
+def test_legacy_send():
+    """Test Legacy Send."""
+    mock_connection = setup_connection()
+    mock_connection.encrypt_message = MagicMock()
+    mock_connection._socket = MagicMock()
+    msg = b'\x00'
+    mock_connection._send_msg(msg, encrypted=True)
+    mock_connection.encrypt_message.assert_called_once_with(msg)
+
+    # Test broken pipe
+    mock_connection._socket.send = MagicMock(side_effect=BrokenPipeError)
+    mock_connection._send_msg(msg, encrypted=True)
+    assert len(mock_connection.ps4.close.mock_calls) == 1
+
 # Async Connection Tests
+
 
 def setup_mock_protocol():
     mock_ps4 = MagicMock()
@@ -261,7 +379,7 @@ def test_connection_lost():
     assert len(mock_protocol._hb_handler.cancel.mock_calls) == 1
 
 
-def test_disconnect():
+def test_async_disconnect():
     """Test disconnect."""
     mock_protocol, mock_ps4 = setup_mock_protocol()
     mock_transport = MagicMock()
@@ -302,7 +420,7 @@ def test_data_recv():
 
     # Test login response
     mock_protocol.task = 'login'
-    msg = bytes(8) + MOCK_LOGIN_SUCCESS
+    msg = MOCK_LOGIN_SUCCESS
     mock_ps4.connection._decipher.decrypt = MagicMock(return_value=msg)
     mock_protocol.data_received(msg)
     assert mock_protocol.login_success.is_set()
@@ -330,7 +448,7 @@ async def test_async_login():
         mock_protocol.login(pin=MOCK_PIN, delay=0.1, power_on=False))
     await asyncio.sleep(0)
     # Mock login success.
-    msg = bytes(8) + MOCK_LOGIN_SUCCESS
+    msg = MOCK_LOGIN_SUCCESS
     mock_ps4.connection._decipher.decrypt = MagicMock(return_value=msg)
     mock_protocol.data_received(msg)
     mock_protocol.send.assert_called_once_with(MOCK_LOGIN)
@@ -341,6 +459,24 @@ async def test_async_login():
     # Test RC PS is sent if not powering on.
     await asyncio.sleep(1)
     assert len(mock_protocol._send_remote_control_request_sync.mock_calls) == 1
+
+    # Test login with no pin and powering on.
+    mock_protocol._send_remote_control_request_sync = MagicMock()
+    asyncio.ensure_future(
+        mock_protocol.login(delay=0.1, power_on=True))
+    await asyncio.sleep(0)
+    # Mock login success.
+    msg = MOCK_LOGIN_SUCCESS
+    mock_ps4.connection._decipher.decrypt = MagicMock(return_value=msg)
+    mock_protocol.data_received(msg)
+    mock_protocol.send.assert_called_once_with(MOCK_LOGIN)
+    mock_protocol.login_success.set()
+    # Test RC Open sent.
+    await asyncio.sleep(1)
+    mock_protocol.sync_send.assert_called_once_with(MOCK_RC_OPEN)
+    # Test RC PS not sent if not powering on.
+    await asyncio.sleep(1)
+    assert not mock_protocol._send_remote_control_request_sync.mock_calls
 
     # Test only one login task scheduled at a time.
     mock_protocol.task = 'login'
@@ -359,11 +495,11 @@ async def test_async_standby():
     asyncio.ensure_future(mock_protocol.standby())
     await asyncio.sleep(0)
     # Mock login success.
-    msg = bytes(8) + MOCK_LOGIN_SUCCESS
+    msg = MOCK_LOGIN_SUCCESS
     mock_ps4.connection._decipher.decrypt = MagicMock(return_value=msg)
     mock_protocol.data_received(msg)
     await asyncio.sleep(0)
-    msg = bytes(8) + b'\x1b'
+    msg = MOCK_STANDBY_SUCCESS
     mock_ps4.connection._decipher.decrypt = MagicMock(return_value=msg)
     mock_protocol.data_received(msg)
     assert mock_protocol.task is None
@@ -381,12 +517,12 @@ async def test_async_start_title():
         mock_protocol.start_title(MOCK_TITLE_ID, running_id='Some ID'))
     # Mock login success.
     await asyncio.sleep(0)
-    msg = bytes(8) + MOCK_LOGIN_SUCCESS
+    msg = MOCK_LOGIN_SUCCESS
     mock_ps4.connection._decipher.decrypt = MagicMock(return_value=msg)
     mock_protocol.data_received(msg)
     await asyncio.sleep(0)
     mock_protocol.send.assert_called_with(MOCK_BOOT)
-    msg = bytes(8) + MOCK_BOOT_SUCCESS
+    msg = MOCK_BOOT_SUCCESS
     mock_ps4.connection._decipher.decrypt = MagicMock(return_value=msg)
     mock_protocol.data_received(msg)
     assert mock_protocol.task is None
@@ -406,7 +542,7 @@ async def test_async_remote_control():
     asyncio.ensure_future(mock_protocol.remote_control(128, 0))
     # Mock login success.
     await asyncio.sleep(0)
-    msg = bytes(8) + MOCK_LOGIN_SUCCESS
+    msg = MOCK_LOGIN_SUCCESS
     mock_ps4.connection._decipher.decrypt = MagicMock(return_value=msg)
     mock_protocol.data_received(msg)
     await asyncio.sleep(1)
@@ -419,6 +555,13 @@ async def test_async_remote_control():
     await asyncio.sleep(2)
     assert mock_protocol.task is None
     assert len(mock_protocol.sync_send.mock_calls) == 3
+
+    # Test Enter.
+    mock_protocol.sync_send = MagicMock()
+    asyncio.ensure_future(mock_protocol.remote_control(16, 0))
+    await asyncio.sleep(1)
+    assert mock_protocol.task is None
+    assert len(mock_protocol.sync_send.mock_calls) == 2
 
 
 @pytest.mark.asyncio
