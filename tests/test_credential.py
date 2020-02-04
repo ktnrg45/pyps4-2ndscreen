@@ -1,11 +1,14 @@
 """Tests for pyps4_2ndscreen.credential."""
+from unittest.mock import patch, MagicMock
+import pytest
+
 from pyps4_2ndscreen import credential
 from pyps4_2ndscreen.ddp import (
     get_ddp_search_message,
     get_ddp_wake_message,
 )
 
-
+MOCK_ADDRESS = ('192.168.0.1', 1234)
 STANDBY_RESPONSE = (
     "HTTP/1.1 620 Server Standby\n"
     "host-id:1234567890AB\n"
@@ -26,9 +29,10 @@ def init_creds():
 def test_response_standby():
     """Test serialization of standby response msg."""
     creds = init_creds()
-    response = credential.get_ddp_message(credential.STANDBY, creds.response).split(
-        "\n"
-    )
+    response = credential.get_ddp_message(
+        credential.STANDBY, creds.response
+    ).split("\n")
+
     for item in response:
         if item == "":
             continue
@@ -45,3 +49,70 @@ def test_parsing_msg():
     parse_wakeup = credential.parse_ddp_response(wakeup_response)
     assert parse_wakeup == credential.PARSE_TYPE_WAKEUP
     assert MOCK_CREDS == credential.get_creds(wakeup_response)
+
+
+def test_creds_handle_search():
+    """Test Service handles search message."""
+    mock_response = (get_ddp_search_message().encode(), MOCK_ADDRESS)
+    creds = init_creds()
+    mock_search = credential.get_ddp_message(
+        credential.STANDBY, creds.response).encode()
+    creds.sock = MagicMock()
+    creds.sock.recvfrom = MagicMock(return_value=mock_response)
+    result = creds.listen(0.1)
+    creds.sock.sendto.assert_called_with(mock_search, MOCK_ADDRESS)
+    assert result is None
+
+
+def test_creds_handle_wakeup():
+    """Test Service handles wakeup message."""
+    mock_response = (get_ddp_wake_message(MOCK_CREDS).encode(), MOCK_ADDRESS)
+    creds = init_creds()
+    creds.sock = MagicMock()
+    creds.sock.recvfrom = MagicMock(return_value=mock_response)
+    result = creds.listen(0.1)
+    assert result == MOCK_CREDS
+
+
+def test_creds_errors():
+    """Test Service error handling."""
+    creds = init_creds()
+    with pytest.raises(credential.CredentialTimeout):
+        result = creds.listen(0.1)
+        assert result is None
+
+    creds = init_creds()
+    creds.sock = MagicMock()
+    creds.sock.recvfrom = MagicMock(side_effect=credential.socket.error())
+    with pytest.raises(credential.CredentialTimeout):
+        result = creds.listen(0.1)
+        assert result is None
+
+    mock_response = (get_ddp_search_message().encode(), MOCK_ADDRESS)
+    creds = init_creds()
+    creds.sock = MagicMock()
+    creds.sock.recvfrom = MagicMock(return_value=mock_response)
+    creds.sock.sendto = MagicMock(side_effect=credential.socket.error())
+    result = creds.listen(0.1)
+    assert result is None
+
+    # Test invalid msg.
+    mock_response = (b'\x00', MOCK_ADDRESS)
+    creds = init_creds()
+    creds.sock = MagicMock()
+    creds.sock.recvfrom = MagicMock(return_value=mock_response)
+    result = creds.listen(0.1)
+    assert result is None
+
+    creds = init_creds()
+    creds.sock = MagicMock()
+    creds.sock.recvfrom = MagicMock(side_effect=KeyboardInterrupt)
+    result = creds.listen(0.1)
+    assert result is None
+
+    with patch(
+        'pyps4_2ndscreen.credential.socket.socket',
+        side_effect=credential.socket.error
+    ), pytest.raises(AttributeError):
+        creds = init_creds()
+        creds.listen()

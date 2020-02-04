@@ -1,6 +1,7 @@
 """Credential fetcher for 2nd Screen app."""
 import logging
 import socket
+import time
 
 from .ddp import (
     DDP_PORT,
@@ -67,10 +68,11 @@ class Credentials:
         data = None
         address = None
         response = None
+        start = time.time()
         _LOGGER.info(
             "Starting Credential Service with Timeout of %s seconds",
             timeout)
-        while 1:
+        while time.time() - start < timeout:
             try:
                 parse_type = None
                 try:
@@ -80,6 +82,7 @@ class Credentials:
                 if not response:
                     _LOGGER.info(
                         "Credential service has timed out with no response")
+                    self.sock.close()
                     raise CredentialTimeout
                 data = response[0]
                 address = response[1]
