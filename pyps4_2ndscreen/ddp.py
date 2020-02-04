@@ -205,9 +205,10 @@ def get_socket(timeout=3):
     return sock
 
 
-def _send_recv_msg(host, broadcast, msg, receive=True):
+def _send_recv_msg(host, broadcast, msg, receive=True, sock=None):
     """Send a ddp message and receive the response."""
-    sock = get_socket()
+    if sock is None:
+        sock = get_socket()
 
     if broadcast:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -224,28 +225,28 @@ def _send_recv_msg(host, broadcast, msg, receive=True):
     return None
 
 
-def _send_msg(host, broadcast, msg):
+def _send_msg(host, broadcast, msg, sock=None):
     """Send a ddp message."""
-    return _send_recv_msg(host, broadcast, msg, receive=False)
+    return _send_recv_msg(host, broadcast, msg, receive=False, sock=sock)
 
 
-def send_search_msg(host):
+def send_search_msg(host, sock=None):
     """Send message only."""
     msg = get_ddp_search_message()
-    return _send_msg(host, True, msg)
+    return _send_msg(host, True, msg, sock=sock)
 
 
-def search(host=None, broadcast=True):
+def search(host=None, broadcast=True, sock=None):
     """Discover PS4s."""
+    ps_list = None
     msg = get_ddp_search_message()
-    data, addr = _send_recv_msg(host, broadcast, msg)
+    data, addr = _send_recv_msg(host, broadcast, msg, sock=sock)
     if data is not None:
         ps_list = []
         data = parse_ddp_response(data.decode('utf-8'))
         data[u'host-ip'] = addr[0]
         ps_list.append(data)
-        return ps_list
-    return None
+    return ps_list
 
 
 def get_status(host):
@@ -257,16 +258,16 @@ def get_status(host):
     return ps_list[0]
 
 
-def wakeup(host, credential, broadcast=None):
+def wakeup(host, credential, broadcast=False, sock=None):
     """Wakeup PS4s."""
     msg = get_ddp_wake_message(credential)
-    _send_msg(host, broadcast, msg)
+    _send_msg(host, broadcast, msg, sock)
 
 
-def launch(host, credential, broadcast=None):
+def launch(host, credential, broadcast=False, sock=None):
     """Launch."""
     msg = get_ddp_launch_message(credential)
-    _send_msg(host, broadcast, msg)
+    _send_msg(host, broadcast, msg, sock)
 
 
 class Discovery:
@@ -307,9 +308,9 @@ class Discovery:
 
     def receive(self):
         """Receive Message."""
-        data, addr = self.sock.recvfrom(1024)
-        if data is not None:
-            data = parse_ddp_response(data.decode('utf-8'))
+        data = None
+        _data, addr = self.sock.recvfrom(1024)
+        if _data is not None:
+            data = parse_ddp_response(_data.decode('utf-8'))
             data[u'host-ip'] = addr[0]
-            return data
-        return None
+        return data

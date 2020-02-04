@@ -1,5 +1,5 @@
 """Tests for pyps4_2ndscreen/ddp.py"""
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import asyncio
 import logging
 
@@ -116,6 +116,38 @@ def test_ddp_messages():
         assert item in MOCK_DDP_MESSAGE.format(ddp.DDP_TYPE_WAKEUP, cred_data)
 
 
+def test_incorrect_ddp_msg_type():
+    """Test incorrect ddp msg type."""
+    with pytest.raises(TypeError):
+        ddp.get_ddp_message('Random', b'')
+
+
+def test_wakeup():
+    """Test Wakeup."""
+    mock_sock = MagicMock()
+    ddp.wakeup(MOCK_HOST, MOCK_CREDS, sock=mock_sock)
+    assert len(mock_sock.sendto.mock_calls) == 1
+
+
+def test_send_search():
+    """Test send search."""
+    mock_sock = MagicMock()
+    ddp.send_search_msg(MOCK_HOST, sock=mock_sock)
+    assert len(mock_sock.sendto.mock_calls) == 1
+
+
+def test_search():
+    """Test Search."""
+    mock_sock = MagicMock()
+    mock_sock.recvfrom.return_value = (
+        MOCK_DDP_RESPONSE.encode(), (MOCK_HOST, MOCK_RANDOM_PORT))
+    with patch(
+        'pyps4_2ndscreen.ddp.select.select',
+            return_value=([mock_sock], [MagicMock()], [MagicMock()])):
+        mock_result = ddp.search(MOCK_HOST, sock=mock_sock)[0]
+        assert MOCK_HOST in mock_result.values()
+
+
 def test_get_status():
     """Test that get_status returns correctly parsed response."""
     with patch(
@@ -132,6 +164,78 @@ def test_get_status():
         assert key in MOCK_DDP_DICT
         assert value == parsed[key]
     assert len(parsed) == len(MOCK_DDP_DICT)
+
+
+def test_no_status():
+    """Test no status."""
+    assert ddp.get_status(MOCK_HOST) is None
+
+
+def test_protocol_connection_lost():
+    """Test protocol connection lost."""
+    mock_ddp = ddp.DDPProtocol()
+    mock_ddp.transport = MagicMock()
+    mock_ddp.error_received(ConnectionError)
+    mock_ddp.connection_lost(ConnectionError)
+    assert len(mock_ddp.transport.close.mock_calls) == 1
+
+
+def test_protocol_close():
+    """Test protocol close."""
+    mock_ddp = ddp.DDPProtocol()
+    mock_ddp.transport = MagicMock()
+    mock_close = mock_ddp.transport.close
+    mock_ddp.close()
+    assert len(mock_close.mock_calls) == 1
+
+
+def test_ps4_unavailable():
+    """Tests for ps4 unavailable."""
+    mock_ddp = ddp.DDPProtocol()
+    mock_ddp.transport = MagicMock()
+    mock_ddp.set_max_polls(1)
+    mock_cb = MagicMock()
+    mock_ps4 = ps4(MOCK_HOST, MOCK_CREDS)
+    mock_ps4.set_protocol(mock_ddp)
+    mock_ps4.add_callback(mock_cb)
+    mock_ps4.status = MOCK_DDP_DICT
+
+    mock_ddp.send_msg(mock_ps4)
+    assert len(mock_ddp.transport.sendto.mock_calls) == 1
+    assert not mock_ps4.unreachable
+    assert mock_ps4.poll_count == 1
+    assert mock_ps4.status is not None
+    assert not mock_cb.mock_calls
+
+    mock_ddp.send_msg(mock_ps4)
+    assert len(mock_ddp.transport.sendto.mock_calls) == 2
+    assert mock_ps4.unreachable is True
+    assert mock_ps4.status is None
+    assert len(mock_cb.mock_calls) == 1
+
+
+def test_discovery():
+    """Tests for discovery."""
+    mock_disc = ddp.Discovery()
+    mock_disc.sock = MagicMock()
+    mock_disc.sock.recvfrom.return_value = (
+        MOCK_DDP_RESPONSE.encode(), (MOCK_HOST, MOCK_RANDOM_PORT))
+    assert mock_disc.search(None)[0]['host-ip'] == MOCK_HOST
+
+    # Test Errors
+    mock_disc.send = MagicMock(
+        side_effect=(ddp.socket.error, ddp.socket.timeout))
+    mock_disc.search(None)
+    assert len(mock_disc.sock.close.mock_calls) == 1
+
+    mock_disc.send = MagicMock()
+    mock_disc.receive = MagicMock(
+        side_effect=(ddp.socket.error, ddp.socket.timeout))
+    mock_disc.search(None)
+    assert len(mock_disc.sock.close.mock_calls) == 2
+
+
+# Test DDP Protocol instance.
 
 
 class MockDDPProtocol():
