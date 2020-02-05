@@ -4,6 +4,7 @@ from ssl import SSLError
 import asyncio
 import urllib
 import aiohttp
+from aiohttp.client_exceptions import ContentTypeError
 
 from .errors import PSDataIncomplete
 
@@ -129,8 +130,7 @@ def get_lang(region) -> str:
     return lang
 
 
-def get_ps_store_url(title, region, reformat='chars', legacy=False,
-                     debug=False):
+def get_ps_store_url(title, region, reformat='chars', legacy=False):
     """Get URL for title search in PS Store."""
     import html
     import re
@@ -147,8 +147,8 @@ def get_ps_store_url(title, region, reformat='chars', legacy=False,
         _url = LEGACY_URL.format(region, title)
     else:
         _url = TUMBLER_URL.format(region, title)
-    if debug:
-        _LOGGER.debug(_url)
+
+    _LOGGER.debug(_url)
 
     url = [_url, DEFAULT_HEADERS, region.split('/')[0]]
     return url
@@ -171,7 +171,6 @@ def _format_url(url):
 
 async def fetch(url, params, session):
     """Get Request."""
-    from aiohttp.client_exceptions import ContentTypeError
     try:
         response = await session.get(url, params=params, timeout=3)
         return await response.json()
@@ -294,48 +293,37 @@ class ResultItem():
     @property
     def name(self):
         """Get Item Name."""
-        if 'name' in self.data:
-            return self.data['name']
-        return None
+        return self.data.get('name')
 
     @property
     def game_type(self):
         """Get Game Type."""
-        game_type = None
-        if 'game-content-type' in self.data:
-            game_type = self.data['game-content-type']
+        game_type = self.data.get('game-content-type')
         if game_type is not None:
             if game_type == self.type_list[4]:
-                return 'App'
-            return game_type
-        return None
+                game_type = 'App'
+        return game_type
 
     @property
     def sku_id(self):
         """Get SKU."""
-        full_id = None
-        if 'default-sku-id' in self.data:
-            full_id = self.data['default-sku-id']
-        if full_id is not None:
-            return parse_id(full_id)
-        return None
+        sku_id = self.data.get('default-sku-id')
+        if sku_id is not None:
+            sku_id = parse_id(sku_id)
+        return sku_id
 
     @property
     def cover_art(self):
         """Get Art URL."""
-        if 'thumbnail-url-base' in self.data:
-            return self.data['thumbnail-url-base']
-        return None
+        return self.data.get('thumbnail-url-base')
 
     @property
     def parent(self):
         """Get Parents."""
-        if self.game_type is not None:
-            if 'parent' in self.data and self.data['parent'] != 'null':
-                if self.data['parent'] is not None:
-                    return ParentItem(
-                        self.data['parent'],
-                        self.game_type)
+        parent = self.data.get('parent')
+        if self.game_type is not None and parent is not None \
+                and parent != 'null':
+            return ParentItem(parent, self.game_type)
         return None
 
 
@@ -359,26 +347,23 @@ class ParentItem():
     @property
     def name(self):
         """Parent Name."""
-        if 'name' in self.data:
-            return self.data['name']
-        return None
+        return self.data.get('name')
 
     @property
     def sku_id(self):
         """Parent SKU."""
-        full_id = None
-        if 'id' in self.data:
-            full_id = self.data['id']
-        if full_id is not None:
-            return parse_id(full_id)
-        return None
+        sku_id = self.data.get('id')
+        if sku_id is not None:
+            sku_id = parse_id(sku_id)
+        return sku_id
 
     @property
     def cover_art(self):
         """Parent Art."""
-        if 'url' in self.data:
-            return "{}{}".format(self.data['url'], "/image")
-        return None
+        url = self.data.get('url')
+        if url is not None:
+            url = "{}{}".format(url, "/image")
+        return url
 
     @property
     def game_type(self):

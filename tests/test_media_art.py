@@ -231,6 +231,23 @@ async def test_fetch():
     assert result == MOCK_DATA
 
 
+@pytest.mark.asyncio
+async def test_fetch_errors():
+    """Test fetch errors."""
+    session = Mock()
+    mock_json = Mock()
+    mock_json.json.return_value = asyncio.Future()
+    mock_json.json.side_effect = (
+        media.asyncio.TimeoutError,
+        media.aiohttp.client_exceptions.ContentTypeError,
+        media.SSLError
+    )
+    session.get.return_value = asyncio.Future()
+    session.get.return_value.set_result(mock_json)
+    result = await media.fetch(MagicMock(), MagicMock(), session)
+    assert result is None
+
+
 def test_parent_item():
     """Test parent item is returned if present."""
     data = MOCK_DATA
