@@ -315,6 +315,7 @@ class Ps4Legacy(Ps4Base):
             if self.auto_close:
                 self.close()
             return True
+        self.msg_sending = False
         return False
 
     def send_status(self):

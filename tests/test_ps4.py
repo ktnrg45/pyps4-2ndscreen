@@ -375,6 +375,7 @@ def test_start_title():
     assert not mock_ps4.start_title(MOCK_TITLE_ID)
 
     # Test return False if login fails.
+    mock_ps4.msg_sending = False
     mock_ps4.login = MagicMock(return_value=False)
     assert not mock_ps4.start_title(MOCK_TITLE_ID)
 
@@ -403,6 +404,7 @@ def test_remote_control():
     assert not mock_ps4.remote_control(MOCK_RC_ENTER)
 
     # Test return False if login fails.
+    mock_ps4.msg_sending = False
     mock_ps4.login = MagicMock(return_value=False)
     assert not mock_ps4.remote_control(MOCK_RC_ENTER)
 
