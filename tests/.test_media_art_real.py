@@ -71,26 +71,6 @@ async def _get_cover_art(index_num):
     _LOGGER.info("Retrieved in %s seconds", elapsed)
 
 
-async def _search_all(title, title_id):
-    start = time.time()
-    result_item = await TEST_PS4.async_search_all_ps_data(
-        title, title_id)
-    elapsed = time.time() - start
-    _LOGGER.info("Search All completed in %s seconds", elapsed)
-    assert result_item is not None
-    return result_item
-
-
-@pytest.mark.asyncio
-async def test_search_all():
-    """Test Search All method"""
-    title = TEST_LIST[2][0]
-    title_id = TEST_LIST[2][1]
-    result_item = await _search_all(title, title_id)
-    assert result_item is not None
-    return result_item
-
-
 @pytest.mark.asyncio
 async def test_sample_list():
     """Test sample list with asyncio."""
@@ -107,11 +87,6 @@ async def _get_tests():
         test = _get_cover_art(index_num)
         tests.append(test)
     await asyncio.gather(*tests)
-
-    # Test one Item for search_all
-    search_all = asyncio.ensure_future(
-        _search_all(TEST_LIST[2][0], TEST_LIST[2][1]))
-    await search_all
 
 
 def main():

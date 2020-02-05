@@ -193,9 +193,6 @@ async def test_get_ps_store_data():
         new=mock_coro(return_value=[MagicMock()]),
     ) as mock_call, patch(
         "pyps4_2ndscreen.media_art.parse_data", side_effect=(TypeError, AttributeError)
-    ), patch(
-        "pyps4_2ndscreen.media_art.async_prepare_tumbler",
-        new=mock_coro(side_effect=(TypeError, AttributeError)),
     ), pytest.raises(
         PSDataIncomplete
     ):
@@ -211,9 +208,6 @@ async def test_get_ps_store_data():
         new=mock_coro(return_value=[]),
     ) as mock_call, patch(
         "pyps4_2ndscreen.media_art.parse_data", return_value=None
-    ), patch(
-        "pyps4_2ndscreen.media_art.async_prepare_tumbler",
-        new=mock_coro(return_value=None),
     ):
         result_item = await mock_ps4.async_get_ps_store_data(
             MOCK_TITLE_NAME, MOCK_TITLE_ID, MOCK_REGION

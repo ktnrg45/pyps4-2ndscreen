@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Media Art Functions."""
 import logging
 from ssl import SSLError
@@ -155,77 +154,6 @@ def get_ps_store_url(title, region, reformat='chars', legacy=False,
     return url
 
 
-async def async_prepare_tumbler(
-        title, title_id, region,
-        session: aiohttp.ClientSession) -> dict or None:
-    """Try tumbler search. Add chars to search, one by one."""
-    lang = get_lang(region)
-    _region = get_region(region)
-    char_index = 0
-    while char_index < (len(title) - 1):
-        index = char_index + 1
-        current_chars = title[0:index]
-        url = get_ps_store_url(
-            current_chars, _region, reformat='orig')
-        url, params = _format_url(url)
-        response = await fetch(url, params, session)
-        if response is None:
-            continue
-
-        data = parse_data(response, title_id, lang)
-
-        # If title not found iterate to next char.
-        if data is None:
-            remaining_chars = list(title[index:])
-            char_index = char_index + 1
-
-            try:
-                next_chars = response['data']['attributes']['next']
-            except KeyError:
-                next_chars = None
-
-            # If no 'next' key return None.
-            if next_chars is None:
-                return None
-
-            if title[char_index] not in next_chars:
-                _LOGGER.debug("Starting Tumbler")
-                return await async_tumbler_search(
-                    current_chars, next_chars, remaining_chars,
-                    title_id, region, session)
-            continue
-
-        return data
-
-
-async def async_tumbler_search(
-        current_chars: list, next_chars: list, remaining_chars: list,
-        title_id, region, session: aiohttp.ClientSession) -> dict or None:
-    """Search using available chars. Stop after 1 iteration."""
-    _region = get_region(region)
-    lang = get_lang(region)
-    current = current_chars
-    chars = next_chars
-    ignore = ["'", ' ']
-    data = None
-
-    for char in chars:
-        if char not in remaining_chars or char in ignore:
-            continue
-        next_str = "{}{}".format(current, char)
-        url = get_ps_store_url(next_str, _region, 'orig', True)
-        url, params = _format_url(url)
-        response = await fetch(url, params, session)
-
-        if response is None:
-            continue
-
-        data = parse_data(response, title_id, lang)
-        if data is not None:
-            return data
-    return None
-
-
 def _format_url(url):
     """Format url for aiohttp."""
     f_params = {}
@@ -302,15 +230,6 @@ async def async_search_ps_store(title: str, title_id: str, region: str):
                 raise PSDataIncomplete
             if result_item is not None:
                 break
-
-        if result_item is None:
-            try:
-                result_item = await async_prepare_tumbler(
-                    title, title_id, region, session)
-            except (TypeError, AttributeError):
-                result_item = None
-                raise PSDataIncomplete
-
         await session.close()
     return result_item
 

@@ -1,16 +1,13 @@
-# -*- coding: utf-8 -*-
 """Methods for PS4 Object."""
-from __future__ import print_function
 import logging
 import time
-import asyncio
 
 from .connection import LegacyConnection, AsyncConnection, DEFAULT_LOGIN_DELAY
 from .credential import DEFAULT_DEVICE_NAME
 from .ddp import (get_status, launch, wakeup,
                   get_ddp_launch_message, get_ddp_wake_message)
 from .errors import NotReady, UnknownButton, LoginFailed
-from .media_art import async_search_ps_store, COUNTRIES, ResultItem
+from .media_art import async_search_ps_store, ResultItem
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -88,38 +85,6 @@ class Ps4Base():
             self.ps_cover = result_item.cover_art
             return result_item
 
-        return None
-
-    async def async_search_all_ps_data(self, title, title_id, timeout=10):
-        """Search for title in all regions."""
-        _LOGGER.debug("Searching all databases...")
-        tasks = []
-        for region in COUNTRIES:
-            search_func = self.async_get_ps_store_data(title, title_id, region)
-            task = asyncio.ensure_future(
-                self._async_search_region(search_func))
-            tasks.append(task)
-
-        done, pending = await asyncio.wait(
-            tasks, timeout=timeout, return_when=asyncio.FIRST_COMPLETED)
-
-        # Return First Result.
-        data = None
-        for completed in done:
-            try:
-                data = completed.result()
-            except asyncio.InvalidStateError:
-                data = None
-            if data is not None:
-                for task in pending:
-                    task.cancel()
-                return data
-        return None
-
-    async def _async_search_region(self, task):
-        result_item = await task
-        if result_item is not None:
-            return result_item
         return None
 
     @property
