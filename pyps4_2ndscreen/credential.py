@@ -1,7 +1,8 @@
-"""Credential fetcher for 2nd Screen app."""
+"""Credential fetcher for PS4 2nd Screen app."""
 import logging
 import socket
 import time
+from typing import Optional
 
 from .ddp import (
     DDP_PORT,
@@ -25,15 +26,15 @@ PARSE_TYPE_WAKEUP = 'wakeup'
 
 
 class Credentials:
-    """The PS4 Credentials object. Masquerades as a PS4 to get credentials.
+    """The PSN Credentials Service. Masquerades as a PS4 to get credentials.
 
-    PS4 listens on ports 987 (Priveleged).
-    Must run command on python path:
-    "sudo setcap 'cap_net_bind_service=+ep' /usr/bin/python3.5"
+    Service listens on port 987 (Priveleged).
+
+    :param device_name: Name to display as
     """
 
-    def __init__(self, device_name=DEFAULT_DEVICE_NAME):
-        """Init Cred Server."""
+    def __init__(self, device_name: Optional[str] = DEFAULT_DEVICE_NAME):
+
         self.sock = None
         self.response = {
             'host-id': HOST_ID,
@@ -44,7 +45,7 @@ class Credentials:
         self.start()
 
     def start(self):
-        """Start Cred Server."""
+        """Start Cred Service."""
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self.sock = sock
@@ -62,8 +63,11 @@ class Credentials:
                 DDP_PORT, error)
             return
 
-    def listen(self, timeout=120):
-        """Listen and respond to requests."""
+    def listen(self, timeout: Optional[int] =120):
+        """Listen and respond to requests.
+
+        :param timeout: Timeout in seconds
+        """
         self.sock.settimeout(timeout)
         data = None
         address = None
@@ -110,8 +114,12 @@ class Credentials:
         return None
 
 
-def get_ddp_message(status, data=None):
-    """Get DDP message."""
+def get_ddp_message(status: str, data: Optional[dict] = None) -> bytes:
+    """Return DDP message.
+
+    :param status: Status type to respond with
+    :param data: Attributes to respond with
+    """
     msg = u'HTTP/1.1 {}\n'.format(status)
     if data is not None:
         for key, value in data.items():
@@ -120,8 +128,11 @@ def get_ddp_message(status, data=None):
     return msg
 
 
-def parse_ddp_response(response):
-    """Parse the response."""
+def parse_ddp_response(response: bytes) -> str:
+    """Parse the response. Return type.
+
+    :param response: Response received by client app
+    """
     rsp = response.decode('utf-8')
     if DDP_TYPE_SEARCH in rsp:
         return 'search'
@@ -130,8 +141,11 @@ def parse_ddp_response(response):
     raise UnknownDDPResponse
 
 
-def get_creds(response):
-    """Return creds."""
+def get_creds(response: bytes) -> str:
+    """Return creds.
+
+    :param response: Response received from client with creds
+    """
     keys = {}
     data = response.decode('utf-8')
     for line in data.splitlines():

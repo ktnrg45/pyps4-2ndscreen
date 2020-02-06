@@ -6,7 +6,7 @@ import logging
 import socket
 import time
 import asyncio
-from typing import cast
+from typing import cast, Optional, Union
 
 from construct import (Bytes, Const, Int32ul, Padding, Struct, Container)
 from Cryptodome.Cipher import AES, PKCS1_OAEP
@@ -121,7 +121,7 @@ def _get_handshake_request(seed: bytes) -> bytes:
 
 
 def _get_login_request(
-        credential: str, name: str, pin='') -> bytes:
+        credential: str, name: str, pin: Optional[str] = '') -> bytes:
     """Return Login Request.
 
     :param credential: 64 char sha256 hash of PSN account ID
@@ -232,7 +232,7 @@ def _get_remote_control_close_request() -> bytes:
     return msg
 
 
-def _get_remote_control_key_off_request(hold_time=0) -> bytes:
+def _get_remote_control_key_off_request(hold_time: Optional[int] = 0) -> bytes:
     """Return RC Key Off Packet."""
     msg = _get_remote_control_msg(256, hold_time)
     return msg
@@ -260,7 +260,9 @@ class BaseConnection():
     :param port: Remote port to connect to.
     """
 
-    def __init__(self, ps4, credential=None, port=997):
+    def __init__(
+            self, ps4, credential: Optional[str] = None,
+            port: Optional[int] = 997):
         """Init Class."""
         self.ps4 = ps4
         self._host = ps4.host
@@ -272,11 +274,11 @@ class BaseConnection():
         self._random_seed = None
         self.pin = None
 
-    def set_socket(self, sock):
+    def set_socket(self, sock: socket.socket):
         """Set socket."""
         self._socket = sock
 
-    def _set_crypto_init_vector(self, init_vector):
+    def _set_crypto_init_vector(self, init_vector: bytes):
         self._cipher = AES.new(RANDOM_SEED, AES.MODE_CBC, init_vector)
         self._decipher = AES.new(RANDOM_SEED, AES.MODE_CBC, init_vector)
 
@@ -284,7 +286,7 @@ class BaseConnection():
         self._cipher = None
         self._decipher = None
 
-    def encrypt_message(self, msg):
+    def encrypt_message(self, msg: bytes):
         """Encrypt message."""
         data = self._cipher.encrypt(msg)
         return data
@@ -294,7 +296,7 @@ class LegacyConnection(BaseConnection):
     """Legacy Connection for Legacy PS4 object."""
 
     # noqa: pylint: disable=no-self-use
-    def delay(self, seconds):
+    def delay(self, seconds: Union[float, int]):
         """Delay in seconds."""
         start_time = time.time()
         while time.time() - start_time < seconds:
@@ -315,7 +317,7 @@ class LegacyConnection(BaseConnection):
         self._socket.close()
         self._reset_crypto_init_vector()
 
-    def login(self, pin):
+    def login(self, pin: str):
         """Login."""
         _LOGGER.debug('Login')
         self._send_login_request(pin=pin)
@@ -329,14 +331,14 @@ class LegacyConnection(BaseConnection):
         msg = self._recv_msg()
         return _handle_response('standby', msg)
 
-    def start_title(self, title_id):
+    def start_title(self, title_id: str):
         """Start an application/game title."""
         _LOGGER.debug('Start title: %s', title_id)
         self._send_boot_request(title_id)
         msg = self._recv_msg()
         return _handle_response('start_title', msg)
 
-    def remote_control(self, operation, hold_time=0):
+    def remote_control(self, operation: int, hold_time: Optional[int] = 0):
         """Send remote control command."""
         _LOGGER.debug('Remote control: %s (%s)', operation, hold_time)
         return self._send_remote_control_request(operation, hold_time)
@@ -347,7 +349,7 @@ class LegacyConnection(BaseConnection):
         self._send_status_ack()
         return True
 
-    def _send_msg(self, msg, encrypted=False):
+    def _send_msg(self, msg: bytes, encrypted: Optional[bool] = False):
         _LOGGER.debug('TX: %s %s', len(msg), binascii.hexlify(msg))
         if encrypted:
             msg = self.encrypt_message(msg)
@@ -357,7 +359,7 @@ class LegacyConnection(BaseConnection):
             _LOGGER.error("Connection error")
             self.ps4.close()
 
-    def _recv_msg(self, decrypt=True):
+    def _recv_msg(self, decrypt: Optional[bool] = True):
         msg = self._socket.recv(1024)
         if decrypt:
             msg = self._decipher.decrypt(msg)
@@ -374,11 +376,11 @@ class LegacyConnection(BaseConnection):
         data = _parse_hello_request(msg)
         return data
 
-    def _send_handshake_request(self, seed):
+    def _send_handshake_request(self, seed: bytes):
         """Finish handshake."""
         self._send_msg(_get_handshake_request(seed))
 
-    def _send_login_request(self, pin):
+    def _send_login_request(self, pin: str):
         name = self.ps4.device_name
         msg = _get_login_request(self._credential, name, pin)
         self._send_msg(msg, encrypted=True)
@@ -386,10 +388,11 @@ class LegacyConnection(BaseConnection):
     def _send_standby_request(self):
         self._send_msg(_get_standby_request(), encrypted=True)
 
-    def _send_boot_request(self, title_id):
+    def _send_boot_request(self, title_id: str):
         self._send_msg(_get_boot_request(title_id), encrypted=True)
 
-    def _send_remote_control_request(self, operation, hold_time=0):
+    def _send_remote_control_request(
+            self, operation: int, hold_time: Optional[int] = 0):
         # Prebuild required remote messages."""
         msg = _get_remote_control_request(operation, hold_time)
 
@@ -420,7 +423,7 @@ class AsyncConnection(BaseConnection):
     async def async_connect(self, ps4):
         """Create asyncio TCP connection.
 
-        :param ps4: PS4Async Object to attach to.
+        :param ps4: :class: PS4Async Object to attach to.
         """
         loop = asyncio.get_event_loop()
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -452,7 +455,7 @@ class AsyncConnection(BaseConnection):
 class TCPProtocol(asyncio.Protocol):
     """Asyncio TCP Protocol.
 
-    :param ps4: PS4Async Object to attach to.
+    :param ps4: :class: PS4Async Object to attach to.
     :param loop: Asyncio Loop to use in.
     """
 
@@ -472,7 +475,7 @@ class TCPProtocol(asyncio.Protocol):
         self._last_heartbeat = None
         self._hb_handler = None
 
-    def connection_made(self, transport):
+    def connection_made(self, transport: asyncio.Transport):
         """When connected.
 
         :param transport: asyncio.Transport class
@@ -521,7 +524,7 @@ class TCPProtocol(asyncio.Protocol):
         self.task = None
         self.task_available.set()
 
-    async def add_task(self, task_name: str, func, *args):
+    async def add_task(self, task_name: str, func: callable, *args: tuple):
         """Add task to queue.
 
         :param task_name: Name of task
@@ -575,7 +578,11 @@ class TCPProtocol(asyncio.Protocol):
                     self.disconnect()
             self._complete_task()
 
-    async def login(self, pin='', power_on=False, delay=DEFAULT_LOGIN_DELAY):
+    async def login(
+            self,
+            pin: Optional[str] = '',
+            power_on: Optional[bool] = False,
+            delay: Optional[int] = DEFAULT_LOGIN_DELAY):
         """Send Login Command.
 
         :param pin: Pin to use for linking.
@@ -620,7 +627,8 @@ class TCPProtocol(asyncio.Protocol):
             _LOGGER.debug("Transport @ %s is disconnected", self.ps4.host)
         self.connection._reset_crypto_init_vector()  # noqa: pylint: disable=protected-access
 
-    async def start_title(self, title_id: str, running_id=None):
+    async def start_title(
+            self, title_id: str, running_id: Optional[str] = None):
         """Send Start Title Command.
 
         :param title_id: Title Id to boot.
@@ -639,7 +647,8 @@ class TCPProtocol(asyncio.Protocol):
             self.loop.call_later(
                 1.0, self._send_remote_control_request_sync, msg, 16)
 
-    async def remote_control(self, operation: int, hold_time=0):
+    async def remote_control(
+            self, operation: int, hold_time: Optional[str] = 0):
         """Send Remote Control Command.
 
         :param operation: Operation to perform.
@@ -654,7 +663,7 @@ class TCPProtocol(asyncio.Protocol):
         asyncio.ensure_future(task)
 
     async def _send_remote_control_request(
-            self, msg: list, operation: int, hold_time=0):
+            self, msg: list, operation: int, hold_time: Optional[str] = 0):
         """Send messages for remote control.
 
         :param msg: Messages to send
@@ -664,7 +673,7 @@ class TCPProtocol(asyncio.Protocol):
         self._send_remote_control_request_sync(msg, operation, hold_time)
 
     def _send_remote_control_request_sync(
-            self, msg: list, operation: int, hold_time=0):
+            self, msg: list, operation: int, hold_time: Optional[str] = 0):
         """Sync Wrapper for Remote Control.
 
         :param msg: Messages to send

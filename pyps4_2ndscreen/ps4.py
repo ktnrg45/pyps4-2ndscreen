@@ -1,11 +1,18 @@
-"""Methods for PS4 Object."""
+"""Methods for interfacing with a PlayStation 4 Console."""
 import logging
 import time
+from typing import Optional, Union
 
 from .connection import LegacyConnection, AsyncConnection, DEFAULT_LOGIN_DELAY
 from .credential import DEFAULT_DEVICE_NAME
-from .ddp import (get_status, launch, wakeup,
-                  get_ddp_launch_message, get_ddp_wake_message)
+from .ddp import (
+    DDPProtocol,
+    get_status,
+    launch,
+    wakeup,
+    get_ddp_launch_message,
+    get_ddp_wake_message,
+)
 from .errors import NotReady, UnknownButton, LoginFailed
 from .media_art import async_search_ps_store, ResultItem
 
@@ -34,7 +41,7 @@ STATUS_STANDBY = 620
 
 
 class Ps4Base():
-    """The PS4 object.
+    """The PS4 base object. Should not be initialized directly.
 
     :param host: The host PS4 IP address
     :param credential: The credentials of a PSN account
@@ -42,7 +49,7 @@ class Ps4Base():
     """
 
     def __init__(self, host: str, credential: str,
-                 device_name=DEFAULT_DEVICE_NAME):
+                 device_name: Optional[str] = DEFAULT_DEVICE_NAME):
         self.host = host
         self.credential = None
         self.device_name = device_name
@@ -88,7 +95,7 @@ class Ps4Base():
         return None
 
     @property
-    def is_running(self):
+    def is_running(self) -> bool:
         """Return True if the PS4 is running."""
         if self.status is not None:
             if self.status['status_code'] == STATUS_OK:
@@ -96,7 +103,7 @@ class Ps4Base():
         return False
 
     @property
-    def is_standby(self):
+    def is_standby(self) -> bool:
         """Return True if the PS4 is in standby."""
         if self.status is not None:
             if self.status['status_code'] == STATUS_STANDBY:
@@ -104,43 +111,43 @@ class Ps4Base():
         return False
 
     @property
-    def is_available(self):
-        """Return if the PS4 is available."""
+    def is_available(self) -> bool:
+        """Return True if the PS4 is available."""
         if self.status is not None:
             return True
         return False
 
     @property
-    def system_version(self):
-        """Get the system version."""
+    def system_version(self) -> dict:
+        """Return the system version."""
         if self.status is not None:
             return self.status['system-version']
         return None
 
     @property
-    def host_id(self):
-        """Get the host id."""
+    def host_id(self) -> str:
+        """Return the host id."""
         if self.status is not None:
             return self.status['host-id']
         return None
 
     @property
-    def host_name(self):
-        """Get the host name."""
+    def host_name(self) -> str:
+        """Return the host name."""
         if self.status is not None:
             return self.status['host-name']
         return None
 
     @property
-    def running_app_titleid(self):
-        """Return the title Id of the running application."""
+    def running_app_titleid(self) -> str:
+        """Return the title ID of the running application."""
         if self.status is not None:
             if 'running-app-titleid' in self.status:
                 return self.status['running-app-titleid']
         return None
 
     @property
-    def running_app_name(self):
+    def running_app_name(self) -> str:
         """Return the name of the running application."""
         if self.status is not None:
             if 'running-app-name' in self.status:
@@ -148,14 +155,14 @@ class Ps4Base():
         return None
 
     @property
-    def running_app_ps_cover(self):
+    def running_app_ps_cover(self) -> str:
         """Return the URL for the title cover art."""
         if self.running_app_titleid is None:
             self.ps_cover = None
         return self.ps_cover
 
     @property
-    def running_app_ps_name(self):
+    def running_app_ps_name(self) -> str:
         """Return the name fetched from PS Store."""
         if self.running_app_titleid is None:
             self.ps_name = None
@@ -163,18 +170,27 @@ class Ps4Base():
 
 
 class Ps4Legacy(Ps4Base):
-    """Legacy PS4 Class. Sync Version."""
+    """Legacy PS4 Class. Sync Version.
+
+    :param host: The host PS4 IP address
+    :param credential: The credentials of a PSN account
+    :param device_name: Name for device
+    """
 
     def __init__(
-            self, host, credential,
-            device_name=DEFAULT_DEVICE_NAME, auto_close=True):
+            self, host: str, credential: str,
+            device_name: Optional[str] = DEFAULT_DEVICE_NAME,
+            auto_close: Optional[bool] = True):
         super().__init__(host, credential, device_name)
         self.auto_close = auto_close
         self.connection = LegacyConnection(self, credential=self.credential)
 
     # noqa: pylint: disable=no-self-use
-    def delay(self, seconds):
-        """Delay in seconds."""
+    def delay(self, seconds: Union[float, str]):
+        """Delay in seconds.
+
+        :param seconds: Seconds to delay
+        """
         start_time = time.time()
         while time.time() - start_time < seconds:
             pass
@@ -205,16 +221,19 @@ class Ps4Legacy(Ps4Base):
         return True
 
     def launch(self):
-        """Launch."""
+        """Send Launch Packet."""
         launch(self.host, self.credential)
 
     def wakeup(self):
-        """Wakeup."""
+        """Send Wakeup Packet."""
         wakeup(self.host, self.credential)
         self._power_on = True
 
-    def login(self, pin='') -> bool:
-        """Login."""
+    def login(self, pin: Optional[str] = '') -> bool:
+        """Send Login Packet.
+
+        :param pin: Pin to send. Requred when linking.
+        """
         if self.loggedin:
             return True
         self.open()
@@ -225,8 +244,8 @@ class Ps4Legacy(Ps4Base):
         self.loggedin = True
         return is_login
 
-    def standby(self):
-        """Standby."""
+    def standby(self) -> bool:
+        """Send Standby Packet."""
         if self.login():
             if self.connection.standby():
                 self.close()
@@ -234,8 +253,8 @@ class Ps4Legacy(Ps4Base):
         self.close()
         return False
 
-    def start_title(self, title_id, running_id=None):
-        """Start title.
+    def start_title(self, title_id, running_id: Optional[str] = None) -> bool:
+        """Send Start title packet.
 
         Close current title if title_id is running_id
 
@@ -261,8 +280,13 @@ class Ps4Legacy(Ps4Base):
         self.msg_sending = False
         return False
 
-    def remote_control(self, button_name, hold_time=0):
-        """Send a remote control button press."""
+    def remote_control(
+            self, button_name, hold_time: Optional[int] = 0) -> bool:
+        """Send remote control command packet.
+
+        :param button_name: Button to send to PS4.
+        :param hold_time: Time to hold in millis. Only affects PS command.
+        """
         if self.msg_sending:
             _LOGGER.warning("PS4 already sending message.")
             return False
@@ -283,8 +307,8 @@ class Ps4Legacy(Ps4Base):
         self.msg_sending = False
         return False
 
-    def send_status(self):
-        """Send connection status to PS4."""
+    def send_status(self) -> bool:
+        """Send connection status ack to PS4."""
         if self.connected and self.loggedin:
             self.connection.send_status()
             return True
@@ -293,10 +317,17 @@ class Ps4Legacy(Ps4Base):
 
 
 class Ps4Async(Ps4Base):
-    """Async Version of Ps4 Class."""
+    """Async Version of Ps4 Class.
 
-    def __init__(self, host, credential=None, device_name=DEFAULT_DEVICE_NAME):
-        """Inherit Class."""
+    :param host: The host PS4 IP address
+    :param credential: The credentials of a PSN account
+    :param device_name: Name for device
+    """
+
+    def __init__(
+        self, host: str, credential: str,
+            device_name: Optional[str] = DEFAULT_DEVICE_NAME):
+
         super().__init__(host, credential, device_name)
         self._login_delay = DEFAULT_LOGIN_DELAY
         self.ddp_protocol = None
@@ -321,7 +352,7 @@ class Ps4Async(Ps4Base):
         """Set delay for login."""
         self._login_delay = value
 
-    def set_protocol(self, ddp_protocol):
+    def set_protocol(self, ddp_protocol: DDPProtocol):
         """Attach DDP protocol.
 
         :param ddp_protocol: :class: `pyps4_2ndscreen.ddp.DDPProtocol`
@@ -356,7 +387,7 @@ class Ps4Async(Ps4Base):
         return super().get_status()
 
     def launch(self):
-        """Send Launch Message."""
+        """Send Launch packet."""
         if self.ddp_protocol is None:
             _LOGGER.error("DDP Protocol does not exist/Not ready")
         else:
@@ -364,7 +395,7 @@ class Ps4Async(Ps4Base):
                 self, get_ddp_launch_message(self.credential))
 
     def wakeup(self):
-        """Wakeup PS4."""
+        """Send Wakeup packet."""
         if self.ddp_protocol is None:
             _LOGGER.error("DDP Protocol does not exist")
         else:
@@ -373,10 +404,10 @@ class Ps4Async(Ps4Base):
             self.ddp_protocol.send_msg(
                 self, get_ddp_wake_message(self.credential))
 
-    async def login(self, pin=''):
-        """Login to PS4.
+    async def login(self, pin: Optional[str] = ''):
+        """Send Login Packet.
 
-        :param pin: PIN as string if linking/pairing
+        :param pin: Pin to send. Requred when linking.
         """
         if self.tcp_protocol is None:
             _LOGGER.info("Login failed: TCP Protocol does not exist")
@@ -385,17 +416,18 @@ class Ps4Async(Ps4Base):
             await self.tcp_protocol.login(pin, power_on, self.login_delay)
 
     async def standby(self):
-        """Place PS4 in Standby."""
+        """Send Standby Packet."""
         if self.tcp_protocol is None:
             _LOGGER.info("Standby Failed: TCP Protocol does not exist")
         else:
             await self.tcp_protocol.standby()
             self._power_off = True
 
-    async def start_title(self, title_id, running_id=None):
-        """Start title. Is coroutine.
+    async def start_title(
+            self, title_id: str, running_id: Optional[str] = None):
+        """Send start title packet.
 
-        Close current title if title_id is running_id
+        Closes current title if title_id is running_id
 
         :param title_id: Title to start; CUSA00000
         :param running_id: Title currently running
@@ -415,8 +447,9 @@ class Ps4Async(Ps4Base):
         else:
             await self.tcp_protocol.start_title(title_id, running_id)
 
-    async def remote_control(self, button_name: str, hold_time=0):
-        """Send remote control command. Is coroutine.
+    async def remote_control(
+            self, button_name: str, hold_time: Optional[int] = 0):
+        """Send remote control command packet. Is coroutine.
 
         :param button_name: Button to send to PS4.
         :param hold_time: Time to hold in millis. Only affects PS command.
@@ -441,7 +474,7 @@ class Ps4Async(Ps4Base):
             await self.tcp_protocol.remote_control(operation, hold_time)
 
     async def close(self):
-        """Async Wrapper for _close()"""
+        """Close Connection."""
         self._close()
 
     def _close(self):
@@ -458,8 +491,11 @@ class Ps4Async(Ps4Base):
         self.loggedin = False
         self.connected = False
 
-    async def async_connect(self, auto_login=True):
-        """Connect."""
+    async def async_connect(self, auto_login: Optional[bool] = True):
+        """Connect.
+
+        :param auto_login: If true will login automatically if powering on.
+        """
         if not self.connected:
             if self.status is None:
                 self.get_status()
@@ -487,6 +523,6 @@ class Ps4Async(Ps4Base):
                     self._power_on = False
 
     @property
-    def login_delay(self):
+    def login_delay(self) -> int:
         """Return login delay value."""
         return self._login_delay
