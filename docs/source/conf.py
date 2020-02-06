@@ -12,7 +12,9 @@
 #
 import os
 import sys
-import sphinx_rtd_theme
+import datetime
+
+from pyps4_2ndscreen.__version__ import __version__ as version
 
 sys.path.insert(0, os.path.abspath('../../'))
 
@@ -20,10 +22,10 @@ sys.path.insert(0, os.path.abspath('../../'))
 # -- Project information -----------------------------------------------------
 os.system('pip install -r {}/requirements.txt'.format(sys.path[0]))
 
-from pyps4_2ndscreen.__version__ import __version__ as version
 
+now = datetime.datetime.now()
 project = 'pyps4-2ndscreen'
-copyright = '2019, ktnrg45'
+copyright = '2019-{}, ktnrg45'.format(now.year)
 author = 'ktnrg45'
 
 # The full version, including alpha/beta/rc tags
@@ -61,3 +63,9 @@ html_theme = "sphinx_rtd_theme"
 # so a file named "default.css" will overwrite the builtin "default.css".
 # html_static_path = ['_static']
 master_doc = 'index'
+
+autodoc_member_order = 'bysource'
+autodoc_default_options = {
+    'undoc-members': True,
+    'show-inheritance': True,
+}
