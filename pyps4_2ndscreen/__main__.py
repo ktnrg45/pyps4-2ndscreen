@@ -2,6 +2,7 @@
 """Main File for pyps4-2ndscreen."""
 import logging
 import json
+import sys
 
 import click
 
@@ -138,6 +139,7 @@ def credentials():
     _credentials_func()
 
 
+# noqa: pylint: disable=no-member, protected-access
 def _credentials_func():
     from .credential import DEFAULT_DEVICE_NAME
     from .ddp import DDP_PORT
@@ -145,7 +147,25 @@ def _credentials_func():
     helper = Helper()
     error = helper.port_bind([DDP_PORT])
     if error is not None:
-        print("Error binding to port. Try again as sudo.")
+        py_path = sys.executable
+        if sys._home not in py_path:
+            py_exec = '/python'
+            py_ver = '{}{}.{}'.format(
+                py_exec,
+                sys.version_info.major,
+                sys.version_info.minor,
+            )
+            py_path = '{}{}'.format(sys._home, py_exec)
+            py_path_ver = '{}{}'.format(sys._home, py_ver)
+        print(
+            "\nError binding to port.\n\n"
+            "- Try again as sudo.\n\n"
+            "- Or try setcap command:\n\n"
+            "  > sudo setcap 'cap_net_bind_service=+ep' {}"
+            "\nor\n"
+            "  > sudo setcap 'cap_net_bind_service=+ep' {}"
+            .format(py_path, py_path_ver)
+        )
         return None
     print("With the PS4 2nd Screen app, refresh devices "
           "and select the device '{}'.".format(DEFAULT_DEVICE_NAME))
