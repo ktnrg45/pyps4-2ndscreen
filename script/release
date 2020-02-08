@@ -1,9 +1,11 @@
 #!/bin/sh
 # Pushes a new version to PyPi. Run from root directory.
-access_token="$(git config --global github.token)"
 repo_url="$(echo $(git config --get remote.origin.url) | grep -Po '.*(?=\.)')"
 url="$(echo $repo_url | sed 's\'github.com'\'api.github.com/repos'\g')"
-API_URL=$(printf "%s%s%s" $url "/releases?access_token=" $access_token)
+
+ACCESS_TOKEN="$(git config --global github.token)"
+API_URL=$(printf "%s/releases?access_token=%s" $url $ACCESS_TOKEN)
+
 lib_dir="pyps4_2ndscreen/__version__.py"
 major="$(head -n 3 "$lib_dir" | tail -n 1 | tail -c 2)"
 minor="$(head -n 4 "$lib_dir" | tail -n 1 | tail -c 2)"
@@ -24,8 +26,9 @@ git checkout master
 git reset HEAD
 git merge dev
 git push
+
 read -p "Enter release message: " msg
+
 API_JSON=$(printf '{"tag_name": "%s","target_commitish": "master","name": "%s","body": "%s","draft": false,"prerelease": false}' $VERSION $VERSION "$msg")
-url="https://api.github.com/repos/$OWNER/$REPOSITORY/releases?access_token=$access_token"
 curl --data $API_JSON $API_URL
 git checkout dev
