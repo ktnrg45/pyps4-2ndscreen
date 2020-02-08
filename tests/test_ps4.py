@@ -364,10 +364,6 @@ def test_start_title():
     mock_ps4.start_title(MOCK_TITLE_ID, MOCK_TITLE_ID)
     assert len(mock_ps4.remote_control.mock_calls) == 0
 
-    # Test Msg already sending.
-    mock_ps4.msg_sending = True
-    assert not mock_ps4.start_title(MOCK_TITLE_ID)
-
     # Test return False if login fails.
     mock_ps4.msg_sending = False
     mock_ps4.login = MagicMock(return_value=False)
@@ -392,10 +388,6 @@ def test_remote_control():
     # Test Unknown Button
     with pytest.raises(ps4.UnknownButton):
         mock_ps4.remote_control("Not Valid")
-
-    # Test Msg already sending.
-    mock_ps4.msg_sending = True
-    assert not mock_ps4.remote_control(MOCK_RC_ENTER)
 
     # Test return False if login fails.
     mock_ps4.msg_sending = False

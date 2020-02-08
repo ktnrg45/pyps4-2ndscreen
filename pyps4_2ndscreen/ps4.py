@@ -261,10 +261,10 @@ class Ps4Legacy(Ps4Base):
         :param title_id: Title to start; CUSA00000
         :param running_id: Title currently running
         """
-        if self.msg_sending:
-            _LOGGER.warning("PS4 already sending message.")
-            return False
-        self.msg_sending = True
+        # if self.msg_sending:
+        #     _LOGGER.warning("PS4 already sending message.")
+        #     return False
+        # self.msg_sending = True
         if self.login():
             if self.connection.start_title(title_id):
                 # Auto confirm prompt to close title.
@@ -273,11 +273,11 @@ class Ps4Legacy(Ps4Base):
                     self.remote_control('enter')
                 else:
                     _LOGGER.warning("Title: %s already started", title_id)
-                self.msg_sending = False
+                # self.msg_sending = False
                 if self.auto_close:
                     self.close()
                 return True
-        self.msg_sending = False
+        # self.msg_sending = False
         return False
 
     def remote_control(
@@ -287,10 +287,10 @@ class Ps4Legacy(Ps4Base):
         :param button_name: Button to send to PS4.
         :param hold_time: Time to hold in millis. Only affects PS command.
         """
-        if self.msg_sending:
-            _LOGGER.warning("PS4 already sending message.")
-            return False
-        self.msg_sending = True
+        # if self.msg_sending:
+        #     _LOGGER.warning("PS4 already sending message.")
+        #     return False
+        # self.msg_sending = True
         button_name = button_name.lower()
         if button_name not in BUTTONS.keys():
             raise UnknownButton("Button: {} is not valid".format(button_name))
@@ -300,11 +300,11 @@ class Ps4Legacy(Ps4Base):
         if self.login():
             _LOGGER.debug("Sending RC Command: %s", button_name)
             self.connection.remote_control(operation, hold_time)
-            self.msg_sending = False
+            # self.msg_sending = False
             if self.auto_close:
                 self.close()
             return True
-        self.msg_sending = False
+        # self.msg_sending = False
         return False
 
     def send_status(self) -> bool:

@@ -220,7 +220,11 @@ def test_discovery():
     mock_disc.sock = MagicMock()
     mock_disc.sock.recvfrom.return_value = (
         MOCK_DDP_RESPONSE.encode(), (MOCK_HOST, MOCK_RANDOM_PORT))
-    assert mock_disc.search(None)[0]['host-ip'] == MOCK_HOST
+    with patch(
+        'pyps4_2ndscreen.ddp.select.select',
+        return_value=([mock_disc.sock], [MagicMock()], [MagicMock()]),
+    ):
+        assert mock_disc.search(None)[0]['host-ip'] == MOCK_HOST
 
     # Test Errors
     mock_disc.send = MagicMock(

@@ -171,8 +171,34 @@ def test_save_files():
     ) as mock_open_file, patch("pyps4_2ndscreen.helpers.os.mkdir"), patch(
         "pyps4_2ndscreen.helpers.os.path.isfile", return_value=True
     ):
-        assert helper.save_files(MOCK_DICT, file_type="ps4") == helpers.DEFAULT_PS4_FILE
+        assert helper.save_files(
+            MOCK_DICT, file_type="ps4") == helpers.DEFAULT_PS4_FILE
         mock_open_file.assert_called_once_with(helpers.DEFAULT_PS4_FILE, "w+")
         assert helper.save_files([]) is None
         assert helper.save_files({}) is None
         assert helper.save_files(MOCK_DICT, file_type="random type") is None
+
+
+def test_get_exec_path():
+    """Test get exec path."""
+    helper = helpers.Helper()
+    mock_venv = '/home/username/pyps4-2ndscreen/bin/python'
+    mock_home = '/usr/bin'
+    mock_reg = '/usr/bin/python{}.{}'.format(
+        helpers.sys.version_info.major, helpers.sys.version_info.minor)
+    mock_path = MagicMock()
+
+    # Test sys.executable is regular file.
+    mock_path.is_symlink.return_value = True
+    helpers.sys.executable = mock_reg
+    helpers.sys._home = mock_home
+    with patch('pyps4_2ndscreen.helpers.Path', return_value=mock_path):
+        result = helper.get_exec_path()
+        assert result == mock_reg
+
+    # Test sys.executable is symlink file in venv.
+    mock_path.is_symlink.return_value = False
+    helpers.sys.executable = mock_venv
+    with patch('pyps4_2ndscreen.helpers.Path', return_value=mock_path):
+        result = helper.get_exec_path()
+        assert result == mock_reg

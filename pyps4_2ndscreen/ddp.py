@@ -286,21 +286,28 @@ class Discovery:
         """Search for Devices."""
         if host is None:
             host = self.host
-        finished = False
+        null_responses = 0
         try:
             self.send(host)
         except (socket.error, socket.timeout):
             self.sock.close()
             return self.ps_list
-        while finished is False:
+
+        while null_responses < 3:
             try:
                 device = self.receive()
-                if device not in self.ps_list:
-                    self.ps_list.append(device)
+                if device is not None:
+                    if device not in self.ps_list:
+                        self.ps_list.append(device)
+                    else:
+                        null_responses += 1
+                else:
+                    null_responses += 1
             except (socket.error, socket.timeout):
                 self.sock.close()
-                self.ps_list = []
-            return self.ps_list
+                return self.ps_list
+
+        return self.ps_list
 
     def send(self, host):
         """Broadcast Message."""
@@ -309,8 +316,10 @@ class Discovery:
     def receive(self):
         """Receive Message."""
         data = None
-        _data, addr = self.sock.recvfrom(1024)
-        if _data is not None:
-            data = parse_ddp_response(_data.decode('utf-8'))
-            data[u'host-ip'] = addr[0]
+        available, _, _ = select.select([self.sock], [], [], 0.01)
+        if self.sock in available:
+            data, addr = self.sock.recvfrom(1024)
+            if data is not None:
+                data = parse_ddp_response(data.decode('utf-8'))
+                data[u'host-ip'] = addr[0]
         return data

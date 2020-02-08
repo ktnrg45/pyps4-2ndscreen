@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import json
 import socket
+import sys
 
 from .errors import NotReady, LoginFailed
 from .credential import Credentials, DEFAULT_DEVICE_NAME
@@ -165,3 +166,21 @@ class Helper:
             json.dump(fp=_w_file, obj=_data)
             _w_file.close()
         return file_name
+
+    # noqa: pylint: disable=no-member, protected-access
+    def get_exec_path(self) -> str:
+        """Return correct exec path for setcap util."""
+        py_exec = '/python'
+        py_ver = '{}{}.{}'.format(
+            py_exec,
+            sys.version_info.major,
+            sys.version_info.minor,
+        )
+        paths = [
+            '{}{}'.format(sys._home, py_ver),
+            '{}{}'.format(sys._home, py_exec),
+        ]
+        for py_path in paths:
+            if not Path(py_path).is_symlink():
+                return py_path
+        return sys.executable
