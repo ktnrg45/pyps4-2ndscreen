@@ -13,6 +13,11 @@
    usage
 
 .. toctree::
+   :maxdepth: 2
+
+   cli
+
+.. toctree::
    :glob:
    :maxdepth: 2
    :caption: Reference

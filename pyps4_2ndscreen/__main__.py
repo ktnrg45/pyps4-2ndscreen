@@ -85,8 +85,8 @@ def cli():
 
 
 @cli.command(
-    help='Wakeup PS4. Example: pyps4-2ndscreen wakeup'
-    '-i 192.168.86.29 -c yourcredentials')
+    help='Wakeup PS4. Example: pyps4-2ndscreen wakeup '
+    '-i 192.168.0.1 -c yourcredentials')
 @click.option('-i', '--ip_address')
 @click.option('-c', '--credentials')
 def wakeup(ip_address=None, credentials=None):
@@ -98,8 +98,8 @@ def wakeup(ip_address=None, credentials=None):
 
 
 @cli.command(
-    help='Place PS4 in Standby. Example: pyps4-2ndscreen standby'
-    '-i 192.168.86.29 -c yourcredentials')
+    help='Place PS4 in Standby. Example: pyps4-2ndscreen standby '
+    '-i 192.168.0.1 -c yourcredentials')
 @click.option('-i', '--ip_address')
 @click.option('-c', '--credentials')
 def standby(ip_address=None, credentials=None):
@@ -111,8 +111,8 @@ def standby(ip_address=None, credentials=None):
 
 
 @cli.command(
-    help='Send Remote Control. Example: pyps4-2ndscreen remote ps'
-    '-i 192.168.86.29 -c yourcredentials')
+    help='Send Remote Control. Example: pyps4-2ndscreen remote ps '
+    '-i 192.168.0.1 -c yourcredentials')
 @click.option('-i', '--ip_address')
 @click.option('-c', '--credentials')
 @click.argument('command', required=True)
@@ -125,8 +125,8 @@ def remote(command, ip_address=None, credentials=None):
 
 
 @cli.command(
-    help='Start title. Example: pyps4-2ndscreen start CUSA10000'
-    '-i 192.168.86.29 -c yourcredentials')
+    help='Start title. Example: pyps4-2ndscreen start CUSA10000 '
+    '-i 192.168.0.1 -c yourcredentials')
 @click.option('-i', '--ip_address')
 @click.option('-c', '--credentials')
 @click.argument('title_id', required=True)
@@ -140,7 +140,7 @@ def start(title_id, ip_address=None, credentials=None):
 
 
 @cli.command(
-    help='Configure/Link PS4. Example: pyps4-2ndscreen link'
+    help='Configure/Link PS4. Example: pyps4-2ndscreen link '
     '-i 192.0.0.1 -c yourcredentials')
 @click.option('-i', '--ip_address')
 @click.option('-c', '--credentials')
@@ -211,7 +211,7 @@ def _search_func():
 
 
 @cli.command(
-    help='Get status of PS4. Example: pyps4-2ndscreen status -i 192.168.0.1')
+    help='Get status of PS4. Example: pyps4-2ndscreen status -i 192.168.0.1 ')
 @click.option('-i', '--ip_address')
 def status(ip_address=None):
     """Get Status of PS4."""
@@ -241,7 +241,7 @@ def status(ip_address=None):
         print("Or use --ip_address option.")
 
 
-@cli.command(help='Get PSN Credentials. Example: pyps4-2ndscreen credentials')
+@cli.command(help='Get PSN Credentials. Example: pyps4-2ndscreen credentials ')
 def credential():
     """Get and save credentials."""
     _credentials_func()
@@ -259,18 +259,8 @@ def _credentials_func():
             return None
     error = helper.port_bind([DDP_PORT])
     if error is not None:
-        py_path = helper.get_exec_path()
-        print(
-            "\nError binding to port.\n\n"
-            "- Try again as sudo.\n\n"
-        )
-        if py_path is not None:
-            print(
-                "- Or try setcap command:\n\n"
-                "  > setcap 'cap_net_bind_service=+ep' {}"
-                .format(py_path)
-            )
         return None
+
     print("\nWith the PS4 2nd Screen app, refresh devices "
           "and select the device '{}'.\n".format(DEFAULT_DEVICE_NAME))
     print("To cancel press 'CTRL + C'.\n")

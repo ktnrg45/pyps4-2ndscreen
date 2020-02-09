@@ -281,11 +281,13 @@ async def start_mock_ps4(mock_addr):
 async def start_mock_instance():
     """Start Tests.
 
-    There are 3 PS4 objects to test, representing 2 PS4 consoles
+    There are 3 PS4 objects to test, representing 2 PS4 consoles:
     1. A PS4 object
-    2. A PS4 object bound to the same IP address as #1. This represents the same
-    PS4 console, but an additional object using a different account credential.
-    3. A PS4 object with a different IP Address. Represents a second PS4 console.
+    2. A PS4 object bound to the same IP address as #1.
+    This represents the same PS4 console,
+    but an additional object using a different account credential.
+    3. A PS4 object with a different IP Address.
+    Represents a second PS4 console.
     """
     _, mock_client_protocol = await ddp.async_create_ddp_endpoint()
     assert mock_client_protocol.port == 987

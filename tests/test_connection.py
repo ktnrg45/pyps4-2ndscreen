@@ -269,12 +269,12 @@ def test_legacy_remote_control():
     mock_connection = setup_connection()
     mock_connection._send_msg = MagicMock()
     assert mock_connection.remote_control(16, 0) is True
-    assert len(mock_connection._send_msg.mock_calls) == 2
+    assert len(mock_connection._send_msg.mock_calls) == 3
 
     # Test PS
     mock_connection._send_msg = MagicMock()
     assert mock_connection.remote_control(128, 0) is True
-    assert len(mock_connection._send_msg.mock_calls) == 3
+    assert len(mock_connection._send_msg.mock_calls) == 4
 
     # Test socket error
     mock_connection._send_msg = MagicMock(side_effect=c.socket.error)

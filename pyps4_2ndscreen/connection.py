@@ -296,7 +296,7 @@ class LegacyConnection(BaseConnection):
     """Legacy Connection for Legacy PS4 object."""
 
     # noqa: pylint: disable=no-self-use
-    def delay(self, seconds: Union[float, int]):
+    def _delay(self, seconds: Union[float, int]):
         """Delay in seconds."""
         start_time = time.time()
         while time.time() - start_time < seconds:
@@ -322,7 +322,8 @@ class LegacyConnection(BaseConnection):
         _LOGGER.debug('Login')
         self._send_login_request(pin=pin)
         msg = self._recv_msg()
-        return _handle_response('login', msg)
+        response = _handle_response('login', msg)
+        return response
 
     def standby(self):
         """Request standby."""
@@ -397,12 +398,15 @@ class LegacyConnection(BaseConnection):
         msg = _get_remote_control_request(operation, hold_time)
 
         try:
+            # Open RC
+            self._send_msg(
+                _get_remote_control_open_request(), encrypted=True)
             for message in msg:
                 self._send_msg(message, encrypted=True)
 
             # Delay Close RC for PS
             if operation == 128:
-                self.delay(1)
+                self._delay(DEFAULT_LOGIN_DELAY)
                 self._send_msg(
                     _get_remote_control_key_off_request(),
                     encrypted=True)

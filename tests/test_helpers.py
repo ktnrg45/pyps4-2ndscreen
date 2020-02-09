@@ -182,10 +182,10 @@ def test_save_files():
 def test_get_exec_path():
     """Test get exec path."""
     helper = helpers.Helper()
-    mock_venv = '/home/username/pyps4-2ndscreen/bin/python'
+    config = helpers.sysconfig.get_config_vars()
+    version = config['py_version_short']
     mock_home = '/usr/bin'
-    mock_reg = '/usr/bin/python{}.{}'.format(
-        helpers.sys.version_info.major, helpers.sys.version_info.minor)
+    mock_reg = '/usr/bin/python{}'.format(version)
     mock_path = MagicMock()
 
     # Test sys.executable is regular file.
@@ -196,9 +196,9 @@ def test_get_exec_path():
         result = helper.get_exec_path()
         assert result == mock_reg
 
-    # Test sys.executable is symlink file in venv.
-    mock_path.is_symlink.return_value = False
-    helpers.sys.executable = mock_venv
-    with patch('pyps4_2ndscreen.helpers.Path', return_value=mock_path):
+    # Test exception returns sys.executable
+    with patch(
+        'pyps4_2ndscreen.helpers.Path',
+            side_effect=(KeyError, AttributeError)):
         result = helper.get_exec_path()
-        assert result == mock_reg
+        assert result == helpers.sys.executable

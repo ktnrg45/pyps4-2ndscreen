@@ -299,10 +299,8 @@ class Discovery:
                 if device is not None:
                     if device not in self.ps_list:
                         self.ps_list.append(device)
-                    else:
-                        null_responses += 1
-                else:
-                    null_responses += 1
+                        continue
+                null_responses += 1
             except (socket.error, socket.timeout):
                 self.sock.close()
                 return self.ps_list
