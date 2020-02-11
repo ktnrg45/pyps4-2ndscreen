@@ -42,6 +42,8 @@ Commands
      - Get status of PS4.
    * - wakeup
      - Wakeup PS4.
+   * - interactive
+     - Toggle interactive mode for continuous control.
 
 Arguments
 ----------

@@ -278,5 +278,210 @@ def _credentials_func():
     return None
 
 
+@cli.command(
+    help='Toggle interactive mode for continuous control. '
+    'Example: pyps4-2ndscreen interactive '
+    '-i 192.168.0.1 -c yourcredentials')
+@click.option('-i', '--ip_address')
+@click.option('-c', '--credentials')
+def interactive(ip_address=None, credentials=None):
+    """Interactive."""
+    import curses
+
+    _ps4 = _get_ps4(ip_address, credentials)
+    if _ps4 is not None:
+        curses.wrapper(_interactive, _ps4)
+
+
+def _interactive(stdscr, ps4):
+    import curses
+    import time
+    from .ps4 import NotReady
+
+    MAPPINGS = {
+        'W': ('wakeup', ps4.wakeup),
+        'S': ('standby', ps4.standby),
+        'B': ('start_title', ps4.start_title),
+        's': ('status_request', ps4.get_status),
+        'KEY_LEFT': ('remote', ps4.remote_control, 'left'),
+        'KEY_RIGHT': ('remote', ps4.remote_control, 'right'),
+        'KEY_UP': ('remote', ps4.remote_control, 'up'),
+        'KEY_DOWN': ('remote', ps4.remote_control, 'down'),
+        '\n': ('remote', ps4.remote_control, 'enter'),
+        'KEY_BACKSPACE': ('remote', ps4.remote_control, 'back'),
+        'o': ('remote', ps4.remote_control, 'option'),
+        'p': ('remote', ps4.remote_control, 'ps'),
+        'P': ('remote', ps4.remote_control, 'ps_hold'),
+    }
+
+    def _init_window(stdscr, status):
+        stdscr.erase()
+        stdscr.move(stdscr.getyx()[0], 0)
+        stdscr.addstr(
+            "Interactive mode, press 'q' to exit. "
+            "Press 'k' for key mappings.\n")
+        if status is not None:
+            stdscr.addstr(
+                "Info: IP: {}, MAC: {}, Name: {}\n"
+                "Status: {} | Playing: {} ({})\n".format(
+                    status.get('host-ip'),
+                    status.get('host-id'),
+                    status.get('host-name'),
+                    status.get('status'),
+                    status.get('running-app-name'),
+                    status.get('running-app-titleid'),
+                ), curses.color_pair(1))
+        else:
+            stdscr.addstr(
+                "Status: {}\n".format('Not Available'), curses.color_pair(2))
+        stdscr.move(stdscr.getyx()[0] + 1, 0)
+
+    def _show_mapping(stdscr):
+        stdscr.addstr(
+            "Key : Action |\n",
+            curses.color_pair(3))
+
+        for key, values in MAPPINGS.items():
+            if key == '\n':
+                key = 'KEY_ENTER'
+            if values[0] == 'remote':
+                value = values[2]
+            else:
+                value = values[0]
+            stdscr.addstr(
+                "{} : {} | ".format(key, value),
+                curses.color_pair(3))
+        stdscr.addstr('\n>')
+
+    def _handle_status(stdscr, status):
+        helper = Helper()
+        games = helper.load_files('games')
+        stdscr.addstr(
+            "Status Updated: {} | {}\n".format(
+                status.get('status'), status.get('running-app-name')),
+            curses.color_pair(1))
+        title_id = status.get('running-app-titleid')
+        if title_id is not None:
+            if title_id not in games:
+                games[title_id] = status.get('running-app-name')
+                helper.save_files(games, 'games')
+
+    def _show_game_mapping():
+        mapping = {}
+        helper = Helper()
+        games = helper.load_files('games')
+        if games:
+            x = 1
+            mapping['0'] = ('', 'Cancel')
+            for key, value in games.items():
+                mapping[str(x)] = (key, value)
+                x += 1
+        return mapping
+
+    curses.start_color()
+    curses.init_pair(1, curses.COLOR_BLUE, curses.COLOR_WHITE)
+    curses.init_pair(2, curses.COLOR_RED, curses.COLOR_WHITE)
+    curses.init_pair(3, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+    curses.init_pair(4, curses.COLOR_GREEN, curses.COLOR_BLACK)
+    ps4.auto_close = False
+    status = None
+    height, width = stdscr.getmaxyx()
+    status = ps4.get_status()
+    _handle_status(stdscr, status)
+    _init_window(stdscr, status)
+    _show_mapping(stdscr)
+
+    running = True
+    key = None
+    start_timer = 0
+    while running:
+        fail = False
+        stdscr.nodelay(True)
+        if time.time() - start_timer > 10:
+            start_timer = time.time()
+            ps4.get_status()
+            if ps4.loggedin:
+                ps4.send_status()
+        try:
+            arg = ''
+            if status != ps4.status:
+                status = ps4.status
+                if status is not None:
+                    _handle_status(stdscr, status)
+
+            key = stdscr.getkey()
+        except curses.error:
+            continue
+        try:
+            if key == "q":
+                running = False
+            elif key == "k":
+                _show_mapping(stdscr)
+            elif key in MAPPINGS:
+                mapping = MAPPINGS.get(key)
+                action = mapping[0]
+                command = mapping[1]
+                if action == 'status_request':
+                    status = command()
+                    if status is not None:
+                        for item, value in status.items():
+                            stdscr.addstr('{}: {}\n'.format(item, value))
+                        stdscr.addstr('\n')
+                elif action == 'wakeup':
+                    command()
+                else:
+                    try:
+                        if action == 'remote':
+                            arg = mapping[2]
+                            command(arg)
+                        elif action == 'start_title':
+                            stdscr.nodelay(False)
+                            mapping = _show_game_mapping()
+                            if mapping:
+                                stdscr.addstr(
+                                    "Options:\n", curses.color_pair(3))
+                                for key, value in mapping.items():
+                                    stdscr.addstr(
+                                        "{}: {}\n".format(key, value[1]),
+                                        curses.color_pair(3))
+
+                                stdscr.addstr(
+                                    "Select number of title to start.\n> ")
+                                title_index = stdscr.getkey()
+                                if title_index != '0':
+                                    try:
+                                        title = mapping[title_index]
+                                        title_id = title[0]
+                                        arg = title[1]
+                                        command(title_id)
+                                    except KeyError:
+                                        stdscr.addstr(
+                                            "Invalid Title",
+                                            curses.color_pair(2))
+                                        fail = True
+                                else:
+                                    stdscr.addstr(
+                                        "Cancelled",
+                                        curses.color_pair(2))
+                                    fail = True
+                        else:
+                            command()
+                    except NotReady:
+                        stdscr.addstr(
+                            "Wakeup PS4 first.", curses.color_pair(2))
+                        stdscr.move(stdscr.getyx()[0] + 1, 0)
+                        continue
+                if not fail:
+                    stdscr.addstr(
+                        'Sent {}: {} '.format(action, arg),
+                        curses.color_pair(4))
+                stdscr.move(stdscr.getyx()[0] + 1, 0)
+                stdscr.addstr(">")
+        except curses.error:
+            _init_window(stdscr, status)
+        finally:
+            curses.flushinp()
+
+
 if __name__ == "__main__":
     cli()
