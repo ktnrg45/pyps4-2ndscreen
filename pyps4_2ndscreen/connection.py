@@ -485,7 +485,7 @@ class TCPProtocol(asyncio.Protocol):
         :param transport: asyncio.Transport class
         """
         self.transport = cast(asyncio.Transport, transport)
-        self.ps4.connected = True
+        self.ps4._connected = True  # noqa: pylint: disable=protected-access
         _LOGGER.debug("PS4 Transport Connected @ %s", self.ps4.host)
 
         if self.ps4.task_queue is not None:
