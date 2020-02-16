@@ -241,13 +241,13 @@ def test_send_status():
     assert mock_result is False
     assert len(mock_call.mock_calls) == 0
 
-    mock_ps4.connected = True
+    mock_ps4._connected = True  # noqa: pylint: disable=protected-access
     mock_result = mock_ps4.send_status()
     assert mock_result is False
     assert len(mock_call.mock_calls) == 0
 
     # If logged in and connected, should send status.
-    mock_ps4.connected = True
+    mock_ps4._connected = True  # noqa: pylint: disable=protected-access
     mock_ps4.loggedin = True
     mock_result = mock_ps4.send_status()
     assert mock_result is True
@@ -448,7 +448,7 @@ def test_async_get_status():
     assert mock_ps4.status is None
 
     # Test standby status closes connection.
-    mock_ps4.connected = True
+    mock_ps4._connected = True  # noqa: pylint: disable=protected-access
     mock_ps4.loggedin = True
     mock_ps4.status = MOCK_STANDBY_STATUS
     mock_ps4.get_status()
@@ -459,7 +459,7 @@ def test_async_get_status():
     assert mock_ps4.is_standby
 
     # Test running status leaves connection open.
-    mock_ps4.connected = True
+    mock_ps4._connected = True  # noqa: pylint: disable=protected-access
     mock_ps4.loggedin = True
     mock_ps4.status = MOCK_DDP_DICT
     mock_ps4.get_status()
@@ -605,7 +605,7 @@ async def test_async_close():
 
     # Test Closed Callback.
     mock_ps4.loggedin = True
-    mock_ps4.connected = True
+    mock_ps4._connected = True  # noqa: pylint: disable=protected-access
     mock_ps4.tcp_transport = MagicMock()
     mock_ps4._closed()
     assert mock_ps4.tcp_transport is None
@@ -615,7 +615,7 @@ async def test_async_close():
 
     # Test Close method.
     mock_ps4.loggedin = True
-    mock_ps4.connected = True
+    mock_ps4._connected = True  # noqa: pylint: disable=protected-access
     mock_ps4.tcp_transport = MagicMock()
     mock_ps4.tcp_protocol = mock_tcp
     await mock_ps4.close()
@@ -634,11 +634,11 @@ async def test_async_connect():
     mock_ps4.login = mock_coro()
 
     # Test that don't try to connect if connected.
-    mock_ps4.connected = True
+    mock_ps4._connected = True  # noqa: pylint: disable=protected-access
     await mock_ps4.async_connect()
     assert len(mock_ps4.connection.async_connect.mock_calls) == 0
 
-    mock_ps4.connected = False
+    mock_ps4._connected = False
 
     # Test Exception Raised if no status
     mock_ps4.status = None

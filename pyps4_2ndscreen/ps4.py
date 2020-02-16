@@ -58,7 +58,7 @@ class Ps4Base():
         self._power_off = False
         self.msg_sending = False
         self.status = None
-        self.connected = False
+        self._connected = False
         self.ps_cover = None
         self.ps_name = None
         self.loggedin = False
@@ -76,7 +76,7 @@ class Ps4Base():
             return self.status
         if self.status is not None:
             if self.is_standby:
-                self.connected = False
+                self._connected = False
                 self.loggedin = False
             return self.status
         return None
@@ -116,6 +116,11 @@ class Ps4Base():
         if self.status is not None:
             return True
         return False
+
+    @property
+    def connected(self) -> bool:
+        """Return True if connected to PS4."""
+        return self._connected
 
     @property
     def system_version(self) -> dict:
@@ -207,14 +212,14 @@ class Ps4Legacy(Ps4Base):
             raise NotReady("PS4 is not On")
 
         self._prepare_connection()
-        if not self.connected:
+        if not self._connected:
             self.connection.connect()
-        self.connected = True
+        self._connected = True
 
     def close(self):
         """Close the connection to the PS4."""
         self.connection.disconnect()
-        self.connected = False
+        self._connected = False
         self.loggedin = False
         self.msg_sending = False
         _LOGGER.debug("Disconnecting from PS4 @ %s", self.host)
@@ -295,7 +300,7 @@ class Ps4Legacy(Ps4Base):
 
     def send_status(self) -> bool:
         """Send connection status ack to PS4."""
-        if self.connected and self.loggedin:
+        if self._connected and self.loggedin:
             self.connection.send_status()
             return True
         _LOGGER.error("PS4 is not connected")
@@ -361,7 +366,7 @@ class Ps4Async(Ps4Base):
             self.ddp_protocol.send_msg(self)
             if self.status is not None:
                 if not self.is_running:
-                    self.connected = False
+                    self._connected = False
                     self.loggedin = False
 
                     # Ensure that connection is closed.
@@ -475,14 +480,14 @@ class Ps4Async(Ps4Base):
         self.tcp_transport = None
         self.tcp_protocol = None
         self.loggedin = False
-        self.connected = False
+        self._connected = False
 
     async def async_connect(self, auto_login: Optional[bool] = True):
         """Connect.
 
         :param auto_login: If true will login automatically if powering on.
         """
-        if not self.connected:
+        if not self._connected:
             if self.status is None:
                 self.get_status()
             if not self.is_available:
@@ -497,12 +502,12 @@ class Ps4Async(Ps4Base):
                         await self.connection.async_connect(self)
                 except (OSError, ConnectionRefusedError):
                     _LOGGER.info("PS4 Refused Connection")
-                    self.connected = False
+                    self._connected = False
                     self.loggedin = False
                 else:
                     self.tcp_transport = tcp_transport
                     self.tcp_protocol = tcp_protocol
-                    self.connected = True
+                    self._connected = True
                     if self._power_on:
                         if auto_login:
                             await self.login()
