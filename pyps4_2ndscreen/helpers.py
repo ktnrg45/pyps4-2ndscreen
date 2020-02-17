@@ -98,6 +98,7 @@ class Helper:
         for port in ports:
             try:
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 sock.settimeout(1)
                 sock.bind(('0.0.0.0', port))
                 sock.close()
@@ -109,7 +110,7 @@ class Helper:
                 if sys.platform == 'linux':
                     py_path = self.get_exec_path()
                     path_str = (
-                        " Try setcap command: >"
+                        " Try setcap command >"
                         "setcap 'cap_net_bind_service=+ep' {}"
                     ).format(py_path)
                 _LOGGER.error('%s%s', error_str, path_str)

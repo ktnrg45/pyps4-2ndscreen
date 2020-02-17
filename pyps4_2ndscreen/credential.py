@@ -53,7 +53,8 @@ class Credentials:
             _LOGGER.error("Failed to create socket")
             return
         sock.settimeout(3)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        # REUSEADDR used instead of REUSEPORT for binding issues.
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
             sock.bind((UDP_IP, DDP_PORT))
         except socket.error as error:

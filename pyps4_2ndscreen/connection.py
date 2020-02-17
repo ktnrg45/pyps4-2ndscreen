@@ -314,7 +314,8 @@ class LegacyConnection(BaseConnection):
 
     def disconnect(self):
         """Close the connection."""
-        self._socket.close()
+        if self._socket is not None:
+            self._socket.close()
         self._reset_crypto_init_vector()
 
     def login(self, pin: str):

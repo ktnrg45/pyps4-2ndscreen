@@ -188,6 +188,12 @@ def test_get_exec_path():
     mock_reg = '/usr/bin/python{}'.format(version)
     mock_path = MagicMock()
 
+    # Test path is symlink.
+    mock_path.is_symlink.return_value = True
+    with patch('pyps4_2ndscreen.helpers.Path', return_value=mock_path):
+        result = helper.get_exec_path()
+        assert result == helpers.sys.executable
+
     # Test sys.executable is regular file.
     mock_path.is_symlink.return_value = True
     helpers.sys.executable = mock_reg
