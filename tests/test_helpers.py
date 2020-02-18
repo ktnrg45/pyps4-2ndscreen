@@ -184,23 +184,24 @@ def test_get_exec_path():
     helper = helpers.Helper()
     config = helpers.sysconfig.get_config_vars()
     version = config['py_version_short']
+    base = config['projectbase']
     mock_home = '/usr/bin'
-    mock_reg = '/usr/bin/python{}'.format(version)
+    mock_reg = '{}/python{}'.format(base, version)
     mock_path = MagicMock()
+
+    # Test path is regular file.
+    mock_path.is_symlink.return_value = False
+    helpers.sys.executable = mock_reg
+    helpers.sys._home = mock_home
+    with patch('pyps4_2ndscreen.helpers.Path', return_value=mock_path):
+        result = helper.get_exec_path()
+        assert result == mock_reg
 
     # Test path is symlink.
     mock_path.is_symlink.return_value = True
     with patch('pyps4_2ndscreen.helpers.Path', return_value=mock_path):
         result = helper.get_exec_path()
         assert result == helpers.sys.executable
-
-    # Test sys.executable is regular file.
-    mock_path.is_symlink.return_value = True
-    helpers.sys.executable = mock_reg
-    helpers.sys._home = mock_home
-    with patch('pyps4_2ndscreen.helpers.Path', return_value=mock_path):
-        result = helper.get_exec_path()
-        assert result == mock_reg
 
     # Test exception returns sys.executable
     with patch(
