@@ -14,8 +14,6 @@ import os
 import sys
 import datetime
 
-from pyps4_2ndscreen.__version__ import __version__ as version
-
 sys.path.insert(0, os.path.abspath('../../'))
 
 
@@ -29,6 +27,7 @@ copyright = '2019-{}, ktnrg45'.format(now.year)
 author = 'ktnrg45'
 
 # The full version, including alpha/beta/rc tags
+from pyps4_2ndscreen.__version__ import __version__ as version
 release = version
 
 

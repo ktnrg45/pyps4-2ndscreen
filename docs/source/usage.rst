@@ -169,13 +169,13 @@ Terminal Command:
 
 .. code:: bash
 
-    pyps4-2ndscreen credentials
+    pyps4-2ndscreen credential
 
 If your system does not have setcap utilities your may run the following command:
 
 .. code:: bash
 
-    sudo ./bin/pyps4-2ndscreen credentials
+    sudo ./bin/pyps4-2ndscreen credential
 
 or
 
