@@ -7,14 +7,23 @@ PyPS4-2ndScreen
 
 Description
 --------------------
-A full Python implementation based on the Node.js package, ps4-waker.
-This is an unofficial API for the PS4 2nd Screen App.
+A full Python implementation based on the Node.js package, ps4-waker, which is an unofficial API for the PS4 2nd Screen App.
 
 This module is mainly targeted towards developers although the module does include a basic CLI.
 
 
 **Disclaimer**:
 This project/module and I are not affiliated with or endorsed by Sony Interactive Entertainment LLC. As such this project may break at any time.
+
+Features
+---------
+This module can perform almost every feature found in the PS4 Second Screen App.
+
+- PS4 power and playing media state/status reporting
+- Remote control
+- Power on and standby control
+- Starting a specific game/media
+- Media information retrieval from the Playstation Store
 
 Compatibility
 --------------------
