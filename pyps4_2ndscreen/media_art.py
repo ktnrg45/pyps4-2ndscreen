@@ -14,42 +14,99 @@ DEPRECATED_REGIONS = {'R1': 'en/us', 'R2': 'en/gb',
                       'R3': 'en/hk', 'R4': 'en/au',
                       'R5': 'en/in'}
 
-# Excluded {China, Japan, Phillipines, Serbia, Ukraine, Vietnam}
-COUNTRIES = {"Argentina": "en/ar", "Australia": "en/au", "Austria": "de/at",
-             "Bahrain": "en/ae", "Belgium": "fr/be", "Brazil": "en/br",
-             "Bulgaria": "en/bg", "Canada": "en/ca", "Chile": "en/cl",
-             "Columbia": "en/co", "Costa Rica": "es/cr", "Croatia": "en/hr",
-             "Cyprus": "en/cy", "Czech Republic": "en/cz", "Denmark": "en/dk",
-             "Ecuador": "es/ec", "El Salvador": "es/sv", "Finland": "en/fi",
-             "France": "fr/fr", "Germany": "de/de", "Greece": "en/gr",
-             "Guatemala": "es/gt", "Honduras": "es/hn", "Hong Kong": "en/hk",
-             "Hungary": "en/hu", "Iceland": "en/is", "India": "en/in",
-             "Indonesia": "en/id", "Ireland": "en/ie", "Israel": "en/il",
-             "Italy": "it/it", "Korea": "ko/kr", "Kuwait": "en/ae",
-             "Lebanon": "en/ae", "Luxembourg": "de/lu", "Maylasia": "en/my",
-             "Malta": "en/mt", "Mexico": "en/mx", "Middle East": "en/ae",
-             "Nederland": "nl/nl", "New Zealand": "en/nz",
-             "Nicaragua": "es/ni", "Norway": "en/no", "Oman": "en/ae",
-             "Panama": "es/pa", "Peru": "en/pe", "Poland": "en/pl",
-             "Portugal": "pt/pt", "Qatar": "en/ae", "Romania": "en/ro",
-             "Russia": "ru/ru", "Saudi Arabia": "en/sa", "Singapore": "en/sg",
-             "Slovenia": "en/si", "Slovakia": "en/sk", "South Africa": "en/za",
-             "Spain": "es/es", "Sweden": "en/se", "Switzerland": "de/ch",
-             "Taiwan": "en/tw", "Thailand": "en/th", "Turkey": "en/tr",
-             "United Arab Emirates": "en/ae", "United States": "en/us",
-             "United Kingdom": "en/gb"}
+"""
+Excluded Countries:
+
+China: Store closed by Sony
+Phillipines: Store not available
+Serbia: Store not available
+Vietnam: Store not available
+"""
+
+COUNTRIES = {
+    "Argentina": "en/ar",
+    "Australia": "en/au",
+    "Austria": "de/at",
+    "Bahrain": "en/ae",
+    "Belgium": "fr/be",
+    "Brazil": "en/br",
+    "Bulgaria": "en/bg",
+    "Canada": "en/ca",
+    "Chile": "en/cl",
+    "Columbia": "en/co",
+    "Costa Rica": "es/cr",
+    "Croatia": "en/hr",
+    "Cyprus": "en/cy",
+    "Czech Republic": "en/cz",
+    "Denmark": "en/dk",
+    "Ecuador": "es/ec",
+    "El Salvador": "es/sv",
+    "Finland": "en/fi",
+    "France": "fr/fr",
+    "Germany": "de/de",
+    "Greece": "en/gr",
+    "Guatemala": "es/gt",
+    "Honduras": "es/hn",
+    "Hong Kong": "en/hk",
+    "Hungary": "en/hu",
+    "Iceland": "en/is",
+    "India": "en/in",
+    "Indonesia": "en/id",
+    "Ireland": "en/ie",
+    "Israel": "en/il",
+    "Italy": "it/it",
+    "Japan": "ja/jp",
+    "Korea": "ko/kr",
+    "Kuwait": "en/ae",
+    "Lebanon": "en/ae",
+    "Luxembourg": "de/lu",
+    "Maylasia": "en/my",
+    "Malta": "en/mt",
+    "Mexico": "en/mx",
+    "Middle East": "en/ae",
+    "Nederland": "nl/nl",
+    "New Zealand": "en/nz",
+    "Nicaragua": "es/ni",
+    "Norway": "en/no",
+    "Oman": "en/ae",
+    "Panama": "es/pa",
+    "Peru": "en/pe",
+    "Poland": "en/pl",
+    "Portugal": "pt/pt",
+    "Qatar": "en/ae",
+    "Romania": "en/ro",
+    "Russia": "ru/ru",
+    "Saudi Arabia": "en/sa",
+    "Singapore": "en/sg",
+    "Slovenia": "en/si",
+    "Slovakia": "en/sk",
+    "South Africa": "en/za",
+    "Spain": "es/es",
+    "Sweden": "en/se",
+    "Switzerland": "de/ch",
+    "Taiwan": "en/tw",
+    "Thailand": "en/th",
+    "Turkey": "en/tr",
+    "Ukraine": "ru/ua",
+    "United Arab Emirates": "en/ae",
+    "United States": "en/us",
+    "United Kingdom": "en/gb",
+}
 
 TYPE_LIST = {
     'de': ['Vollversion', 'Spiel', 'PSN-Spiel', 'Paket', 'App'],
     'en': ['Full Game', 'Game', 'PSN Game', 'Bundle', 'App'],
-    'es': ['Juego completo', 'Juego', 'Juego de PSN', 'Paquete', 'App'],
+    'es': ['Juego completo', 'Juego', 'Juego de PSN', 'Paquete', 'Aplicación'],
     'fr': ['Jeu complet', 'Jeu', 'Jeu PSN', 'Offre groupée', 'App'],
     'it': ['Gioco completo', 'Gioco', 'Gioco PSN', 'Bundle', 'App'],
+    'ja': ['ゲーム本編', 'ゲーム本編', 'DL専用ゲーム', 'ゲーム本編', 'アプリ'],
     'ko': ['제품판', '게임', 'PSN 게임', '번들', '앱'],
     'nl': ['Volledige game', 'game', 'PSN-game', 'Bundel', 'App'],
-    'pt': ['Jogo completo', 'jogo', 'Jogo da PSN', 'Pacote', 'App'],
+    'pt': ['Jogo completo', 'jogo', 'Jogo da PSN', 'Pacote', 'Aplicação'],
     'ru': ['Полная версия', 'Игра', 'Игра PSN', 'Комплект', 'Приложение'],
 }
+
+TYPE_APP = 'App'
 
 DEFAULT_HEADERS = {
     'User-Agent':
@@ -61,8 +118,8 @@ DEFAULT_HEADERS = {
 FORMATS = ['chars', 'chars+', 'orig', 'tumbler']
 
 BASE_IMAGE_URL = (
-    "https://store.playstation.com"
-    "/store/api/chihiro/00_09_000/container/us/en/999/"
+    'https://store.playstation.com'
+    '/store/api/chihiro/00_09_000/container/US/en/999/'
 )
 
 LEGACY_URL = (
@@ -139,6 +196,9 @@ def get_ps_store_url(title, region, reformat='chars', legacy=False):
         title = re.sub(r'[^A-Za-z0-9\ ]+', '', title)
     elif reformat == 'chars+':  # ignore ' and - and :
         title = re.sub(r'[^A-Za-z0-9\-\'\: ]+', '', title)
+    elif reformat == 'tumbler':  # Sub special chars with space
+        title = re.sub(r'[^A-Za-z0-9\ ]+', ' ', title)
+        title = re.sub(r'[  ]+', ' ', title)  # Remove multiple spaces
     elif reformat == 'orig':
         pass
     title = html.escape(title.rstrip())
@@ -147,8 +207,6 @@ def get_ps_store_url(title, region, reformat='chars', legacy=False):
         _url = LEGACY_URL.format(region, title)
     else:
         _url = TUMBLER_URL.format(region, title)
-
-    _LOGGER.debug(_url)
 
     url = [_url, DEFAULT_HEADERS, region.split('/')[0]]
     return url
@@ -205,6 +263,25 @@ async def async_get_ps_store_requests(title, region,
     return responses
 
 
+async def async_get_ps_store_requests_tumbler(
+        title, region, session: aiohttp.ClientSession) -> list:
+    """Perform tumbler search."""
+    _LOGGER.debug("Starting Tumbler Search")
+    responses = []
+    region = get_region(region)
+    short_title = title.split(' ')
+    _title = short_title[0]
+    _url = get_ps_store_url(
+        _title, region, reformat='tumbler', legacy=False)
+    url, params = _format_url(_url)
+    _LOGGER.debug("Tumbler URL: %s", _url)
+
+    response = await fetch(url, params, session)
+    if response is not None:
+        responses.append(response)
+    return responses
+
+
 async def async_search_ps_store(title: str, title_id: str, region: str):
     """Search PS Store for title data."""
     # Check if title is a pinned title first and return.
@@ -229,6 +306,18 @@ async def async_search_ps_store(title: str, title_id: str, region: str):
                 raise PSDataIncomplete
             if result_item is not None:
                 break
+
+        if result_item is None:
+            responses = await async_get_ps_store_requests_tumbler(
+                title, region, session)
+            for response in responses:
+                try:
+                    result_item = parse_data(response, title_id, lang)
+                except (TypeError, AttributeError):
+                    result_item = None
+                    raise PSDataIncomplete
+                if result_item is not None:
+                    break
         await session.close()
     return result_item
 
@@ -237,6 +326,7 @@ def parse_data(result, title_id, lang):
     """Filter through each item in search request."""
     item_list = []
     type_list = TYPE_LIST[lang]
+    type_list.append(TYPE_APP)
     parent_list = []
 
     for item in result['included']:
