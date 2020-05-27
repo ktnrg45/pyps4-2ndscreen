@@ -2,6 +2,7 @@
 from unittest.mock import patch, MagicMock
 import asyncio
 import logging
+import socket
 
 import pytest
 from pyps4_2ndscreen import ddp
@@ -270,10 +271,11 @@ class MockDDPProtocol():
 
 async def start_mock_ps4(mock_addr):
     """Start a Mock PS4 Server."""
+    reuse_port = hasattr(socket, 'SO_REUSEPORT')
     mock_loop = asyncio.get_event_loop()
     mock_server = mock_loop.create_datagram_endpoint(
         lambda: MockDDPProtocol(), local_addr=(mock_addr, MOCK_DDP_PROTO_PORT),  # noqa: pylint: disable=unnecessary-lambda
-        reuse_port=True, allow_broadcast=True)
+        reuse_port=reuse_port, allow_broadcast=True)
     _, mock_protocol = await mock_loop.create_task(mock_server)
     return mock_protocol
 

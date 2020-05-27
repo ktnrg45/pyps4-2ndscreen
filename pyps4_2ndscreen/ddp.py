@@ -162,7 +162,7 @@ def parse_ddp_response(rsp):
         # skip empty lines
         if not line:
             continue
-        elif re_status.match(line):
+        if re_status.match(line):
             data[u'status_code'] = int(re_status.match(line).group('code'))
             data[u'status'] = re_status.match(line).group('status')
         else:

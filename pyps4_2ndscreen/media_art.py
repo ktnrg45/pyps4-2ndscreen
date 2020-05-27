@@ -2,6 +2,8 @@
 import logging
 from ssl import SSLError
 import asyncio
+import html
+import re
 import urllib
 import aiohttp
 from aiohttp.client_exceptions import ContentTypeError
@@ -189,9 +191,6 @@ def get_lang(region) -> str:
 
 def get_ps_store_url(title, region, reformat='chars', legacy=False):
     """Get URL for title search in PS Store."""
-    import html
-    import re
-
     if reformat == 'chars':  # No Special Chars.
         title = re.sub(r'[^A-Za-z0-9\ ]+', '', title)
     elif reformat == 'chars+':  # ignore ' and - and :

@@ -18,7 +18,7 @@ def _get_ps4(ip_address=None, credentials=None, no_creds=False):
 
     if credentials is None:
         data = helper.load_files('credentials')
-        credentials = data['credentials']
+        credentials = data.get('credentials')
     if ip_address is not None and credentials is None:
         if not no_creds:
             print('--credentials option required')

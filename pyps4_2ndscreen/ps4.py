@@ -1,6 +1,7 @@
 """Methods for interfacing with a PlayStation 4 Console."""
 import logging
 import time
+import socket
 from typing import Optional, Union
 
 from .connection import LegacyConnection, AsyncConnection, DEFAULT_LOGIN_DELAY
@@ -66,8 +67,6 @@ class Ps4Base():
 
     def get_status(self) -> dict:
         """Return current status info."""
-        import socket
-
         try:
             self.status = get_status(self.host)
         except socket.timeout:
