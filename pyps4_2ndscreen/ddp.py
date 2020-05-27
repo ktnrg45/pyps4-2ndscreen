@@ -127,10 +127,11 @@ class DDPProtocol(asyncio.DatagramProtocol):
 
 async def async_create_ddp_endpoint():
     """Create Async UDP endpoint."""
+    reuse_port = hasattr(socket, 'SO_REUSEPORT')
     loop = asyncio.get_event_loop()
     connect = loop.create_datagram_endpoint(
         lambda: DDPProtocol(), local_addr=(UDP_IP, UDP_PORT),  # noqa: pylint: disable=unnecessary-lambda
-        reuse_port=True, allow_broadcast=True)
+        reuse_port=reuse_port, allow_broadcast=True)
     transport, protocol = await loop.create_task(connect)
     return transport, protocol
 
