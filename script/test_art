@@ -1,2 +1,2 @@
 #!bin/sh
-python tests/.test_media_art_real.py 2> tests/.media_art_test_results.txt
+python tests/.test_media_art_real.py 2> .media_art_test_results.txt
