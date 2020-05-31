@@ -9,7 +9,7 @@ import sys
 
 from .errors import NotReady, LoginFailed
 from .credential import Credentials, DEFAULT_DEVICE_NAME
-from .ddp import Discovery
+from .ddp import Discovery, DDP_PORT
 from .ps4 import Ps4Legacy
 
 _LOGGER = logging.getLogger(__name__)
@@ -105,15 +105,16 @@ class Helper:
             except socket.error:
                 sock.close()
 
-                error_str = "Error binding to port."
-                path_str = ''
-                if sys.platform == 'linux':
-                    py_path = self.get_exec_path()
-                    path_str = (
-                        " Try setcap command >"
-                        "setcap 'cap_net_bind_service=+ep' {}"
-                    ).format(py_path)
-                _LOGGER.error('%s%s', error_str, path_str)
+                if port == DDP_PORT:
+                    error_str = "Error binding to port."
+                    path_str = ''
+                    if sys.platform == 'linux':
+                        py_path = self.get_exec_path()
+                        path_str = (
+                            " Try setcap command >"
+                            "setcap 'cap_net_bind_service=+ep' {}"
+                        ).format(py_path)
+                    _LOGGER.error('%s%s', error_str, path_str)
 
                 return int(port)
             return None

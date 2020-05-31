@@ -21,8 +21,8 @@ STANDBY_RESPONSE = (
 MOCK_CREDS = "123412341234abcd12341234abcd12341234abcd12341234abcd12341234abcd"
 
 
-def init_creds():
-    creds = credential.Credentials()
+def init_creds(start=True):
+    creds = credential.Credentials(start=start)
     return creds
 
 
@@ -113,6 +113,15 @@ def test_creds_errors():
     with patch(
         'pyps4_2ndscreen.credential.socket.socket',
         side_effect=credential.socket.error
-    ), pytest.raises(AttributeError):
+    ):
         creds = init_creds()
         creds.listen()
+        assert creds.sock is None
+
+    with patch(
+        'pyps4_2ndscreen.credential.socket.socket.bind',
+        side_effect=credential.socket.error
+    ):
+        creds = init_creds()
+        creds.listen()
+        assert creds.sock is None

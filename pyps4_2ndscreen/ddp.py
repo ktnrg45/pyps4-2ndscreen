@@ -7,6 +7,7 @@ import socket
 import logging
 import select
 import asyncio
+from typing import Optional
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,16 +30,27 @@ class DDPProtocol(asyncio.DatagramProtocol):
 
     def __init__(self, max_polls=DEFAULT_POLL_COUNT):
         """Init Instance."""
-        self.callbacks = {}
-        self.transport = None
-        self.port = DDP_PORT
-        self.max_polls = max_polls
-        self.message = get_ddp_search_message()
         super().__init__()
+        self.callbacks = {}
+        self.max_polls = max_polls
+        self._transport = None
+        self._remote_port = DDP_PORT
+        self._local_port = UDP_PORT
+        self._message = get_ddp_search_message()
+
+    def __repr__(self):
+        return (
+            "<{}.{} local_port={} max_polls={}>".format(
+                self.__module__,
+                self.__class__.__name__,
+                self.local_port,
+                self.max_polls,
+            )
+        )
 
     def _set_write_port(self, port):
         """Only used for tests."""
-        self.port = port
+        self._remote_port = port
 
     def set_max_polls(self, poll_count: int):
         """Set number of unreturned polls neeeded to assume no status."""
@@ -46,16 +58,19 @@ class DDPProtocol(asyncio.DatagramProtocol):
 
     def connection_made(self, transport):
         """On Connection."""
-        self.transport = transport
-        _LOGGER.debug("PS4 Transport Created: %s", type(self.transport))
+        self._transport = transport
+        sock = self._transport.get_extra_info('socket')
+        self._local_port = sock.getsockname()[1]
+        _LOGGER.debug("PS4 Transport created with port: %s", self.local_port)
 
     def send_msg(self, ps4, message=None):
         """Send Message."""
         if message is None:
-            message = self.message
+            message = self._message
 
-        self.transport.sendto(message.encode('utf-8'),
-                              (ps4.host, self.port))
+        self._transport.sendto(
+            message.encode('utf-8'),
+            (ps4.host, self._remote_port))
 
         # Track polls that were never returned.
         ps4.poll_count += 1
@@ -94,9 +109,9 @@ class DDPProtocol(asyncio.DatagramProtocol):
 
     def connection_lost(self, exc):
         """On Connection Lost."""
-        if self.transport is not None:
+        if self._transport is not None:
             _LOGGER.error("DDP Transport Closed")
-            self.transport.close()
+            self._transport.close()
 
     def error_received(self, exc):
         """Handle Exceptions."""
@@ -104,9 +119,11 @@ class DDPProtocol(asyncio.DatagramProtocol):
 
     def close(self):
         """Close Transport."""
-        self.transport.close()
-        self.transport = None
-        _LOGGER.info("Closing DDP Transport")
+        self._transport.close()
+        self._transport = None
+        _LOGGER.info(
+            "Closing DDP Transport: %s",
+            self._local_port)
 
     def add_callback(self, ps4, callback):
         """Add callback to list. One per PS4 Object."""
@@ -124,14 +141,31 @@ class DDPProtocol(asyncio.DatagramProtocol):
                 if not self.callbacks[ps4.host]:
                     self.callbacks.pop(ps4.host)
 
+    @property
+    def local_port(self):
+        """Return local port."""
+        return self._local_port
 
-async def async_create_ddp_endpoint():
+    @property
+    def remote_port(self):
+        """Return remote port."""
+        return self._remote_port
+
+
+async def async_create_ddp_endpoint(sock=None):
     """Create Async UDP endpoint."""
+    local_addr = (UDP_IP, UDP_PORT)
     reuse_port = hasattr(socket, 'SO_REUSEPORT')
+    allow_broadcast = True
     loop = asyncio.get_event_loop()
+    if sock is not None:
+        sock.settimeout(0)
+        local_addr = None
+        reuse_port = None
+        allow_broadcast = None
     connect = loop.create_datagram_endpoint(
-        lambda: DDPProtocol(), local_addr=(UDP_IP, UDP_PORT),  # noqa: pylint: disable=unnecessary-lambda
-        reuse_port=reuse_port, allow_broadcast=True)
+        lambda: DDPProtocol(), local_addr=local_addr,  # noqa: pylint: disable=unnecessary-lambda
+        reuse_port=reuse_port, allow_broadcast=allow_broadcast, sock=sock)
     transport, protocol = await loop.create_task(connect)
     return transport, protocol
 
@@ -198,11 +232,17 @@ def get_ddp_launch_message(credential):
     return get_ddp_message('LAUNCH', data)
 
 
-def get_socket(timeout=3):
+def get_socket(timeout=3, port: Optional[int] = UDP_PORT):
     """Return DDP socket object."""
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.settimeout(timeout)
-    sock.bind((UDP_IP, UDP_PORT))
+    try:
+        if port != UDP_PORT:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        sock.bind((UDP_IP, port))
+    except socket.error as e:
+        _LOGGER.error("Error getting DDP socket with port: %s: %s", port, e)
+        sock = None
     return sock
 
 
@@ -216,7 +256,8 @@ def _send_recv_msg(host, broadcast, msg, receive=True, sock=None):
         _host = host or BROADCAST_IP
     else:
         _host = host
-
+    _LOGGER.debug(
+        "Sent DDP MSG: %s : %s", sock.getsockname(), (_host, DDP_PORT))
     sock.sendto(msg.encode('utf-8'), (_host, DDP_PORT))
 
     if receive:
@@ -250,10 +291,10 @@ def search(host=None, broadcast=True, sock=None):
     return ps_list
 
 
-def get_status(host):
+def get_status(host, sock=None):
     """Get status."""
     try:
-        ps_list = search(host=host)
+        ps_list = search(host=host, sock=sock)
     except TypeError:
         return None
     return ps_list[0]

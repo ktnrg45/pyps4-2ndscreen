@@ -31,9 +31,14 @@ class Credentials:
     Service listens on port 987 (Priveleged).
 
     :param device_name: Name to display as
+    :param start: Start on init
     """
 
-    def __init__(self, device_name: Optional[str] = DEFAULT_DEVICE_NAME):
+    def __init__(
+        self,
+        device_name: Optional[str] = DEFAULT_DEVICE_NAME,
+        start: Optional[bool] = True
+    ):
 
         self.sock = None
         self.response = {
@@ -42,7 +47,8 @@ class Credentials:
             'host-name': device_name,
             'host-request-port': REQ_PORT
         }
-        self.start()
+        if start:
+            self.start()
 
     def start(self):
         """Start Cred Service."""
@@ -52,12 +58,14 @@ class Credentials:
         except socket.error:
             _LOGGER.error("Failed to create socket")
             return
-        sock.settimeout(3)
+
         # REUSEADDR used instead of REUSEPORT for binding issues.
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.settimeout(3)
         try:
             sock.bind((UDP_IP, DDP_PORT))
         except socket.error as error:
+            self.sock = None
             _LOGGER.error(
                 "Could not bind to port %s; \
                 Ensure port is accessible and unused, %s",
@@ -69,6 +77,8 @@ class Credentials:
 
         :param timeout: Timeout in seconds
         """
+        if self.sock is None:
+            return None
         self.sock.settimeout(timeout)
         data = None
         address = None

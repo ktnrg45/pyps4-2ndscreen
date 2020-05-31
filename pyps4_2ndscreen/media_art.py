@@ -290,24 +290,17 @@ async def async_search_ps_store(title: str, title_id: str, region: str):
         return get_pinned_item(pinned)
 
     # Conduct Search Requests.
+    searches = [
+        async_get_ps_store_requests,
+        async_get_ps_store_requests_tumbler,
+    ]
     lang = get_lang(region)
     result_item = None
     _LOGGER.debug("Starting search request")
 
     async with aiohttp.ClientSession() as session:
-        responses = await async_get_ps_store_requests(
-            title, region, session)
-        for response in responses:
-            try:
-                result_item = parse_data(response, title_id, lang)
-            except (TypeError, AttributeError):
-                result_item = None
-                raise PSDataIncomplete
-            if result_item is not None:
-                break
-
-        if result_item is None:
-            responses = await async_get_ps_store_requests_tumbler(
+        for search in searches:
+            responses = await search(
                 title, region, session)
             for response in responses:
                 try:
@@ -317,6 +310,8 @@ async def async_search_ps_store(title: str, title_id: str, region: str):
                     raise PSDataIncomplete
                 if result_item is not None:
                     break
+            if result_item is not None:
+                break
         await session.close()
     return result_item
 
@@ -372,10 +367,13 @@ class ResultItem():
 
     def __repr__(self):
         return (
-            "<{}.{} Name: {}, SKU ID: {}, Game Type: {}, "
-            "Parent: {}>".format(
-                self.__module__, self.__class__.__name__, self.name,
-                self.sku_id, self.game_type, self.parent is not None,
+            "<{}.{} name={} sku_id={} game_type={} parent={}>".format(
+                self.__module__,
+                self.__class__.__name__,
+                self.name,
+                self.sku_id,
+                self.game_type,
+                self.parent is not None,
             )
         )
 
@@ -426,10 +424,13 @@ class ParentItem():
 
     def __repr__(self):
         return (
-            "<{}.{} Name: {}, SKU ID: {}, Game Type: {}>"
+            "<{}.{} name={} sku_id={} game_type={}>"
             .format(
-                self.__module__, self.__class__.__name__, self.name,
-                self.sku_id, self.game_type,
+                self.__module__,
+                self.__class__.__name__,
+                self.name,
+                self.sku_id,
+                self.game_type,
             )
         )
 

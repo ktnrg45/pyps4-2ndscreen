@@ -13,6 +13,9 @@ from .ddp import (
     wakeup,
     get_ddp_launch_message,
     get_ddp_wake_message,
+    async_create_ddp_endpoint,
+    get_socket,
+    UDP_PORT,
 )
 from .errors import NotReady, UnknownButton, LoginFailed
 from .media_art import async_search_ps_store, ResultItem
@@ -50,11 +53,13 @@ class Ps4Base():
     """
 
     def __init__(self, host: str, credential: str,
-                 device_name: Optional[str] = DEFAULT_DEVICE_NAME):
+                 device_name: Optional[str] = DEFAULT_DEVICE_NAME,
+                 port: Optional[int] = UDP_PORT):
         self.host = host
         self.credential = None
         self.device_name = device_name
         self._socket = None
+        self._port = port
         self._power_on = False
         self._power_off = False
         self.msg_sending = False
@@ -65,10 +70,26 @@ class Ps4Base():
         self.loggedin = False
         self.credential = credential
 
+    def __repr__(self):
+        return (
+            "<{}.{} host={} local_port={} status_code={}>".format(
+                self.__module__,
+                self.__class__.__name__,
+                self.host,
+                self.port,
+                self.status_code,
+            )
+        )
+
+    def _get_socket(self):
+        self._socket = get_socket(port=self.port)
+
     def get_status(self) -> dict:
         """Return current status info."""
+        if self.port != UDP_PORT:
+            self._get_socket()
         try:
-            self.status = get_status(self.host)
+            self.status = get_status(self.host, self._socket)
         except socket.timeout:
             _LOGGER.debug("PS4 @ %s status timed out", self.host)
             self.status = None
@@ -91,6 +112,17 @@ class Ps4Base():
             self.ps_cover = result_item.cover_art
             return result_item
 
+        return None
+
+    @property
+    def port(self):
+        """Return local port."""
+        return self._port
+
+    @property
+    def status_code(self):
+        if self.status is not None:
+            return self.status['status_code']
         return None
 
     @property
@@ -184,8 +216,9 @@ class Ps4Legacy(Ps4Base):
     def __init__(
             self, host: str, credential: str,
             device_name: Optional[str] = DEFAULT_DEVICE_NAME,
-            auto_close: Optional[bool] = True):
-        super().__init__(host, credential, device_name)
+            auto_close: Optional[bool] = True,
+            port: Optional[int] = UDP_PORT):
+        super().__init__(host, credential, device_name, port)
         self.auto_close = auto_close
         self.connection = LegacyConnection(self, credential=self.credential)
 
@@ -316,9 +349,10 @@ class Ps4Async(Ps4Base):
 
     def __init__(
             self, host: str, credential: str,
-            device_name: Optional[str] = DEFAULT_DEVICE_NAME):
+            device_name: Optional[str] = DEFAULT_DEVICE_NAME,
+            port: Optional[int] = UDP_PORT):
 
-        super().__init__(host, credential, device_name)
+        super().__init__(host, credential, device_name, port)
         self._login_delay = DEFAULT_LOGIN_DELAY
         self.ddp_protocol = None
         self.tcp_transport = None
@@ -393,6 +427,18 @@ class Ps4Async(Ps4Base):
             self._power_off = False
             self.ddp_protocol.send_msg(
                 self, get_ddp_wake_message(self.credential))
+
+    async def get_ddp_endpoint(self):
+        """Return True if endpoint is created from socket."""
+        protocol = None
+        if self.port != UDP_PORT:
+            self._get_socket()
+        _, protocol = await async_create_ddp_endpoint(
+            sock=self._socket)
+        if protocol is not None:
+            self.ddp_protocol = protocol
+            return True
+        return False
 
     async def login(self, pin: Optional[str] = ''):
         """Send Login Packet.

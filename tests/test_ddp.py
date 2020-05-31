@@ -5,6 +5,7 @@ import logging
 import socket
 
 import pytest
+from asynctest import CoroutineMock as mock_coro
 from pyps4_2ndscreen import ddp
 from pyps4_2ndscreen.credential import get_ddp_message
 from pyps4_2ndscreen.ps4 import Ps4Async as ps4, STATUS_STANDBY
@@ -124,9 +125,16 @@ def test_incorrect_ddp_msg_type():
 
 
 def test_wakeup():
-    """Test Wakeup."""
+    """Test Wakeup call."""
     mock_sock = MagicMock()
     ddp.wakeup(MOCK_HOST, MOCK_CREDS, sock=mock_sock)
+    assert len(mock_sock.sendto.mock_calls) == 1
+
+
+def test_launch():
+    """Test Launch call."""
+    mock_sock = MagicMock()
+    ddp.launch(MOCK_HOST, MOCK_CREDS, sock=mock_sock)
     assert len(mock_sock.sendto.mock_calls) == 1
 
 
@@ -175,17 +183,17 @@ def test_no_status():
 def test_protocol_connection_lost():
     """Test protocol connection lost."""
     mock_ddp = ddp.DDPProtocol()
-    mock_ddp.transport = MagicMock()
+    mock_ddp._transport = MagicMock()
     mock_ddp.error_received(ConnectionError)
     mock_ddp.connection_lost(ConnectionError)
-    assert len(mock_ddp.transport.close.mock_calls) == 1
+    assert len(mock_ddp._transport.close.mock_calls) == 1
 
 
 def test_protocol_close():
     """Test protocol close."""
     mock_ddp = ddp.DDPProtocol()
-    mock_ddp.transport = MagicMock()
-    mock_close = mock_ddp.transport.close
+    mock_ddp._transport = MagicMock()
+    mock_close = mock_ddp._transport.close
     mock_ddp.close()
     assert len(mock_close.mock_calls) == 1
 
@@ -193,7 +201,7 @@ def test_protocol_close():
 def test_ps4_unavailable():
     """Tests for ps4 unavailable."""
     mock_ddp = ddp.DDPProtocol()
-    mock_ddp.transport = MagicMock()
+    mock_ddp._transport = MagicMock()
     mock_ddp.set_max_polls(1)
     mock_cb = MagicMock()
     mock_ps4 = ps4(MOCK_HOST, MOCK_CREDS)
@@ -202,14 +210,14 @@ def test_ps4_unavailable():
     mock_ps4.status = MOCK_DDP_DICT
 
     mock_ddp.send_msg(mock_ps4)
-    assert len(mock_ddp.transport.sendto.mock_calls) == 1
+    assert len(mock_ddp._transport.sendto.mock_calls) == 1
     assert not mock_ps4.unreachable
     assert mock_ps4.poll_count == 1
     assert mock_ps4.status is not None
     assert not mock_cb.mock_calls
 
     mock_ddp.send_msg(mock_ps4)
-    assert len(mock_ddp.transport.sendto.mock_calls) == 2
+    assert len(mock_ddp._transport.sendto.mock_calls) == 2
     assert mock_ps4.unreachable is True
     assert mock_ps4.status is None
     assert len(mock_cb.mock_calls) == 1
@@ -238,6 +246,78 @@ def test_discovery():
         side_effect=(ddp.socket.error, ddp.socket.timeout))
     mock_disc.search(None)
     assert len(mock_disc.sock.close.mock_calls) == 2
+
+
+def test_get_socket_error():
+    """Tests handling of get_socket errors."""
+    with patch('pyps4_2ndscreen.ddp.socket.socket.bind', side_effect=socket.error) as mock_call:
+        sock = ddp.get_socket()
+        assert sock is None
+
+
+@pytest.mark.asyncio
+async def test_create_ddp_protocol():
+    """Test DDP Protocol init."""
+    with patch(
+        "pyps4_2ndscreen.ddp.asyncio.get_event_loop",
+        return_value=MagicMock()) as mock_loop:
+        mock_loop = mock_loop()
+        mock_create_task = mock_coro(return_value=(MagicMock(), MagicMock()))
+        mock_call = mock_coro(return_value=(MagicMock(), MagicMock()))
+        mock_loop.create_datagram_endpoint = mock_call
+        mock_loop.create_task = mock_create_task
+
+        local_addr = (ddp.UDP_IP, ddp.UDP_PORT)
+        reuse_port = True
+        allow_broadcast = True
+        sock = None
+        mock_kwargs = {
+            'local_addr': local_addr,
+            'reuse_port': reuse_port,
+            'allow_broadcast': allow_broadcast,
+            'sock': sock,
+        }
+        await ddp.async_create_ddp_endpoint()
+        args, kwargs = mock_call.call_args
+        assert callable(args[0])  # Hack for lambda: DDPProtocol()
+        for key, value in kwargs.items():
+            assert mock_kwargs[key] == value
+
+
+@pytest.mark.asyncio
+async def test_create_ddp_protocol_sock():
+    """Test DDP Protocol init with socket."""
+    with patch(
+        "pyps4_2ndscreen.ddp.asyncio.get_event_loop",
+        return_value=MagicMock()) as mock_loop:
+        mock_loop = mock_loop()
+        mock_create_task = mock_coro(return_value=(MagicMock(), MagicMock()))
+        mock_call = mock_coro(return_value=(MagicMock(), MagicMock()))
+        mock_loop.create_datagram_endpoint = mock_call
+        mock_loop.create_task = mock_create_task
+        mock_port = 1234
+        mock_timeout = 3
+
+        local_addr = None
+        reuse_port = None
+        allow_broadcast = None
+        sock = ddp.get_socket(timeout=mock_timeout, port=mock_port)
+
+        assert sock.getblocking()
+        assert sock.getsockname() == (ddp.UDP_IP, mock_port)
+        mock_kwargs = {
+            'local_addr': local_addr,
+            'reuse_port': reuse_port,
+            'allow_broadcast': allow_broadcast,
+            'sock': sock,
+        }
+        await ddp.async_create_ddp_endpoint(sock=sock)
+        args, kwargs = mock_call.call_args
+        assert callable(args[0])  # Hack for lambda: DDPProtocol()
+        for key, value in kwargs.items():
+            assert mock_kwargs[key] == value
+        # Test if socket is changed to nonblocking
+        assert not kwargs['sock'].getblocking()
 
 
 # Test DDP Protocol instance.
@@ -292,10 +372,10 @@ async def start_mock_instance():
     Represents a second PS4 console.
     """
     _, mock_client_protocol = await ddp.async_create_ddp_endpoint()
-    assert mock_client_protocol.port == 987
+    assert mock_client_protocol.remote_port == 987
     # Change port to use unpriviliged port.
     mock_client_protocol._set_write_port(MOCK_DDP_PROTO_PORT)  # noqa: pylint: disable=protected-access
-    assert mock_client_protocol.port == MOCK_DDP_PROTO_PORT
+    assert mock_client_protocol.remote_port == MOCK_DDP_PROTO_PORT
     mock_protocol1 = await start_mock_ps4(MOCK_DDP_PROTO_HOST)
     mock_protocol2 = await start_mock_ps4(MOCK_DDP_PROTO_HOST2)
 

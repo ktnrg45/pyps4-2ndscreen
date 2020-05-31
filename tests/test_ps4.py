@@ -44,6 +44,7 @@ MOCK_COVER_URL = "https://someurl.com"
 MOCK_REGION = "United States"
 MOCK_RC_PS_HOLD = "ps_hold"
 MOCK_RC_ENTER = "enter"
+MOCK_PORT = 1234
 
 
 def test_get_status():
@@ -54,7 +55,26 @@ def test_get_status():
     ) as mock_call:
         mock_status = mock_ps4.get_status()
     assert mock_status is not None
+    assert mock_ps4.status_code == MOCK_DDP_DICT['status_code']
     assert len(mock_call.mock_calls) == 1
+    assert mock_call.call_args[0] == (MOCK_HOST, mock_ps4._socket)
+    # Sock should be none if no port specified
+    assert mock_ps4._socket is None
+
+
+def test_get_status_port():
+    """Test get_status call with specific port."""
+    mock_ps4 = ps4.Ps4Legacy(MOCK_HOST, MOCK_CREDS, port=MOCK_PORT)
+    with patch(
+        "pyps4_2ndscreen.ps4.get_status", return_value=MOCK_DDP_DICT
+    ) as mock_call:
+        mock_status = mock_ps4.get_status()
+    assert mock_status is not None
+    assert mock_ps4.status_code == MOCK_DDP_DICT['status_code']
+    assert len(mock_call.mock_calls) == 1
+    assert mock_call.call_args[0] == (MOCK_HOST, mock_ps4._socket)
+    assert mock_ps4._socket is not None
+    assert mock_ps4._socket.getsockname()[1] == MOCK_PORT
 
 
 def test_state_off():
@@ -94,6 +114,7 @@ def test_no_response():
         mock_status = mock_ps4.get_status()
     assert mock_status is None
     assert len(mock_call.mock_calls) == 1
+    assert mock_ps4.status_code is None
     assert mock_ps4.is_running is False
     assert mock_ps4.is_standby is False
     assert mock_ps4.is_available is False
@@ -681,3 +702,24 @@ async def test_async_connect():
     # Assert that auto login performed, since powering on.
     assert len(mock_ps4.login.mock_calls) == 1
     assert not mock_ps4._power_on
+
+
+@pytest.mark.asyncio
+async def test_async_get_ddp_endpoint():
+    """Test get_ddp_endpoint."""
+    mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS)
+    await mock_ps4.get_ddp_endpoint()
+    assert mock_ps4.ddp_protocol is not None
+
+    # Test with specific port
+    mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS, port=MOCK_PORT)
+    assert mock_ps4.port == MOCK_PORT
+    await mock_ps4.get_ddp_endpoint()
+    assert mock_ps4.ddp_protocol is not None
+    assert mock_ps4.ddp_protocol.local_port == MOCK_PORT
+    mock_ps4.ddp_protocol.close()
+
+    # Test fail
+    mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS, port=MOCK_PORT)
+    with patch('pyps4_2ndscreen.ps4.async_create_ddp_endpoint', new=mock_coro(return_value=(None, None))):
+        assert not await mock_ps4.get_ddp_endpoint()
