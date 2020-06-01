@@ -1,2 +1,15 @@
 #!/bin/bash
-python tests/.test_media_art_real.py 2> .media_art_test_results.txt
+TEST_FILE="tests/.test_media_art_real.py"
+LOG_FILE=".media_art_test_results.txt"
+
+python $TEST_FILE 2> $LOG_FILE
+test_result="$(tail -n 1 $LOG_FILE | tail -c 5)"
+
+if [ $test_result == "True" ];
+then
+	echo "Success: Test Media Art"
+else
+	echo "Failed: Test Media Art"
+	exit 1
+fi
+exit 0

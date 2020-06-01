@@ -1,5 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 # Pushes a new version to PyPi. Run from root directory.
+DEV_BRANCH="dev"
+CURRENT="Already up to date."
 repo_url="$(echo $(git config --get remote.origin.url) | grep -Po '.*(?=\.)')"
 url="$(echo $repo_url | sed 's\'github.com'\'api.github.com/repos'\g')"
 
@@ -10,12 +12,41 @@ lib_dir="pyps4_2ndscreen/__version__.py"
 major="$(head -n 3 "$lib_dir" | tail -n 1 | tail -c 2)"
 minor="$(head -n 4 "$lib_dir" | tail -n 1 | tail -c 2)"
 patch="$(head -n 5 "$lib_dir" | tail -n 1 | tail -c 2)"
-VERSION=$(printf "%s.%s.%s" $major $minor $patch)
+VERSION="$(printf "%s.%s.%s" $major $minor $patch)"
 
 
 git checkout dev
 git reset HEAD
-git pull
+branch="$(git status | head -n 1 | tail -c 4)"
+if [[ $branch != $DEV_BRANCH ]];
+then
+	echo "Branch not on dev."
+	exit 1
+fi
+
+git_pull="$(git pull)"
+if [[ $git_pull != $CURRENT ]];
+then
+	echo "Branch not up to date."
+	exit 1
+fi
+
+test_result="$(script/test_art | head -c 7)"
+echo $test_result
+if [ $test_result != "Success" ];
+then
+	read -p "Media Art Test Failed: Continue?: y> " msg_test
+	if [ "$msg_test" != "y" ];
+	then
+		exit 1
+	fi
+fi
+
+git commit -a -m "Update Media Art Test Logs"
+git push
+
+echo "Media Art Test Log committed"
+
 rm -rf dist
 rm -rf build
 python3 setup.py sdist bdist_wheel
@@ -29,6 +60,6 @@ git push
 
 read -p "Enter release message: " msg
 
-API_JSON=$(printf '{"tag_name": "%s","target_commitish": "master","name": "%s","body": "%s","draft": false,"prerelease": false}' $VERSION $VERSION "$msg")
+API_JSON="$(printf '{"tag_name": "%s","target_commitish": "master","name": "%s","body": "%s","draft": false,"prerelease": false}' "$VERSION" "$VERSION" "$msg")"
 curl --data $API_JSON $API_URL
 git checkout dev

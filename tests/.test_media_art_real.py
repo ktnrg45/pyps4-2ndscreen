@@ -115,6 +115,8 @@ async def _get_tests():
             _LOGGER.info("Failed: %s", item)
     if not fails:
         _LOGGER.info("All Tests Passed")
+        return True
+    return False
 
 
 def main():
@@ -123,9 +125,10 @@ def main():
         "\nTest last ran on %s\nVersion: %s\n", time.ctime(), __version__)
     loop = asyncio.get_event_loop()
     start = time.time()
-    loop.run_until_complete(_get_tests())
+    success = loop.run_until_complete(_get_tests())
     elapsed = time.time() - start
     _LOGGER.info("All Tests completed in %s seconds", elapsed)
+    _LOGGER.info("Success: %s", success)
 
 
 if __name__ == "__main__":
