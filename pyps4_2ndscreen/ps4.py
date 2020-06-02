@@ -428,10 +428,27 @@ class Ps4Async(Ps4Base):
             self.ddp_protocol.send_msg(
                 self, get_ddp_wake_message(self.credential))
 
+    # async def new_ddp_endpoint(self, port: int, close_old=False):
+    #     """Return True if new endpoint is created from socket."""
+    #     old_port = self._port
+    #     old_protocol = self.ddp_protocol
+    #     self._port = port
+
+    #     success = await self.get_ddp_endpoint()
+    #     if not success:
+    #         _LOGGER.warning("Failed to get new protocol")
+    #         self._port = old_port
+    #         self.ddp_protocol = old_protocol
+    #         return False
+    #     if close_old:
+    #         _LOGGER.debug("Closing old protocol")
+    #         old_protocol.close()
+    #     return True
+
     async def get_ddp_endpoint(self):
         """Return True if endpoint is created from socket."""
         protocol = None
-        if self.port != UDP_PORT:
+        if self.port != UDP_PORT and self._socket is None:
             self._get_socket()
         _, protocol = await async_create_ddp_endpoint(
             sock=self._socket)

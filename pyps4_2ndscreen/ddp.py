@@ -67,7 +67,8 @@ class DDPProtocol(asyncio.DatagramProtocol):
         """Send Message."""
         if message is None:
             message = self._message
-
+        sock = self._transport.get_extra_info('socket')
+        _LOGGER.debug("SENT MSG @ DDP Proto: %s", sock.getsockname())
         self._transport.sendto(
             message.encode('utf-8'),
             (ps4.host, self._remote_port))
@@ -89,6 +90,8 @@ class DDPProtocol(asyncio.DatagramProtocol):
     def datagram_received(self, data, addr):
         """When data is received."""
         if data is not None:
+            sock = self._transport.get_extra_info('socket')
+            _LOGGER.debug("RECV MSG @ DDP Proto: %s", sock.getsockname())
             self._handle(data, addr)
 
     def _handle(self, data, addr):
@@ -239,6 +242,8 @@ def get_socket(timeout=3, port: Optional[int] = UDP_PORT):
     try:
         if port != UDP_PORT:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        if hasattr(socket, "SO_REUSEPORT"):
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         sock.bind((UDP_IP, port))
     except socket.error as e:
         _LOGGER.error("Error getting DDP socket with port: %s: %s", port, e)
@@ -257,7 +262,7 @@ def _send_recv_msg(host, broadcast, msg, receive=True, sock=None):
     else:
         _host = host
     _LOGGER.debug(
-        "Sent DDP MSG: %s : %s", sock.getsockname(), (_host, DDP_PORT))
+        "Sent DDP MSG: SRC=%s DEST=%s", sock.getsockname(), (_host, DDP_PORT))
     sock.sendto(msg.encode('utf-8'), (_host, DDP_PORT))
 
     if receive:
