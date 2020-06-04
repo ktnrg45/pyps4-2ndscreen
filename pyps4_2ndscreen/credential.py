@@ -35,9 +35,9 @@ class Credentials:
     """
 
     def __init__(
-        self,
-        device_name: Optional[str] = DEFAULT_DEVICE_NAME,
-        start: Optional[bool] = True
+            self,
+            device_name: Optional[str] = DEFAULT_DEVICE_NAME,
+            start: Optional[bool] = True
     ):
 
         self.sock = None

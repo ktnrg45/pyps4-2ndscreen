@@ -10,6 +10,7 @@ from pyps4_2ndscreen.ddp import (
     DDPProtocol,
     get_ddp_launch_message,
     get_ddp_wake_message,
+    UDP_PORT,
 )
 
 from .test_ddp import (
@@ -723,3 +724,58 @@ async def test_async_get_ddp_endpoint():
     mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS, port=MOCK_PORT)
     with patch('pyps4_2ndscreen.ps4.async_create_ddp_endpoint', new=mock_coro(return_value=(None, None))):
         assert not await mock_ps4.get_ddp_endpoint()
+
+
+@pytest.mark.asyncio
+async def test_async_change_ddp_endpoint():
+    """Test changing DDP Endpoint."""
+    mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS)
+    await mock_ps4.get_ddp_endpoint()
+    assert mock_ps4.ddp_protocol is not None
+    mock_ps4.add_callback(MagicMock)
+    mock_old_protocol = mock_ps4.ddp_protocol
+
+    success = await mock_ps4.change_ddp_endpoint(MOCK_PORT)
+    assert success is True
+    assert mock_ps4.ddp_protocol is not None
+    assert mock_ps4.ddp_protocol.local_port == MOCK_PORT
+    assert mock_ps4.port == MOCK_PORT
+    assert not mock_old_protocol._transport.is_closing()
+
+    # Test old protocol closes
+    mock_old_protocol = mock_ps4.ddp_protocol
+    success = await mock_ps4.change_ddp_endpoint(UDP_PORT, True)
+    assert success is True
+    assert mock_ps4.ddp_protocol != mock_old_protocol
+    assert mock_ps4.ddp_protocol.local_port != MOCK_PORT
+    assert mock_ps4.port != MOCK_PORT
+    assert mock_old_protocol._transport is None
+
+
+@pytest.mark.asyncio
+async def test_async_change_ddp_endpoint_errors():
+    """Test changing DDP Endpoint errors."""
+    mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS)
+
+    # Test that no DDP protocol returns False.
+    assert mock_ps4.ddp_protocol is None
+    success = await mock_ps4.change_ddp_endpoint(MOCK_PORT)
+    assert success is False
+
+    await mock_ps4.get_ddp_endpoint()
+    assert mock_ps4.ddp_protocol is not None
+    mock_ps4.add_callback(MagicMock)
+    mock_old_protocol = mock_ps4.ddp_protocol
+    mock_old_port = mock_ps4.port
+
+    # Test that same port returns False.
+    success = await mock_ps4.change_ddp_endpoint(mock_ps4.port)
+    assert success is False
+
+    # Test socket error/fail to get new protocol
+    with patch('pyps4_2ndscreen.ps4.async_create_ddp_endpoint', new=mock_coro(return_value=(None, None))):
+        success = await mock_ps4.change_ddp_endpoint(MOCK_PORT)
+        assert success is False
+        assert mock_ps4.ddp_protocol == mock_old_protocol
+        assert mock_ps4.port == mock_old_port
+        assert mock_ps4.ddp_protocol.callbacks[MOCK_HOST][mock_ps4] == MagicMock

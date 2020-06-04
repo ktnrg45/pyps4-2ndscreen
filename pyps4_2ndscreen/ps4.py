@@ -121,6 +121,7 @@ class Ps4Base():
 
     @property
     def status_code(self):
+        """Return status code."""
         if self.status is not None:
             return self.status['status_code']
         return None
@@ -382,6 +383,20 @@ class Ps4Async(Ps4Base):
         :param ddp_protocol: :class: `pyps4_2ndscreen.ddp.DDPProtocol`
         """
         self.ddp_protocol = ddp_protocol
+        self._port = self.ddp_protocol.local_port
+
+    def _detach_protocol(self):
+        """Detach from protcocol. Return current protocol and callback."""
+        protocol = None
+        callback = None
+        if self.ddp_protocol is not None:
+            host = self.ddp_protocol.callbacks.get(self.host)
+            if host is not None:
+                callback = host.get(self)
+                self.ddp_protocol.remove_callback(self, callback)
+            protocol = self.ddp_protocol
+            self.ddp_protocol = None
+        return protocol, callback
 
     def add_callback(self, callback: callable):
         """Add status updated callback.
@@ -428,22 +443,41 @@ class Ps4Async(Ps4Base):
             self.ddp_protocol.send_msg(
                 self, get_ddp_wake_message(self.credential))
 
-    # async def new_ddp_endpoint(self, port: int, close_old=False):
-    #     """Return True if new endpoint is created from socket."""
-    #     old_port = self._port
-    #     old_protocol = self.ddp_protocol
-    #     self._port = port
+    async def change_ddp_endpoint(self, port: int, close_old: bool = False):
+        """Return True if new endpoint is created."""
+        if self.ddp_protocol is None:
+            _LOGGER.warning("No DDP protocol set")
+            return False
+        if self.port == port:
+            _LOGGER.warning("Port is already: %s", self.port)
+            return False
 
-    #     success = await self.get_ddp_endpoint()
-    #     if not success:
-    #         _LOGGER.warning("Failed to get new protocol")
-    #         self._port = old_port
-    #         self.ddp_protocol = old_protocol
-    #         return False
-    #     if close_old:
-    #         _LOGGER.debug("Closing old protocol")
-    #         old_protocol.close()
-    #     return True
+        old_protocol, callback = self._detach_protocol()
+        old_port = self._port
+        old_socket = self._socket
+        self._socket = None
+        self._port = port
+
+        _LOGGER.debug("Changing Port from %s to %s", old_port, self._port)
+
+        success = await self.get_ddp_endpoint()
+
+        # Restore old protocol
+        if not success:
+            self._port = old_port
+            self.ddp_protocol = old_protocol
+            self._socket = old_socket
+            if callback is not None:
+                self.add_callback(callback)
+            _LOGGER.warning(
+                "Failed to get new protocol; Reverting to port: %s",
+                self._port)
+            return False
+
+        if close_old:
+            _LOGGER.debug("Closing old protocol: %s", self.ddp_protocol)
+            old_protocol.close()
+        return True
 
     async def get_ddp_endpoint(self):
         """Return True if endpoint is created from socket."""

@@ -245,8 +245,9 @@ def get_socket(timeout=3, port: Optional[int] = UDP_PORT):
         if hasattr(socket, "SO_REUSEPORT"):
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         sock.bind((UDP_IP, port))
-    except socket.error as e:
-        _LOGGER.error("Error getting DDP socket with port: %s: %s", port, e)
+    except socket.error as error:
+        _LOGGER.error(
+            "Error getting DDP socket with port: %s: %s", port, error)
         sock = None
     return sock
 
