@@ -31,6 +31,9 @@ then
 	exit 1
 fi
 
+python3 setup.py install
+
+echo "Running Media Art Tests"
 test_result="$(script/test_art | head -c 7)"
 echo $test_result
 if [ $test_result != "Success" ];
