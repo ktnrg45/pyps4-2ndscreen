@@ -250,7 +250,9 @@ def test_discovery():
 
 def test_get_socket_error():
     """Tests handling of get_socket errors."""
-    with patch('pyps4_2ndscreen.ddp.socket.socket.bind', side_effect=socket.error) as mock_call:
+    with patch(
+        'pyps4_2ndscreen.ddp.socket.socket.bind',
+            side_effect=socket.error):
         sock = ddp.get_socket()
         assert sock is None
 
@@ -260,7 +262,7 @@ async def test_create_ddp_protocol():
     """Test DDP Protocol init."""
     with patch(
         "pyps4_2ndscreen.ddp.asyncio.get_event_loop",
-        return_value=MagicMock()) as mock_loop:
+            return_value=MagicMock()) as mock_loop:
         mock_loop = mock_loop()
         mock_create_task = mock_coro(return_value=(MagicMock(), MagicMock()))
         mock_call = mock_coro(return_value=(MagicMock(), MagicMock()))
@@ -289,7 +291,7 @@ async def test_create_ddp_protocol_sock():
     """Test DDP Protocol init with socket."""
     with patch(
         "pyps4_2ndscreen.ddp.asyncio.get_event_loop",
-        return_value=MagicMock()) as mock_loop:
+            return_value=MagicMock()) as mock_loop:
         mock_loop = mock_loop()
         mock_create_task = mock_coro(return_value=(MagicMock(), MagicMock()))
         mock_call = mock_coro(return_value=(MagicMock(), MagicMock()))
@@ -303,7 +305,7 @@ async def test_create_ddp_protocol_sock():
         allow_broadcast = None
         sock = ddp.get_socket(timeout=mock_timeout, port=mock_port)
 
-        assert sock.getblocking()
+        assert sock.gettimeout() > 0
         assert sock.getsockname() == (ddp.UDP_IP, mock_port)
         mock_kwargs = {
             'local_addr': local_addr,
@@ -317,7 +319,7 @@ async def test_create_ddp_protocol_sock():
         for key, value in kwargs.items():
             assert mock_kwargs[key] == value
         # Test if socket is changed to nonblocking
-        assert not kwargs['sock'].getblocking()
+        assert kwargs['sock'].gettimeout() == 0
 
 
 # Test DDP Protocol instance.

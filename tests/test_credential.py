@@ -77,11 +77,6 @@ def test_creds_handle_wakeup():
 def test_creds_errors():
     """Test Service error handling."""
     creds = init_creds()
-    with pytest.raises(credential.CredentialTimeout):
-        result = creds.listen(0.1)
-        assert result is None
-
-    creds = init_creds()
     creds.sock = MagicMock()
     creds.sock.recvfrom = MagicMock(side_effect=credential.socket.error())
     with pytest.raises(credential.CredentialTimeout):
