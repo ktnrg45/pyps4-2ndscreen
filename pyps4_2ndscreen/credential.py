@@ -94,6 +94,9 @@ class Credentials:
                     response = self.sock.recvfrom(1024)
                 except socket.error:
                     self.sock.close()
+                    _LOGGER.info(
+                        "Credential service has timed out with no response")
+                    raise CredentialTimeout
                 if not response:
                     _LOGGER.info(
                         "Credential service has timed out with no response")
