@@ -198,6 +198,7 @@ def get_ps_store_url(title, region, reformat='chars', legacy=False):
     elif reformat == 'tumbler':  # Sub special chars with space
         title = re.sub(r'[^A-Za-z0-9\ ]+', ' ', title)
         title = re.sub(r'[  ]+', ' ', title)  # Remove multiple spaces
+        title = re.sub(r' .*', '', title)
     elif reformat == 'orig':
         pass
     title = html.escape(title.rstrip())
@@ -239,11 +240,10 @@ async def async_get_ps_store_requests(title, region,
                                       session: aiohttp.ClientSession) -> list:
     """Return Title and Cover data with aiohttp."""
     responses = []
-    region = get_region(region)
 
     for format_type in FORMATS:
         _url = get_ps_store_url(
-            title, region, reformat=format_type, legacy=True)
+            title, get_region(region), reformat=format_type, legacy=True)
         url, params = _format_url(_url)
 
         response = await fetch(url, params, session)
@@ -252,7 +252,7 @@ async def async_get_ps_store_requests(title, region,
 
     for format_type in FORMATS:
         _url = get_ps_store_url(
-            title, region, reformat=format_type, legacy=False)
+            title, get_region(region), reformat=format_type, legacy=False)
         url, params = _format_url(_url)
 
         response = await fetch(url, params, session)
@@ -267,11 +267,10 @@ async def async_get_ps_store_requests_tumbler(
     """Perform tumbler search."""
     _LOGGER.debug("Starting Tumbler Search")
     responses = []
-    region = get_region(region)
     short_title = title.split(' ')
     _title = short_title[0]
     _url = get_ps_store_url(
-        _title, region, reformat='tumbler', legacy=False)
+        _title, get_region(region), reformat='tumbler', legacy=False)
     url, params = _format_url(_url)
     _LOGGER.debug("Tumbler URL: %s", _url)
 
@@ -293,18 +292,30 @@ async def async_search_ps_store(title: str, title_id: str, region: str):
     searches = [
         async_get_ps_store_requests,
         async_get_ps_store_requests_tumbler,
+        'all'
     ]
-    lang = get_lang(region)
+
     result_item = None
+    search_all = False
     _LOGGER.debug("Starting search request")
 
     async with aiohttp.ClientSession() as session:
         for search in searches:
+            if search == 'all':
+                searches.extend([_r for _r in COUNTRIES.keys()])
+                search_all = True
+                _LOGGER.info("Searching other regions; Result may be incorrect")
+                continue
+            if search_all:
+                region = search
+                search = async_get_ps_store_requests_tumbler
+            await asyncio.sleep(0)
             responses = await search(
                 title, region, session)
+
             for response in responses:
                 try:
-                    result_item = parse_data(response, title_id, lang)
+                    result_item = parse_data(response, title_id, region)
                 except (TypeError, AttributeError):
                     result_item = None
                     raise PSDataIncomplete
@@ -316,8 +327,9 @@ async def async_search_ps_store(title: str, title_id: str, region: str):
     return result_item
 
 
-def parse_data(result, title_id, lang):
+def parse_data(result, title_id, region):
     """Filter through each item in search request."""
+    lang = get_lang(region)
     item_list = []
     type_list = TYPE_LIST[lang]
     type_list.append(TYPE_APP)

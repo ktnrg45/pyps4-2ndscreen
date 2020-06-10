@@ -8,6 +8,7 @@ from pyps4_2ndscreen.errors import PSDataIncomplete
 from pyps4_2ndscreen.__version__ import __version__
 
 TEST_LIST = [  # title, titleid, region
+    ["Marvel's Spider-Man", 'CUSA11994', 'Australia'],  # Search All
     ["Marvel's Spider-Man", 'CUSA02299', 'Argentina'],
     ["Marvel's Spider-Man", 'CUSA11993', 'Australia'],
     ["Marvel's Spider-Man", 'CUSA11993', 'Austria'],
@@ -108,11 +109,17 @@ async def _get_tests():
     for index_num in TEST_LIST:
         test = _get_cover_art(index_num)
         tests.append(test)
+    test_search_all = tests.pop(0)
     results = await asyncio.gather(*tests)
     for index, item in enumerate(results):
         if item is not None:
             fails = True
             _LOGGER.info("Failed: %s", item)
+    _LOGGER.info("\nStarting Search All Test:\n")
+    search_all_result = await test_search_all
+    if search_all_result is not None:
+        fails = True
+        _LOGGER.info("Search All Test Failed")
     if not fails:
         _LOGGER.info("All Tests Passed")
         return True
