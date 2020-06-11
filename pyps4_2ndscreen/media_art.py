@@ -265,7 +265,6 @@ async def async_get_ps_store_requests(title, region,
 async def async_get_ps_store_requests_tumbler(
         title, region, session: aiohttp.ClientSession) -> list:
     """Perform tumbler search."""
-    _LOGGER.debug("Starting Tumbler Search")
     responses = []
     short_title = title.split(' ')
     _title = short_title[0]

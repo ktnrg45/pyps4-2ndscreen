@@ -2,6 +2,7 @@
 import logging
 import time
 import socket
+import asyncio
 from typing import Optional, Union
 
 from .connection import LegacyConnection, AsyncConnection, DEFAULT_LOGIN_DELAY
@@ -438,10 +439,15 @@ class Ps4Async(Ps4Base):
         if self.ddp_protocol is None:
             _LOGGER.error("DDP Protocol does not exist")
         else:
-            self._power_on = True
-            self._power_off = False
-            self.ddp_protocol.send_msg(
-                self, get_ddp_wake_message(self.credential))
+            if self.is_standby:
+                self._power_on = True
+                self._power_off = False
+                self.ddp_protocol.send_msg(
+                    self, get_ddp_wake_message(self.credential))
+                _LOGGER.debug("Command: Wakeup")
+            elif self.is_running:
+                _LOGGER.debug("Status is 'running'; Trying Command: Standby")
+                asyncio.ensure_future(self.standby)
 
     async def change_ddp_endpoint(self, port: int, close_old: bool = False):
         """Return True if new endpoint is created."""
@@ -500,15 +506,21 @@ class Ps4Async(Ps4Base):
             _LOGGER.info("Login failed: TCP Protocol does not exist")
         else:
             power_on = self._power_on
+            _LOGGER.debug("Logging in with PSN user: %s", self.credential)
             await self.tcp_protocol.login(pin, power_on, self.login_delay)
 
     async def standby(self):
         """Send Standby Packet."""
         if self.tcp_protocol is None:
-            _LOGGER.info("Standby Failed: TCP Protocol does not exist")
+            if self.is_running:
+                _LOGGER.info("Standby Failed: TCP Protocol does not exist")
+            elif self.is_standby:
+                self.wakeup()
+                _LOGGER.debug("Status is 'standby'; Trying Command: Wakeup")
         else:
-            await self.tcp_protocol.standby()
             self._power_off = True
+            await self.tcp_protocol.standby()
+            _LOGGER.debug("Command: Standby")
 
     async def start_title(
             self, title_id: str, running_id: Optional[str] = None):
@@ -524,15 +536,21 @@ class Ps4Async(Ps4Base):
                 running_id = self.running_app_titleid
 
         if self.tcp_protocol is None:
-            _LOGGER.info("TCP Protocol does not exist")
+            _LOGGER.debug("Start Title failed: TCP Protocol does not exist")
 
             # Queue task upon login.
             task = ('start_title', title_id, running_id)
             self.task_queue = task
             self.wakeup()
+            _LOGGER.info(
+                "Queuing Command: Start Title: title_id=%s, running_id=%s",
+                title_id, running_id)
 
         else:
             await self.tcp_protocol.start_title(title_id, running_id)
+            _LOGGER.debug(
+                "Command: Start Title: title_id=%s, running_id=%s",
+                title_id, running_id)
 
     async def remote_control(
             self, button_name: str, hold_time: Optional[int] = 0):
@@ -550,19 +568,26 @@ class Ps4Async(Ps4Base):
         operation = BUTTONS[button_name]
 
         if self.tcp_protocol is None:
-            _LOGGER.info("TCP Protocol does not exist")
+            _LOGGER.debug("Remote Control failed: TCP Protocol does not exist")
 
             # Queue task upon login.
             task = ('remote_control', operation, hold_time)
             self.task_queue = task
             self.wakeup()
+            _LOGGER.info(
+                "Queuing Command: Remote Control: button=%s",
+                button_name)
 
         else:
             await self.tcp_protocol.remote_control(operation, hold_time)
+            _LOGGER.debug(
+                "Command: Remote Control: button=%s",
+                button_name)
 
     async def close(self):
         """Close Connection."""
         self._close()
+        _LOGGER.debug("Closing PS4 TCP connection")
 
     def _close(self):
         """Close Transport."""
@@ -584,15 +609,16 @@ class Ps4Async(Ps4Base):
         :param auto_login: If true will login automatically if powering on.
         """
         if not self._connected:
-            if self.status is None:
+            if self.status is None and self.ddp_protocol is not None:
                 self.get_status()
             if not self.is_available:
                 raise NotReady(
                     "PS4 is not available or powered off. Check connection.")
-            if not self._power_off:
+            if not self._power_off:  # If not powering off
                 if self.is_standby:
                     raise NotReady("PS4 is not On")
                 try:
+                    _LOGGER.debug("Attempting connection with PS4")
                     self._prepare_connection()
                     tcp_transport, tcp_protocol =\
                         await self.connection.async_connect(self)
@@ -604,7 +630,7 @@ class Ps4Async(Ps4Base):
                     self.tcp_transport = tcp_transport
                     self.tcp_protocol = tcp_protocol
                     self._connected = True
-                    if self._power_on:
+                    if self._power_on:  # If powering on
                         if auto_login:
                             await self.login()
                     self._power_on = False
