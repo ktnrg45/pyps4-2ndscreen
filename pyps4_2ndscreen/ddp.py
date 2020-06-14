@@ -68,7 +68,9 @@ class DDPProtocol(asyncio.DatagramProtocol):
         if message is None:
             message = self._message
         sock = self._transport.get_extra_info('socket')
-        _LOGGER.debug("SENT MSG @ DDP Proto: %s", sock.getsockname())
+        _LOGGER.debug(
+            "SENT MSG @ DDP Proto SPORT=%s DEST=%s",
+            sock.getsockname()[1], (ps4.host, self._remote_port))
         self._transport.sendto(
             message.encode('utf-8'),
             (ps4.host, self._remote_port))
@@ -91,7 +93,9 @@ class DDPProtocol(asyncio.DatagramProtocol):
         """When data is received."""
         if data is not None:
             sock = self._transport.get_extra_info('socket')
-            _LOGGER.debug("RECV MSG @ DDP Proto: %s", sock.getsockname())
+            _LOGGER.debug(
+                "RECV MSG @ DDP Proto DPORT=%s SRC=%s",
+                sock.getsockname()[1], addr)
             self._handle(data, addr)
 
     def _handle(self, data, addr):
@@ -124,8 +128,8 @@ class DDPProtocol(asyncio.DatagramProtocol):
         """Close Transport."""
         self._transport.close()
         self._transport = None
-        _LOGGER.info(
-            "Closing DDP Transport: %s",
+        _LOGGER.debug(
+            "Closing DDP Transport: Port=%s",
             self._local_port)
 
     def add_callback(self, ps4, callback):
@@ -254,6 +258,7 @@ def get_socket(timeout=3, port: Optional[int] = UDP_PORT):
 
 def _send_recv_msg(host, broadcast, msg, receive=True, sock=None):
     """Send a ddp message and receive the response."""
+    recv = None
     if sock is None:
         sock = get_socket()
 
@@ -263,14 +268,19 @@ def _send_recv_msg(host, broadcast, msg, receive=True, sock=None):
     else:
         _host = host
     _LOGGER.debug(
-        "Sent DDP MSG: SRC=%s DEST=%s", sock.getsockname(), (_host, DDP_PORT))
+        "SENT DDP MSG: SPORT=%s DEST=%s",
+        sock.getsockname()[1], (_host, DDP_PORT))
     sock.sendto(msg.encode('utf-8'), (_host, DDP_PORT))
 
     if receive:
         available, _, _ = select.select([sock], [], [], 0.01)
         if sock in available:
-            return sock.recvfrom(1024)
-    return None
+            recv = sock.recvfrom(1024)
+            _LOGGER.debug(
+                "RECV DDP MSG: DPORT=%s SRC=%s",
+                sock.getsockname()[1], (_host, DDP_PORT))
+    sock.close()
+    return recv
 
 
 def _send_msg(host, broadcast, msg, sock=None):

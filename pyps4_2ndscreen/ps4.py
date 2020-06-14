@@ -59,7 +59,6 @@ class Ps4Base():
         self.host = host
         self.credential = None
         self.device_name = device_name
-        self._socket = None
         self._port = port
         self._power_on = False
         self._power_off = False
@@ -83,14 +82,15 @@ class Ps4Base():
         )
 
     def _get_socket(self):
-        self._socket = get_socket(port=self.port)
+        return get_socket(port=self.port)
 
     def get_status(self) -> dict:
         """Return current status info."""
+        sock = None
         if self.port != UDP_PORT:
-            self._get_socket()
+            sock = self._get_socket()
         try:
-            self.status = get_status(self.host, self._socket)
+            self.status = get_status(self.host, sock)
         except socket.timeout:
             _LOGGER.debug("PS4 @ %s status timed out", self.host)
             self.status = None
@@ -460,8 +460,6 @@ class Ps4Async(Ps4Base):
 
         old_protocol, callback = self._detach_protocol()
         old_port = self._port
-        old_socket = self._socket
-        self._socket = None
         self._port = port
 
         _LOGGER.debug("Changing Port from %s to %s", old_port, self._port)
@@ -472,7 +470,6 @@ class Ps4Async(Ps4Base):
         if not success:
             self._port = old_port
             self.ddp_protocol = old_protocol
-            self._socket = old_socket
             if callback is not None:
                 self.add_callback(callback)
             _LOGGER.warning(
@@ -488,10 +485,11 @@ class Ps4Async(Ps4Base):
     async def get_ddp_endpoint(self):
         """Return True if endpoint is created from socket."""
         protocol = None
-        if self.port != UDP_PORT and self._socket is None:
-            self._get_socket()
+        socket = None
+        if self.port != UDP_PORT:
+            socket = self._get_socket()
         _, protocol = await async_create_ddp_endpoint(
-            sock=self._socket)
+            sock=socket)
         if protocol is not None:
             self.ddp_protocol = protocol
             return True
