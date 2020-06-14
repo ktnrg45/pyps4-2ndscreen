@@ -279,7 +279,8 @@ async def async_get_ps_store_requests_tumbler(
     return responses
 
 
-async def async_search_ps_store(title: str, title_id: str, region: str):
+async def async_search_ps_store(
+        title: str, title_id: str, region: str, search_all: bool = False):
     """Search PS Store for title data."""
     # Check if title is a pinned title first and return.
     pinned = None
@@ -291,21 +292,22 @@ async def async_search_ps_store(title: str, title_id: str, region: str):
     searches = [
         async_get_ps_store_requests,
         async_get_ps_store_requests_tumbler,
-        'all'
     ]
-
+    if search_all:
+        searches.append('all')
     result_item = None
-    search_all = False
+    searching_all = False
     _LOGGER.debug("Starting search request")
 
     async with aiohttp.ClientSession() as session:
         for search in searches:
             if search == 'all':
-                searches.extend([_r for _r in COUNTRIES.keys()])
-                search_all = True
-                _LOGGER.info("Searching other regions; Result may be incorrect")
+                searches.extend([_r for _r in COUNTRIES])
+                searching_all = True
+                _LOGGER.info(
+                    "Searching other regions; Result may be incorrect")
                 continue
-            if search_all:
+            if searching_all:
                 region = search
                 search = async_get_ps_store_requests_tumbler
             await asyncio.sleep(0)

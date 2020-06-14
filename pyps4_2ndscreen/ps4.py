@@ -103,9 +103,14 @@ class Ps4Base():
         return None
 
     async def async_get_ps_store_data(
-            self, title: str, title_id: str, region: str) -> ResultItem:
+            self,
+            title: str,
+            title_id: str,
+            region: str,
+            search_all: bool = False) -> ResultItem:
         """Return title data from PS Store."""
-        result_item = await async_search_ps_store(title, title_id, region)
+        result_item = await async_search_ps_store(
+            title, title_id, region, search_all)
         if result_item is not None:
             _LOGGER.debug("Found Title: %s, URL: %s",
                           result_item.name, result_item.cover_art)
@@ -485,11 +490,11 @@ class Ps4Async(Ps4Base):
     async def get_ddp_endpoint(self):
         """Return True if endpoint is created from socket."""
         protocol = None
-        socket = None
+        sock = None
         if self.port != UDP_PORT:
-            socket = self._get_socket()
+            sock = self._get_socket()
         _, protocol = await async_create_ddp_endpoint(
-            sock=socket)
+            sock=sock)
         if protocol is not None:
             self.ddp_protocol = protocol
             return True
@@ -539,10 +544,11 @@ class Ps4Async(Ps4Base):
             # Queue task upon login.
             task = ('start_title', title_id, running_id)
             self.task_queue = task
-            self.wakeup()
             _LOGGER.info(
                 "Queuing Command: Start Title: title_id=%s, running_id=%s",
                 title_id, running_id)
+            if self.is_standby:
+                self.wakeup()
 
         else:
             await self.tcp_protocol.start_title(title_id, running_id)
@@ -571,10 +577,11 @@ class Ps4Async(Ps4Base):
             # Queue task upon login.
             task = ('remote_control', operation, hold_time)
             self.task_queue = task
-            self.wakeup()
             _LOGGER.info(
                 "Queuing Command: Remote Control: button=%s",
                 button_name)
+            if self.is_standby:
+                self.wakeup()
 
         else:
             await self.tcp_protocol.remote_control(operation, hold_time)

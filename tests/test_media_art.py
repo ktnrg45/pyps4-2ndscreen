@@ -252,7 +252,7 @@ def test_parent_item():
     """Test parent item is returned if present."""
     data = MOCK_DATA
     data["included"][0]["attributes"]["parent"] = MOCK_PARENT
-    result = media.parse_data(data, MOCK_TITLE_ID, MOCK_LANG)
+    result = media.parse_data(data, MOCK_TITLE_ID, MOCK_REGION_NAME)
     assert result.name == MOCK_PARENT_NAME
     assert result.sku_id == MOCK_TITLE_ID
     assert result.game_type == MOCK_TYPE
@@ -268,7 +268,7 @@ def test_result_item_missing_data():
     _data.pop("name")
     _data.pop("thumbnail-url-base")
     data["included"][0]["attributes"] = _data
-    result = media.parse_data(data, MOCK_TITLE_ID, MOCK_LANG)
+    result = media.parse_data(data, MOCK_TITLE_ID, MOCK_REGION_NAME)
     assert result is None
 
 
@@ -276,7 +276,7 @@ def test_result_item_diff_id():
     """Test result with different ID returns None."""
     data = MOCK_DATA
     data["included"][0]["attributes"]["default-sku-id"] = "CUSA00000"
-    result = media.parse_data(data, MOCK_TITLE_ID, MOCK_LANG)
+    result = media.parse_data(data, MOCK_TITLE_ID, MOCK_REGION_NAME)
     assert result is None
 
 

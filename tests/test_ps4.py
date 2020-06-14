@@ -58,9 +58,6 @@ def test_get_status():
     assert mock_status is not None
     assert mock_ps4.status_code == MOCK_DDP_DICT['status_code']
     assert len(mock_call.mock_calls) == 1
-    assert mock_call.call_args[0] == (MOCK_HOST, mock_ps4._socket)
-    # Sock should be none if no port specified
-    assert mock_ps4._socket is None
 
 
 def test_get_status_port():
@@ -73,9 +70,6 @@ def test_get_status_port():
     assert mock_status is not None
     assert mock_ps4.status_code == MOCK_DDP_DICT['status_code']
     assert len(mock_call.mock_calls) == 1
-    assert mock_call.call_args[0] == (MOCK_HOST, mock_ps4._socket)
-    assert mock_ps4._socket is not None
-    assert mock_ps4._socket.getsockname()[1] == MOCK_PORT
 
 
 def test_state_off():
@@ -510,6 +504,7 @@ def test_async_launch():
 def test_async_wakeup():
     """Test wakeup method."""
     mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS)
+    mock_ps4.status = MOCK_STANDBY_STATUS
     mock_ddp = DDPProtocol()
     mock_ddp.send_msg = MagicMock()
     mock_wake_msg = get_ddp_wake_message(MOCK_CREDS)
