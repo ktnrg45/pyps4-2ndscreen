@@ -207,6 +207,22 @@ async def test_search_ps_store():
 
 
 @pytest.mark.asyncio
+async def test_search_all():
+    """Test PS store search all."""
+    with patch(
+        "pyps4_2ndscreen.media_art.fetch", new=mock_coro(return_value=None)
+    ), patch(
+        "pyps4_2ndscreen.media_art.async_get_ps_store_requests_tumbler",
+        new=mock_coro(return_value=[]),
+    ) as mock_call:
+        result = await media.async_search_ps_store(
+            MOCK_TITLE, MOCK_TITLE_ID, MOCK_REGION_NAME, search_all=True
+        )
+    assert result is None
+    assert len(mock_call.mock_calls) > len(media.COUNTRIES)
+
+
+@pytest.mark.asyncio
 async def test_parse_errors():
     """Test PS store search errors."""
     with patch(
@@ -240,7 +256,7 @@ async def test_fetch_errors():
     mock_json.json.side_effect = (
         media.asyncio.TimeoutError,
         media.aiohttp.client_exceptions.ContentTypeError,
-        media.SSLError
+        media.SSLError,
     )
     session.get.return_value = asyncio.Future()
     session.get.return_value.set_result(mock_json)

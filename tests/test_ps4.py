@@ -501,7 +501,8 @@ def test_async_launch():
     mock_ddp.send_msg.assert_called_once_with(mock_ps4, mock_launch_msg)
 
 
-def test_async_wakeup():
+@pytest.mark.asyncio
+async def test_async_wakeup():
     """Test wakeup method."""
     mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS)
     mock_ps4.status = MOCK_STANDBY_STATUS
@@ -517,6 +518,12 @@ def test_async_wakeup():
     mock_ddp.send_msg.assert_called_once_with(mock_ps4, mock_wake_msg)
     assert mock_ps4._power_on
     assert not mock_ps4._power_off
+
+    mock_ps4.standby = mock_coro()
+    with patch('asyncio.ensure_future', side_effect=mock_ps4.standby):
+        mock_ps4.status = MOCK_DDP_DICT
+        mock_ps4.wakeup()
+    assert len(mock_ps4.standby.mock_calls) == 1
 
 
 @pytest.mark.asyncio
@@ -551,6 +558,11 @@ async def test_async_standby():
     await mock_ps4.standby()
     assert len(mock_ps4.tcp_protocol.standby.mock_calls) == 1
     assert mock_ps4._power_off
+
+    mock_ps4.wakeup = MagicMock()
+    mock_ps4.status = MOCK_STANDBY_STATUS
+    await mock_ps4.standby()
+    assert len(mock_ps4.wakeup.mock_calls) == 1
 
 
 @pytest.mark.asyncio
@@ -644,6 +656,7 @@ async def test_async_connect():
     """Test connect method."""
     mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS)
     mock_ps4.get_status = MagicMock()
+    mock_ps4.ddp_protocol = MagicMock()
     mock_tcp = MagicMock()
     mock_tcp_transport = MagicMock()
     mock_ps4.launch = MagicMock()

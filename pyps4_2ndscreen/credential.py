@@ -97,11 +97,6 @@ class Credentials:
                     _LOGGER.info(
                         "Credential service has timed out with no response")
                     raise CredentialTimeout
-                if not response:
-                    _LOGGER.info(
-                        "Credential service has timed out with no response")
-                    self.sock.close()
-                    raise CredentialTimeout
                 data = response[0]
                 address = response[1]
                 try:

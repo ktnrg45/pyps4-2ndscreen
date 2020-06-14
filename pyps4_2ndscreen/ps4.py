@@ -514,12 +514,12 @@ class Ps4Async(Ps4Base):
 
     async def standby(self):
         """Send Standby Packet."""
-        if self.tcp_protocol is None:
-            if self.is_running:
-                _LOGGER.info("Standby Failed: TCP Protocol does not exist")
-            elif self.is_standby:
-                self.wakeup()
-                _LOGGER.debug("Status is 'standby'; Trying Command: Wakeup")
+        if self.is_standby:
+            self.wakeup()
+            _LOGGER.debug("Status is 'standby'; Trying Command: Wakeup")
+
+        elif self.tcp_protocol is None:
+            _LOGGER.info("Standby Failed: TCP Protocol does not exist")
         else:
             self._power_off = True
             await self.tcp_protocol.standby()

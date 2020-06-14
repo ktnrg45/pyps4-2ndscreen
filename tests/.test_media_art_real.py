@@ -61,17 +61,16 @@ TEST_CREDS = "Imatest000"
 TEST_PS4 = ps4.Ps4Async(TEST_HOST, TEST_CREDS)
 
 
-async def _get_cover_art(index_num):
+async def _get_cover_art(item, search_all):
     start = time.time()
-    test_item = TEST_LIST.index(index_num)
-    item = TEST_LIST[test_item]
+    test_index = TEST_LIST.index(item)
     title = item[0]
     title_id = item[1]
     region = item[2]
 
     try:
         result_item = await TEST_PS4.async_get_ps_store_data(
-            title, title_id, region)
+            title, title_id, region, search_all=search_all)
     except PSDataIncomplete:
         _LOGGER.error(
             "PS Data Incomplete: %s, %s, %s", title, title_id, region)
@@ -92,7 +91,7 @@ async def _get_cover_art(index_num):
             "\n-------------"
             "\nSearch Time: %s seconds"
             "\nSearch Query:\n--> Title: %s\n--> SKU ID: %s\n--> Region: %s\n",
-            TEST_LIST.index(index_num),
+            test_index,
             result_item.name,
             result_item.cover_art,
             round(elapsed, 2),
@@ -106,10 +105,12 @@ async def _get_cover_art(index_num):
 async def _get_tests():
     tests = []
     fails = False
-    for index_num in TEST_LIST:
-        test = _get_cover_art(index_num)
+    for item in TEST_LIST:
+        test = _get_cover_art(item, search_all=False)
         tests.append(test)
-    test_search_all = tests.pop(0)
+    tests.pop(0)
+    test_search_all = _get_cover_art(TEST_LIST[0], search_all=True)
+
     results = await asyncio.gather(*tests)
     for index, item in enumerate(results):
         if item is not None:
