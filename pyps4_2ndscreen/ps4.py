@@ -17,6 +17,8 @@ from .ddp import (
     async_create_ddp_endpoint,
     get_socket,
     UDP_PORT,
+    STATUS_OK,
+    STATUS_STANDBY,
 )
 from .errors import NotReady, UnknownButton, LoginFailed
 from .media_art import async_search_ps_store, ResultItem
@@ -40,9 +42,6 @@ BUTTONS = {
 }
 
 PS_HOLD_TIME = 2000
-
-STATUS_OK = 200
-STATUS_STANDBY = 620
 
 
 class Ps4Base():
@@ -439,7 +438,7 @@ class Ps4Async(Ps4Base):
             self.ddp_protocol.send_msg(
                 self, get_ddp_launch_message(self.credential))
 
-    def wakeup(self):
+    def wakeup(self, ignore_conflict=True):
         """Send Wakeup packet."""
         if self.ddp_protocol is None:
             _LOGGER.error("DDP Protocol does not exist")
@@ -450,9 +449,9 @@ class Ps4Async(Ps4Base):
                 self.ddp_protocol.send_msg(
                     self, get_ddp_wake_message(self.credential))
                 _LOGGER.debug("Command: Wakeup")
-            elif self.is_running:
+            elif self.is_running and ignore_conflict:
                 _LOGGER.debug("Status is 'running'; Trying Command: Standby")
-                asyncio.ensure_future(self.standby)
+                asyncio.ensure_future(self.standby())
 
     async def change_ddp_endpoint(self, port: int, close_old: bool = False):
         """Return True if new endpoint is created."""
@@ -512,9 +511,9 @@ class Ps4Async(Ps4Base):
             _LOGGER.debug("Logging in with PSN user: %s", self.credential)
             await self.tcp_protocol.login(pin, power_on, self.login_delay)
 
-    async def standby(self):
+    async def standby(self, ignore_conflict=True):
         """Send Standby Packet."""
-        if self.is_standby:
+        if self.is_standby and ignore_conflict:
             self.wakeup()
             _LOGGER.debug("Status is 'standby'; Trying Command: Wakeup")
 

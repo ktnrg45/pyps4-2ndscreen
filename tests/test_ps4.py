@@ -27,19 +27,8 @@ from .test_ddp import (
     MOCK_DDP_DICT,
     MOCK_STATUS_REST,
     MOCK_STANDBY_CODE,
+    MOCK_STANDBY_STATUS,
 )
-
-MOCK_STANDBY_STATUS = {
-    "host-type": MOCK_HOST_TYPE,
-    "host-ip": MOCK_HOST,
-    "host-request-port": MOCK_TCP_PORT,
-    "host-id": MOCK_HOST_ID,
-    "host-name": MOCK_HOST_NAME,
-    "status": MOCK_STATUS_REST,
-    "status_code": MOCK_STANDBY_CODE,
-    "device-discovery-protocol-version": MOCK_DDP_VERSION,
-    "system-version": MOCK_SYSTEM_VERSION,
-}
 
 MOCK_COVER_URL = "https://someurl.com"
 MOCK_REGION = "United States"
@@ -520,9 +509,8 @@ async def test_async_wakeup():
     assert not mock_ps4._power_off
 
     mock_ps4.standby = mock_coro()
-    with patch('asyncio.ensure_future', side_effect=mock_ps4.standby):
-        mock_ps4.status = MOCK_DDP_DICT
-        mock_ps4.wakeup()
+    mock_ps4.status = MOCK_DDP_DICT
+    mock_ps4.wakeup()
     assert len(mock_ps4.standby.mock_calls) == 1
 
 

@@ -7,6 +7,7 @@ import socket
 import logging
 import select
 import asyncio
+import time
 from typing import Optional
 
 _LOGGER = logging.getLogger(__name__)
@@ -24,6 +25,11 @@ DDP_MSG_TYPES = (DDP_TYPE_SEARCH, DDP_TYPE_LAUNCH, DDP_TYPE_WAKEUP)
 
 DEFAULT_POLL_COUNT = 5
 
+DEFAULT_STANDBY_DELAY = 50
+
+STATUS_OK = 200
+STATUS_STANDBY = 620
+
 
 class DDPProtocol(asyncio.DatagramProtocol):
     """Async UDP Client."""
@@ -37,6 +43,7 @@ class DDPProtocol(asyncio.DatagramProtocol):
         self._remote_port = DDP_PORT
         self._local_port = UDP_PORT
         self._message = get_ddp_search_message()
+        self._standby_start = 0
 
     def __repr__(self):
         return (
@@ -65,6 +72,13 @@ class DDPProtocol(asyncio.DatagramProtocol):
 
     def send_msg(self, ps4, message=None):
         """Send Message."""
+        # PS4 won't respond to polls right after standby
+        if self.polls_disabled:
+            elapsed = time.time() - self._standby_start
+            seconds = DEFAULT_STANDBY_DELAY - elapsed
+            _LOGGER.debug("Polls disabled for %s seconds", round(seconds, 2))
+            return
+        self._standby_start = 0
         if message is None:
             message = self._message
         sock = self._transport.get_extra_info('socket')
@@ -113,6 +127,14 @@ class DDPProtocol(asyncio.DatagramProtocol):
                 if old_status != data:
                     _LOGGER.debug("Status: %s", ps4.status)
                     callback()
+                    # Status changed from OK to Standby/Turned Off
+                    if old_status.get('status_code') == STATUS_OK and \
+                            ps4.status.get('status_code') == STATUS_STANDBY:
+                        self._standby_start = time.time()
+                        _LOGGER.debug(
+                            "Status changed from OK to Standby."
+                            "Disabling polls for %s seconds",
+                            DEFAULT_STANDBY_DELAY)
 
     def connection_lost(self, exc):
         """On Connection Lost."""
@@ -157,6 +179,15 @@ class DDPProtocol(asyncio.DatagramProtocol):
     def remote_port(self):
         """Return remote port."""
         return self._remote_port
+
+    @property
+    def polls_disabled(self):
+        """Return true if polls disabled."""
+        elapsed = time.time() - self._standby_start
+        if elapsed < DEFAULT_STANDBY_DELAY:
+            return True
+        self._standby_start = 0
+        return False
 
 
 async def async_create_ddp_endpoint(sock=None):

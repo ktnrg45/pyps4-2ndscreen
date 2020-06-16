@@ -54,6 +54,18 @@ MOCK_DDP_DICT = {
     "system-version": MOCK_SYSTEM_VERSION,
 }
 
+MOCK_STANDBY_STATUS = {
+    "host-type": MOCK_HOST_TYPE,
+    "host-ip": MOCK_HOST,
+    "host-request-port": MOCK_TCP_PORT,
+    "host-id": MOCK_HOST_ID,
+    "host-name": MOCK_HOST_NAME,
+    "status": MOCK_STATUS_REST,
+    "status_code": MOCK_STANDBY_CODE,
+    "device-discovery-protocol-version": MOCK_DDP_VERSION,
+    "system-version": MOCK_SYSTEM_VERSION,
+}
+
 MOCK_DDP_RESPONSE = '''
     HTTP/1.1 {} {}\n
     host-id:{}\n
@@ -76,6 +88,26 @@ MOCK_DDP_RESPONSE = '''
     MOCK_DDP_VERSION,
     MOCK_SYSTEM_VERSION,
 )
+
+MOCK_DDP_RESPONSE_STANDBY = '''
+    HTTP/1.1 {} {}\n
+    host-id:{}\n
+    host-type:{}\n
+    host-name:{}\n
+    host-request-port:{}\n
+    device-discovery-protocol-version:{}\n
+    system-version:{}\n
+'''.format(
+    MOCK_STANDBY_CODE,
+    MOCK_STATUS_REST,
+    MOCK_HOST_ID,
+    MOCK_HOST_TYPE,
+    MOCK_HOST_NAME,
+    MOCK_TCP_PORT,
+    MOCK_DDP_VERSION,
+    MOCK_SYSTEM_VERSION,
+)
+
 
 MOCK_DDP_PROTO_HOST = '127.0.0.2'
 MOCK_DDP_PROTO_HOST2 = '127.0.0.3'
@@ -221,6 +253,36 @@ def test_ps4_unavailable():
     assert mock_ps4.unreachable is True
     assert mock_ps4.status is None
     assert len(mock_cb.mock_calls) == 1
+
+
+def test_ddp_disable_polls():
+    """Tests for diabling polls."""
+    mock_ddp = ddp.DDPProtocol()
+    mock_ddp._transport = MagicMock()
+    mock_cb = MagicMock()
+    mock_ps4 = ps4(MOCK_HOST, MOCK_CREDS)
+    mock_ps4.set_protocol(mock_ddp)
+    mock_ps4.add_callback(mock_cb)
+    mock_ps4.status = MOCK_DDP_DICT
+
+    mock_ddp.send_msg(mock_ps4)
+    assert len(mock_ddp._transport.sendto.mock_calls) == 1
+    assert mock_ps4.status is not None
+    assert not mock_ddp.polls_disabled
+
+    # Diabled polls
+    mock_ddp._handle(
+        MOCK_DDP_RESPONSE_STANDBY.encode(),
+        (mock_ps4.host, MOCK_RANDOM_PORT))
+    mock_ddp.send_msg(mock_ps4)
+    assert len(mock_ddp._transport.sendto.mock_calls) == 1
+    assert mock_ddp.polls_disabled
+
+    # Disabled timer expires
+    mock_ddp._standby_start = 0
+    mock_ddp.send_msg(mock_ps4)
+    assert len(mock_ddp._transport.sendto.mock_calls) == 2
+    assert not mock_ddp.polls_disabled
 
 
 def test_discovery():
