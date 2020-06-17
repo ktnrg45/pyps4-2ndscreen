@@ -279,7 +279,7 @@ def get_socket(timeout=3, port: Optional[int] = UDP_PORT):
         if port != UDP_PORT:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         if hasattr(socket, "SO_REUSEPORT"):
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)  # noqa: pylint: disable=no-member
         sock.bind((UDP_IP, port))
     except socket.error as error:
         _LOGGER.error(

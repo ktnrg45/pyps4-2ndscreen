@@ -332,7 +332,7 @@ async def test_create_ddp_protocol():
         mock_loop.create_task = mock_create_task
 
         local_addr = (ddp.UDP_IP, ddp.UDP_PORT)
-        reuse_port = True
+        reuse_port = hasattr(socket, "SO_REUSEPORT")
         allow_broadcast = True
         sock = None
         mock_kwargs = {
@@ -341,7 +341,8 @@ async def test_create_ddp_protocol():
             'allow_broadcast': allow_broadcast,
             'sock': sock,
         }
-        await ddp.async_create_ddp_endpoint()
+        _, mock_ddp = await ddp.async_create_ddp_endpoint()
+        mock_ddp.close()
         args, kwargs = mock_call.call_args
         assert callable(args[0])  # Hack for lambda: DDPProtocol()
         for key, value in kwargs.items():
@@ -375,7 +376,8 @@ async def test_create_ddp_protocol_sock():
             'allow_broadcast': allow_broadcast,
             'sock': sock,
         }
-        await ddp.async_create_ddp_endpoint(sock=sock)
+        _, mock_ddp = await ddp.async_create_ddp_endpoint(sock=sock)
+        mock_ddp.close()
         args, kwargs = mock_call.call_args
         assert callable(args[0])  # Hack for lambda: DDPProtocol()
         for key, value in kwargs.items():

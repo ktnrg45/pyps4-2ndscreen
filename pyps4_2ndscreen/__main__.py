@@ -295,6 +295,7 @@ def interactive(ip_address=None, credentials=None):
         curses.wrapper(_interactive, _ps4)
 
 
+# pylint: disable=no-member
 def _interactive(stdscr, ps4):
     key_mapping = {
         'W': ('wakeup', ps4.wakeup),
@@ -324,12 +325,14 @@ def _interactive(stdscr, ps4):
     _run(stdscr, ps4, key_mapping)
 
 
+# pylint: disable=no-member
 def _write_str(
         stdscr, text, color=1):
     stdscr.clrtoeol()
     stdscr.addstr(text, curses.color_pair(color))
 
 
+# pylint: disable=no-member
 def _init_window(stdscr, _status):
     stdscr.addstr(
         0, 0,
@@ -461,6 +464,7 @@ def _handle_require_on(stdscr, mapping):
     return (fail, arg)
 
 
+# pylint: disable=no-member
 def _handle_key(stdscr, key, key_mapping):
     fail = False
     arg = ''
@@ -491,6 +495,7 @@ def _handle_key(stdscr, key, key_mapping):
     return True
 
 
+# pylint: disable=no-member
 def _run(stdscr, ps4, key_mapping):
     _status = ps4.get_status()
     stdscr.scrollok(True)
