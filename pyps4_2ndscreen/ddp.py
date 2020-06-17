@@ -128,7 +128,8 @@ class DDPProtocol(asyncio.DatagramProtocol):
                     _LOGGER.debug("Status: %s", ps4.status)
                     callback()
                     # Status changed from OK to Standby/Turned Off
-                    if old_status.get('status_code') == STATUS_OK and \
+                    if old_status is not None and \
+                            old_status.get('status_code') == STATUS_OK and \
                             ps4.status.get('status_code') == STATUS_STANDBY:
                         self._standby_start = time.time()
                         _LOGGER.debug(

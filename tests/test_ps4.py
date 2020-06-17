@@ -15,18 +15,13 @@ from pyps4_2ndscreen.ddp import (
 
 from .test_ddp import (
     MOCK_HOST_ID,
-    MOCK_HOST_TYPE,
     MOCK_HOST_NAME,
-    MOCK_TCP_PORT,
     MOCK_TITLE_NAME,
     MOCK_TITLE_ID,
-    MOCK_DDP_VERSION,
     MOCK_SYSTEM_VERSION,
     MOCK_CREDS,
     MOCK_HOST,
     MOCK_DDP_DICT,
-    MOCK_STATUS_REST,
-    MOCK_STANDBY_CODE,
     MOCK_STANDBY_STATUS,
 )
 
