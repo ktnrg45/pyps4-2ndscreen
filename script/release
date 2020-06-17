@@ -72,8 +72,8 @@ git push
 
 read -p "Enter release message: " msg
 
-API_JSON="$(printf '{"tag_name": "%s","target_commitish": "master","name": "%s","body": "%s","draft": false,"prerelease": false}' "$VERSION" "$VERSION" "$msg")"
-curl -H "Authorization: token $ACCESS_TOKEN" --data $API_JSON --url $API_URL
+API_JSON="$(printf "{\"tag_name\": \"%s\",\"target_commitish\": \"master\",\"name\": \"%s\",\"body\": \"%s\",\"draft\": false,\"prerelease\": false}" "$VERSION" "$VERSION" "$msg")"
+curl -H "Authorization: token $ACCESS_TOKEN" --data "$API_JSON" --url $API_URL
 
 read -p "Upload to pypi?: y> " msg_pypi
 if [ "$msg_test" == "y" ];
