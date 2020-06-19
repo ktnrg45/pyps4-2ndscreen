@@ -537,6 +537,7 @@ async def test_async_standby():
     assert len(mock_tcp.standby.mock_calls) == 0
     assert not mock_ps4._power_off
 
+    mock_ps4.status = MOCK_DDP_DICT
     mock_ps4.tcp_protocol = mock_tcp
     await mock_ps4.standby()
     assert len(mock_ps4.tcp_protocol.standby.mock_calls) == 1
@@ -694,6 +695,58 @@ async def test_async_connect():
     # Assert that auto login performed, since powering on.
     assert len(mock_ps4.login.mock_calls) == 1
     assert not mock_ps4._power_on
+
+
+@pytest.mark.asyncio
+async def test_async_connect_if_no_tcp():
+    """Test connect if not tcp protocol."""
+    mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS)
+    mock_tcp_protocol = MagicMock()
+    mock_tcp_transport = MagicMock()
+    mock_ps4.ddp_protocol = MagicMock()
+    mock_ps4.launch = MagicMock()
+    mock_ps4.status = MOCK_DDP_DICT
+    assert mock_ps4.is_running
+
+    mock_ps4.tcp_protocol = None
+    mock_ps4._connected = False
+    mock_tcp_protocol.start_title = mock_coro()
+    mock_ps4.connection.async_connect = mock_coro(
+        return_value=(mock_tcp_transport, mock_tcp_protocol)
+    )
+    await mock_ps4.start_title(MagicMock())
+    assert mock_ps4.tcp_protocol == mock_tcp_protocol
+    assert len(mock_tcp_protocol.start_title.mock_calls) == 1
+
+    mock_ps4.tcp_protocol = None
+    mock_ps4._connected = False
+    mock_tcp_protocol.remote_control = mock_coro()
+    mock_ps4.connection.async_connect = mock_coro(
+        return_value=(mock_tcp_transport, mock_tcp_protocol)
+    )
+    await mock_ps4.remote_control(MOCK_RC_ENTER)
+    assert mock_ps4.tcp_protocol == mock_tcp_protocol
+    assert len(mock_tcp_protocol.remote_control.mock_calls) == 1
+
+    mock_ps4.tcp_protocol = None
+    mock_ps4._connected = False
+    mock_tcp_protocol.login = mock_coro()
+    mock_ps4.connection.async_connect = mock_coro(
+        return_value=(mock_tcp_transport, mock_tcp_protocol)
+    )
+    await mock_ps4.login()
+    assert mock_ps4.tcp_protocol == mock_tcp_protocol
+    assert len(mock_tcp_protocol.login.mock_calls) == 1
+
+    mock_ps4.tcp_protocol = None
+    mock_ps4._connected = False
+    mock_tcp_protocol.standby = mock_coro()
+    mock_ps4.connection.async_connect = mock_coro(
+        return_value=(mock_tcp_transport, mock_tcp_protocol)
+    )
+    await mock_ps4.standby()
+    assert mock_ps4.tcp_protocol == mock_tcp_protocol
+    assert len(mock_tcp_protocol.standby.mock_calls) == 1
 
 
 @pytest.mark.asyncio

@@ -506,23 +506,28 @@ class Ps4Async(Ps4Base):
         """
         if self.tcp_protocol is None:
             _LOGGER.info("Login failed: TCP Protocol does not exist")
-        else:
+            if self.is_running:
+                await self.async_connect()
+
+        if self.tcp_protocol is not None:
             power_on = self._power_on
             _LOGGER.debug("Logging in with PSN user: %s", self.credential)
             await self.tcp_protocol.login(pin, power_on, self.login_delay)
 
     async def standby(self, ignore_conflict=True):
         """Send Standby Packet."""
-        if self.is_standby and ignore_conflict:
-            self.wakeup()
-            _LOGGER.debug("Status is 'standby'; Trying Command: Wakeup")
-
-        elif self.tcp_protocol is None:
-            _LOGGER.info("Standby Failed: TCP Protocol does not exist")
-        else:
-            self._power_off = True
-            await self.tcp_protocol.standby()
-            _LOGGER.debug("Command: Standby")
+        if self.is_standby:
+            if ignore_conflict:
+                self.wakeup()
+                _LOGGER.debug("Status is 'standby'; Trying Command: Wakeup")
+        elif self.is_running:
+            if self.tcp_protocol is None:
+                _LOGGER.info("Standby Failed: TCP Protocol does not exist")
+                await self.async_connect()
+            if self.tcp_protocol is not None:
+                self._power_off = True
+                await self.tcp_protocol.standby()
+                _LOGGER.debug("Command: Standby")
 
     async def start_title(
             self, title_id: str, running_id: Optional[str] = None):
@@ -548,8 +553,10 @@ class Ps4Async(Ps4Base):
                 title_id, running_id)
             if self.is_standby:
                 self.wakeup()
+            elif self.is_running:
+                await self.async_connect()
 
-        else:
+        if self.tcp_protocol is not None:
             await self.tcp_protocol.start_title(title_id, running_id)
             _LOGGER.debug(
                 "Command: Start Title: title_id=%s, running_id=%s",
@@ -581,8 +588,10 @@ class Ps4Async(Ps4Base):
                 button_name)
             if self.is_standby:
                 self.wakeup()
+            elif self.is_running:
+                await self.async_connect()
 
-        else:
+        if self.tcp_protocol is not None:
             await self.tcp_protocol.remote_control(operation, hold_time)
             _LOGGER.debug(
                 "Command: Remote Control: button=%s",
