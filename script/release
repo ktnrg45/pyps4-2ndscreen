@@ -77,7 +77,7 @@ API_JSON="$(printf "{\"tag_name\": \"%s\",\"target_commitish\": \"master\",\"nam
 curl -H "Authorization: token $ACCESS_TOKEN" --data "$API_JSON" --url $API_URL
 
 read -p "Upload to pypi?: y> " msg_pypi
-if [ "$msg_test" == "y" ];
+if [ "$msg_pypi" == "y" ];
 then
 	echo "Uploading to pypi."
 	rm -rf dist
