@@ -3,7 +3,8 @@
 DEV_BRANCH="dev"
 MASTER_BRANCH="master"
 CURRENT="Already up to date."
-ACCESS_TOKEN="$(git config --global github.token)"
+USER="$(git config --get user.name)"
+ACCESS_TOKEN="$(git config --get user.token)"
 repo_url="$(echo $(git config --get remote.origin.url) | grep -Po '.*(?=\.)')"
 url="$(echo $repo_url | sed 's\'github.com'\'api.github.com/repos'\g')"
 API_URL=$(printf "%s/releases" $url)
