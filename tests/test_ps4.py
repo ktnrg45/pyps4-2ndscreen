@@ -56,6 +56,14 @@ def test_get_status_port():
     assert len(mock_call.mock_calls) == 1
 
 
+def test_port_change():
+    """Test that port is changed."""
+    mock_ps4 = ps4.Ps4Legacy(MOCK_HOST, MOCK_CREDS)
+    assert mock_ps4.port != MOCK_PORT
+    mock_ps4.change_port(MOCK_PORT)
+    assert mock_ps4.port == MOCK_PORT
+
+
 def test_state_off():
     """Test state ff is properly set."""
     mock_ps4 = ps4.Ps4Legacy(MOCK_HOST, MOCK_CREDS)
@@ -505,8 +513,24 @@ async def test_async_wakeup():
 
     mock_ps4.standby = mock_coro()
     mock_ps4.status = MOCK_DDP_DICT
-    mock_ps4.wakeup()
+    mock_ps4.wakeup(True)
     assert len(mock_ps4.standby.mock_calls) == 1
+
+
+@pytest.mark.asyncio
+async def test_async_toggle():
+    """Test toggle method."""
+    mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS)
+    mock_ps4.wakeup = MagicMock()
+    mock_ps4.standby = mock_coro()
+
+    mock_ps4.status = MOCK_STANDBY_STATUS
+    await mock_ps4.toggle()
+    assert len(mock_ps4.wakeup.mock_calls) == 1
+
+    mock_ps4.status = MOCK_DDP_DICT
+    await mock_ps4.toggle()
+    mock_ps4.standby.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -545,7 +569,7 @@ async def test_async_standby():
 
     mock_ps4.wakeup = MagicMock()
     mock_ps4.status = MOCK_STANDBY_STATUS
-    await mock_ps4.standby()
+    await mock_ps4.standby(True)
     assert len(mock_ps4.wakeup.mock_calls) == 1
 
 

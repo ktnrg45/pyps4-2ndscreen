@@ -80,6 +80,10 @@ class Ps4Base():
             )
         )
 
+    def change_port(self, port):
+        """Change DDP Port."""
+        self._port = port
+
     def _get_socket(self):
         return get_socket(port=self.port)
 
@@ -438,7 +442,7 @@ class Ps4Async(Ps4Base):
             self.ddp_protocol.send_msg(
                 self, get_ddp_launch_message(self.credential))
 
-    def wakeup(self, ignore_conflict=True):
+    def wakeup(self, ignore_conflict=False):
         """Send Wakeup packet."""
         if self.ddp_protocol is None:
             _LOGGER.error("DDP Protocol does not exist")
@@ -514,7 +518,7 @@ class Ps4Async(Ps4Base):
             _LOGGER.debug("Logging in with PSN user: %s", self.credential)
             await self.tcp_protocol.login(pin, power_on, self.login_delay)
 
-    async def standby(self, ignore_conflict=True):
+    async def standby(self, ignore_conflict=False):
         """Send Standby Packet."""
         if self.is_standby:
             if ignore_conflict:
@@ -528,6 +532,13 @@ class Ps4Async(Ps4Base):
                 self._power_off = True
                 await self.tcp_protocol.standby()
                 _LOGGER.debug("Command: Standby")
+
+    async def toggle(self):
+        """Toggle Power."""
+        if self.is_standby:
+            self.wakeup()
+        elif self.is_running:
+            await self.standby()
 
     async def start_title(
             self, title_id: str, running_id: Optional[str] = None):
