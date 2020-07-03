@@ -1,6 +1,6 @@
 INFO:__main__:
-Test last ran on Sat Jun 20 08:48:45 2020
-Version: 1.1.0
+Test last ran on Fri Jul  3 10:05:49 2020
+Version: 1.1.1
 
 tests/.test_media_art_real.py:111: RuntimeWarning: coroutine '_get_cover_art' was never awaited
   tests.pop(0)
@@ -20,9 +20,9 @@ INFO:pyps4_2ndscreen.media_art:Direct Match
 INFO:__main__:
 Result 14:
 --> Title: Netflix
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/US/en/19/UT0007-CUSA00129_00-NETFLIXPOLLUX001/1592614644000/image
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/US/en/19/UT0007-CUSA00129_00-NETFLIXPOLLUX001/1593738044000/image
 -------------
-Search Time: 1.64 seconds
+Search Time: 0.95 seconds
 Search Query:
 --> Title: Netflix
 --> SKU ID: CUSA00129
@@ -32,9 +32,9 @@ INFO:pyps4_2ndscreen.media_art:Direct Match
 INFO:__main__:
 Result 15:
 --> Title: Netflix
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/ES/es/19/EP4350-CUSA00127_00-NETFLIXPOLLUX001/1592614643000/image
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/ES/es/19/EP4350-CUSA00127_00-NETFLIXPOLLUX001/1593738019000/image
 -------------
-Search Time: 1.75 seconds
+Search Time: 1.85 seconds
 Search Query:
 --> Title: Netflix
 --> SKU ID: CUSA00127
@@ -42,23 +42,11 @@ Search Query:
 
 INFO:pyps4_2ndscreen.media_art:Direct Match
 INFO:__main__:
-Result 17:
---> Title: Netflix
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/PT/pt/19/EP4350-CUSA00127_00-NETFLIXPOLLUX001/1592614644000/image
--------------
-Search Time: 1.85 seconds
-Search Query:
---> Title: Netflix
---> SKU ID: CUSA00127
---> Region: Portugal
-
-INFO:pyps4_2ndscreen.media_art:Direct Match
-INFO:__main__:
 Result 16:
 --> Title: YouTube
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/PT/pt/19/EP4381-CUSA01116_00-YOUTUBESCEE00000/1592614832000/image
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/PT/pt/19/EP4381-CUSA01116_00-YOUTUBESCEE00000/1593738038000/image
 -------------
-Search Time: 1.9 seconds
+Search Time: 2.0 seconds
 Search Query:
 --> Title: Youtube
 --> SKU ID: CUSA01116
@@ -66,23 +54,23 @@ Search Query:
 
 INFO:pyps4_2ndscreen.media_art:Direct Match
 INFO:__main__:
-Result 21:
---> Title: Fortnite
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/ES/es/19/EP1464-CUSA07669_00-FORTNITETESTING1/1592614820000/image
+Result 17:
+--> Title: Netflix
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/PT/pt/19/EP4350-CUSA00127_00-NETFLIXPOLLUX001/1593738020000/image
 -------------
-Search Time: 2.64 seconds
+Search Time: 2.08 seconds
 Search Query:
---> Title: Fortnite
---> SKU ID: CUSA07669
---> Region: Spain
+--> Title: Netflix
+--> SKU ID: CUSA00127
+--> Region: Portugal
 
 INFO:pyps4_2ndscreen.media_art:Direct Match
 INFO:__main__:
 Result 18:
 --> Title: Fortnite
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/PT/pt/19/EP1464-CUSA07669_00-FORTNITETESTING1/1592614822000/image
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/PT/pt/19/EP1464-CUSA07669_00-FORTNITETESTING1/1593738023000/image
 -------------
-Search Time: 3.22 seconds
+Search Time: 3.35 seconds
 Search Query:
 --> Title: Fortnite
 --> SKU ID: CUSA07669
@@ -90,83 +78,11 @@ Search Query:
 
 INFO:pyps4_2ndscreen.media_art:Direct Match
 INFO:__main__:
-Result 8:
---> Title: Marvel’s Spider-Man
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/NL/nl/19/EP9000-CUSA11993_00-MARVELSSPIDERMAN/1592442384000/image
--------------
-Search Time: 3.27 seconds
-Search Query:
---> Title: Marvel's Spider-Man
---> SKU ID: CUSA11993
---> Region: Nederland
-
-INFO:pyps4_2ndscreen.media_art:Direct Match
-INFO:__main__:
-Result 37:
---> Title: Days Gone
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/US/en/19/UP9000-CUSA08966_00-DAYSGONECOMPLETE/1592614301000/image
--------------
-Search Time: 4.25 seconds
-Search Query:
---> Title: Days Gone
---> SKU ID: CUSA08966
---> Region: United States
-
-INFO:pyps4_2ndscreen.media_art:Direct Match
-INFO:__main__:
-Result 10:
---> Title: Marvel's Человек-паук
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/RU/ru/19/EP9000-CUSA11995_00-MARVELSSPIDERMAN/1592442028000/image
--------------
-Search Time: 4.28 seconds
-Search Query:
---> Title: Marvel's Spider-Man
---> SKU ID: CUSA11995
---> Region: Russia
-
-INFO:pyps4_2ndscreen.media_art:Direct Match
-INFO:__main__:
-Result 33:
---> Title: Gran Turismo Sport
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/US/en/19/UP9000-CUSA03220_00-GTSPORTS00000000/1592613461000/image
--------------
-Search Time: 4.29 seconds
-Search Query:
---> Title: Gran TurismoSPORT
---> SKU ID: CUSA03220
---> Region: United States
-
-INFO:pyps4_2ndscreen.media_art:Direct Match
-INFO:__main__:
-Result 32:
---> Title: Watch Dogs 2
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/US/en/19/UP0001-CUSA04459_00-WD2FULLGAME00000/1592614668000/image
--------------
-Search Time: 4.38 seconds
-Search Query:
---> Title: WATCH_DOGS® 2
---> SKU ID: CUSA04459
---> Region: United States
-
-INFO:pyps4_2ndscreen.media_art:Direct Match
-INFO:__main__:
-Result 4:
---> Title: Marvel’s Spider-Man
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/FR/fr/19/EP9000-CUSA11993_00-MARVELSSPIDERMAN/1592442384000/image
--------------
-Search Time: 4.47 seconds
-Search Query:
---> Title: Marvel's Spider-Man
---> SKU ID: CUSA11993
---> Region: France
-
-INFO:pyps4_2ndscreen.media_art:Direct Match
-INFO:__main__:
 Result 39:
 --> Title: Diablo III: Eternal Collection
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/FR/fr/19/EP0002-CUSA00433_00-D3ETERNALCOLL000/1592582235000/image
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/FR/fr/19/EP0002-CUSA00433_00-D3ETERNALCOLL000/1593651216000/image
 -------------
-Search Time: 4.64 seconds
+Search Time: 4.09 seconds
 Search Query:
 --> Title: Diablo III: Reaper of Souls – Ultimate Evil Edition
 --> SKU ID: CUSA00433
@@ -174,191 +90,70 @@ Search Query:
 
 INFO:pyps4_2ndscreen.media_art:Direct Match
 INFO:__main__:
-Result 36:
---> Title: EA SPORTS™ NHL™ 18 Édition Standard
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/FR/fr/19/EP0006-CUSA07580_00-NHLICEHOCKEY2018/1592589477000/image
+Result 33:
+--> Title: Gran Turismo Sport
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/US/en/19/UP9000-CUSA03220_00-GTSPORTS00000000/1593736250000/image
 -------------
-Search Time: 4.93 seconds
+Search Time: 4.38 seconds
 Search Query:
---> Title: NHL™ 18
---> SKU ID: CUSA07580
---> Region: France
+--> Title: Gran TurismoSPORT
+--> SKU ID: CUSA03220
+--> Region: United States
 
 INFO:pyps4_2ndscreen.media_art:Direct Match
 INFO:__main__:
-Result 6:
---> Title: Marvel's Spider-Man Game of the Year Edition
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/JP/ja/19/JP9000-CUSA09751_00-SMDIGITALDELUXE0/1592613926000/image
+Result 37:
+--> Title: Days Gone
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/US/en/19/UP9000-CUSA08966_00-DAYSGONECOMPLETE/1593736568000/image
 -------------
-Search Time: 4.95 seconds
+Search Time: 4.57 seconds
 Search Query:
---> Title: Marvel's Spider-Man
---> SKU ID: CUSA09751
---> Region: Japan
-
-INFO:pyps4_2ndscreen.media_art:Parent Match
-INFO:__main__:
-Result 5:
---> Title: Marvel’s Spider-Man
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/IT/it/19/EP9000-CUSA11993_00-MARVELSSPIDERMAN/1592442384/image
--------------
-Search Time: 4.97 seconds
-Search Query:
---> Title: Marvel's Spider-Man
---> SKU ID: CUSA11993
---> Region: Italy
+--> Title: Days Gone
+--> SKU ID: CUSA08966
+--> Region: United States
 
 INFO:pyps4_2ndscreen.media_art:Direct Match
 INFO:__main__:
-Result 19:
---> Title: BEYOND: Duas Almas™
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/PT/pt/19/EP9000-CUSA00512_00-GBEYONDTWO000001/1592268415000/image
+Result 32:
+--> Title: Watch Dogs 2
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/US/en/19/UP0001-CUSA04459_00-WD2FULLGAME00000/1593736252000/image
 -------------
-Search Time: 4.98 seconds
+Search Time: 5.16 seconds
 Search Query:
---> Title: Beyond: Two Souls™
---> SKU ID: CUSA00512
---> Region: Portugal
+--> Title: WATCH_DOGS® 2
+--> SKU ID: CUSA04459
+--> Region: United States
 
-INFO:pyps4_2ndscreen.media_art:Direct Match
-INFO:__main__:
-Result 2:
---> Title: Marvel’s Spider-Man
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/AU/en/19/EP9000-CUSA11993_00-MARVELSSPIDERMAN/1592442383000/image
--------------
-Search Time: 5.0 seconds
-Search Query:
---> Title: Marvel's Spider-Man
---> SKU ID: CUSA11993
---> Region: Australia
-
+ERROR:asyncio:SSL error in data received
+protocol: <asyncio.sslproto.SSLProtocol object at 0x7f8e7f9160>
+transport: <_SelectorSocketTransport fd=36 read=polling write=<idle, bufsize=0>>
+Traceback (most recent call last):
+  File "/usr/lib/python3.7/asyncio/sslproto.py", line 526, in data_received
+    ssldata, appdata = self._sslpipe.feed_ssldata(data)
+  File "/usr/lib/python3.7/asyncio/sslproto.py", line 207, in feed_ssldata
+    self._sslobj.unwrap()
+  File "/usr/lib/python3.7/ssl.py", line 767, in unwrap
+    return self._sslobj.shutdown()
+ssl.SSLError: [SSL: KRB5_S_INIT] application data after close notify (_ssl.c:2609)
 INFO:pyps4_2ndscreen.media_art:Direct Match
 INFO:__main__:
 Result 34:
 --> Title: Ratchet and Clank™
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/SE/en/19/EP9000-CUSA01073_00-RCPS400000000000/1592442218000/image
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/SE/en/19/EP9000-CUSA01073_00-RCPS400000000000/1592996715000/image
 -------------
-Search Time: 5.12 seconds
+Search Time: 5.46 seconds
 Search Query:
 --> Title: Ratchet & Clank™
 --> SKU ID: CUSA01073
 --> Region: Sweden
 
-INFO:pyps4_2ndscreen.media_art:Parent Match
-INFO:__main__:
-Result 11:
---> Title: Marvel’s Spider-Man
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/ES/es/19/EP9000-CUSA11994_00-MARVELSSPIDERMAN/1592437798/image
--------------
-Search Time: 5.26 seconds
-Search Query:
---> Title: Marvel's Spider-Man
---> SKU ID: CUSA11994
---> Region: Spain
-
-INFO:pyps4_2ndscreen.media_art:Direct Match
-INFO:__main__:
-Result 7:
---> Title: Marvel's Spider-Man Game Of The Year Edition
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/KR/ko/19/HP9000-CUSA09893_00-ASIAPLACEHOLDER1/1592355387000/image
--------------
-Search Time: 5.29 seconds
-Search Query:
---> Title: Marvel's Spider-Man
---> SKU ID: CUSA09893
---> Region: Korea
-
-INFO:pyps4_2ndscreen.media_art:Parent Match
-INFO:__main__:
-Result 9:
---> Title: Marvel’s Spider-Man
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/PT/pt/19/EP9000-CUSA11994_00-MARVELSSPIDERMAN/1592437798/image
--------------
-Search Time: 5.61 seconds
-Search Query:
---> Title: Marvel's Spider-Man
---> SKU ID: CUSA11994
---> Region: Portugal
-
-INFO:pyps4_2ndscreen.media_art:Direct Match
-INFO:__main__:
-Result 35:
---> Title: UNCHARTED The Nathan Drake Collection
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/US/en/19/UP9000-CUSA02320_00-UNCHARTEDTRILOGY/1592613167000/image
--------------
-Search Time: 5.8 seconds
-Search Query:
---> Title: Uncharted: The Nathan Drake Collection™
---> SKU ID: CUSA02320
---> Region: United States
-
-INFO:pyps4_2ndscreen.media_art:Direct Match
-INFO:__main__:
-Result 12:
---> Title: Marvel’s Spider-Man
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/SE/en/19/EP9000-CUSA11993_00-MARVELSSPIDERMAN/1592442383000/image
--------------
-Search Time: 5.86 seconds
-Search Query:
---> Title: Marvel's Spider-Man
---> SKU ID: CUSA11993
---> Region: Sweden
-
-INFO:pyps4_2ndscreen.media_art:Direct Match
-INFO:__main__:
-Result 3:
---> Title: Marvel’s Spider-Man
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/AT/de/19/EP9000-CUSA11993_00-MARVELSSPIDERMAN/1592442384000/image
--------------
-Search Time: 5.87 seconds
-Search Query:
---> Title: Marvel's Spider-Man
---> SKU ID: CUSA11993
---> Region: Austria
-
-INFO:pyps4_2ndscreen.media_art:Direct Match
-INFO:__main__:
-Result 41:
---> Title: The Last of Us Remastered PlayStation®Hits
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/JP/ja/19/JP9000-CUSA00554_00-THELASTOFUS00000/1592614514000/image
--------------
-Search Time: 5.96 seconds
-Search Query:
---> Title: The Last of Us™ Remastered
---> SKU ID: CUSA00554
---> Region: Japan
-
-INFO:pyps4_2ndscreen.media_art:Direct Match
-INFO:__main__:
-Result 40:
---> Title: Цифровое издание «UNCHARTED™ 4: Путь вора»
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/UA/ru/19/EP9000-CUSA04529_00-UNCHARTED4000000/1592441316000/image
--------------
-Search Time: 6.13 seconds
-Search Query:
---> Title: Uncharted 4: A Thief’s End
---> SKU ID: CUSA04529
---> Region: Ukraine
-
-INFO:pyps4_2ndscreen.media_art:Direct Match
-INFO:__main__:
-Result 20:
---> Title: Shadow of the Colossus™
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/TW/en/19/HP9000-CUSA08804_00-SOTC0000000000AS/1592538944000/image
--------------
-Search Time: 6.34 seconds
-Search Query:
---> Title: Shadow of the Colossus
---> SKU ID: CUSA08804
---> Region: Taiwan
-
 INFO:pyps4_2ndscreen.media_art:Direct Match
 INFO:__main__:
 Result 1:
 --> Title: Marvel's Spider-Man: Game of the Year Edition
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/AR/en/19/UP9000-CUSA02299_00-MARVELSSMGOTY000/1592614838000/image
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/AR/en/19/UP9000-CUSA02299_00-MARVELSSMGOTY000/1593737865000/image
 -------------
-Search Time: 6.35 seconds
+Search Time: 5.68 seconds
 Search Query:
 --> Title: Marvel's Spider-Man
 --> SKU ID: CUSA02299
@@ -366,11 +161,71 @@ Search Query:
 
 INFO:pyps4_2ndscreen.media_art:Direct Match
 INFO:__main__:
+Result 10:
+--> Title: Marvel's Человек-паук
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/RU/ru/19/EP9000-CUSA11995_00-MARVELSSPIDERMAN/1593787081000/image
+-------------
+Search Time: 5.93 seconds
+Search Query:
+--> Title: Marvel's Spider-Man
+--> SKU ID: CUSA11995
+--> Region: Russia
+
+INFO:pyps4_2ndscreen.media_art:Direct Match
+INFO:__main__:
+Result 8:
+--> Title: Marvel’s Spider-Man
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/NL/nl/19/EP9000-CUSA11993_00-MARVELSSPIDERMAN/1593787052000/image
+-------------
+Search Time: 6.01 seconds
+Search Query:
+--> Title: Marvel's Spider-Man
+--> SKU ID: CUSA11993
+--> Region: Nederland
+
+INFO:pyps4_2ndscreen.media_art:Parent Match
+INFO:__main__:
+Result 11:
+--> Title: Marvel’s Spider-Man
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/ES/es/19/EP9000-CUSA11994_00-MARVELSSPIDERMAN/1593787003/image
+-------------
+Search Time: 6.08 seconds
+Search Query:
+--> Title: Marvel's Spider-Man
+--> SKU ID: CUSA11994
+--> Region: Spain
+
+INFO:pyps4_2ndscreen.media_art:Direct Match
+INFO:__main__:
+Result 6:
+--> Title: Marvel's Spider-Man Game of the Year Edition
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/JP/ja/19/JP9000-CUSA09751_00-SMDIGITALDELUXE0/1593736619000/image
+-------------
+Search Time: 6.19 seconds
+Search Query:
+--> Title: Marvel's Spider-Man
+--> SKU ID: CUSA09751
+--> Region: Japan
+
+INFO:pyps4_2ndscreen.media_art:Direct Match
+INFO:__main__:
+Result 36:
+--> Title: EA SPORTS™ NHL™ 18 Édition Standard
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/FR/fr/19/EP0006-CUSA07580_00-NHLICEHOCKEY2018/1593772109000/image
+-------------
+Search Time: 6.2 seconds
+Search Query:
+--> Title: NHL™ 18
+--> SKU ID: CUSA07580
+--> Region: France
+
+INFO:pyps4_2ndscreen.media_art:Direct Match
+INFO:__main__:
 Result 38:
 --> Title: Battlefield™ V
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/PT/pt/19/EP0006-CUSA08670_00-BATTLEFIELDV0000/1592614844000/image
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/PT/pt/19/EP0006-CUSA08670_00-BATTLEFIELDV0000/1593736946000/image
 -------------
-Search Time: 6.38 seconds
+Search Time: 6.23 seconds
 Search Query:
 --> Title: Battlefield™ V
 --> SKU ID: CUSA08670
@@ -378,15 +233,159 @@ Search Query:
 
 INFO:pyps4_2ndscreen.media_art:Direct Match
 INFO:__main__:
-Result 26:
---> Title: UNCHARTED: The Lost Legacy
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/US/en/19/UP9000-CUSA07737_00-UNCHD4LOSTLEGACY/1592613777000/image
+Result 35:
+--> Title: UNCHARTED The Nathan Drake Collection
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/US/en/19/UP9000-CUSA02320_00-UNCHARTEDTRILOGY/1593736912000/image
 -------------
-Search Time: 7.64 seconds
+Search Time: 6.24 seconds
 Search Query:
---> Title: UNCHARTED: The Lost Legacy
---> SKU ID: CUSA07737
+--> Title: Uncharted: The Nathan Drake Collection™
+--> SKU ID: CUSA02320
 --> Region: United States
+
+INFO:pyps4_2ndscreen.media_art:Direct Match
+INFO:__main__:
+Result 7:
+--> Title: Marvel's Spider-Man Game Of The Year Edition
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/KR/ko/19/HP9000-CUSA09893_00-ASIAPLACEHOLDER1/1593487147000/image
+-------------
+Search Time: 6.3 seconds
+Search Query:
+--> Title: Marvel's Spider-Man
+--> SKU ID: CUSA09893
+--> Region: Korea
+
+INFO:pyps4_2ndscreen.media_art:Direct Match
+INFO:__main__:
+Result 4:
+--> Title: Marvel’s Spider-Man
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/FR/fr/19/EP9000-CUSA11993_00-MARVELSSPIDERMAN/1593787048000/image
+-------------
+Search Time: 6.32 seconds
+Search Query:
+--> Title: Marvel's Spider-Man
+--> SKU ID: CUSA11993
+--> Region: France
+
+INFO:pyps4_2ndscreen.media_art:Parent Match
+INFO:__main__:
+Result 9:
+--> Title: Marvel’s Spider-Man
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/PT/pt/19/EP9000-CUSA11994_00-MARVELSSPIDERMAN/1593787005/image
+-------------
+Search Time: 6.34 seconds
+Search Query:
+--> Title: Marvel's Spider-Man
+--> SKU ID: CUSA11994
+--> Region: Portugal
+
+INFO:pyps4_2ndscreen.media_art:Direct Match
+INFO:__main__:
+Result 3:
+--> Title: Marvel’s Spider-Man
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/AT/de/19/EP9000-CUSA11993_00-MARVELSSPIDERMAN/1593787049000/image
+-------------
+Search Time: 6.37 seconds
+Search Query:
+--> Title: Marvel's Spider-Man
+--> SKU ID: CUSA11993
+--> Region: Austria
+
+INFO:pyps4_2ndscreen.media_art:Direct Match
+INFO:__main__:
+Result 19:
+--> Title: BEYOND: Duas Almas™
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/PT/pt/19/EP9000-CUSA00512_00-GBEYONDTWO000001/1593787197000/image
+-------------
+Search Time: 6.38 seconds
+Search Query:
+--> Title: Beyond: Two Souls™
+--> SKU ID: CUSA00512
+--> Region: Portugal
+
+INFO:pyps4_2ndscreen.media_art:Direct Match
+INFO:__main__:
+Result 41:
+--> Title: The Last of Us Remastered PlayStation®Hits
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/JP/ja/19/JP9000-CUSA00554_00-THELASTOFUS00000/1593737516000/image
+-------------
+Search Time: 6.52 seconds
+Search Query:
+--> Title: The Last of Us™ Remastered
+--> SKU ID: CUSA00554
+--> Region: Japan
+
+INFO:pyps4_2ndscreen.media_art:Parent Match
+INFO:__main__:
+Result 5:
+--> Title: Marvel’s Spider-Man
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/IT/it/19/EP9000-CUSA11993_00-MARVELSSPIDERMAN/1593787050/image
+-------------
+Search Time: 6.61 seconds
+Search Query:
+--> Title: Marvel's Spider-Man
+--> SKU ID: CUSA11993
+--> Region: Italy
+
+INFO:pyps4_2ndscreen.media_art:Direct Match
+INFO:__main__:
+Result 2:
+--> Title: Marvel’s Spider-Man
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/AU/en/19/EP9000-CUSA11993_00-MARVELSSPIDERMAN/1593787045000/image
+-------------
+Search Time: 7.13 seconds
+Search Query:
+--> Title: Marvel's Spider-Man
+--> SKU ID: CUSA11993
+--> Region: Australia
+
+INFO:pyps4_2ndscreen.media_art:Direct Match
+INFO:__main__:
+Result 21:
+--> Title: Fortnite
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/ES/es/19/EP1464-CUSA07669_00-FORTNITETESTING1/1593738020000/image
+-------------
+Search Time: 7.42 seconds
+Search Query:
+--> Title: Fortnite
+--> SKU ID: CUSA07669
+--> Region: Spain
+
+INFO:pyps4_2ndscreen.media_art:Direct Match
+INFO:__main__:
+Result 40:
+--> Title: Цифровое издание «UNCHARTED™ 4: Путь вора»
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/UA/ru/19/EP9000-CUSA04529_00-UNCHARTED4000000/1593787125000/image
+-------------
+Search Time: 7.5 seconds
+Search Query:
+--> Title: Uncharted 4: A Thief’s End
+--> SKU ID: CUSA04529
+--> Region: Ukraine
+
+INFO:pyps4_2ndscreen.media_art:Direct Match
+INFO:__main__:
+Result 12:
+--> Title: Marvel’s Spider-Man
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/SE/en/19/EP9000-CUSA11993_00-MARVELSSPIDERMAN/1593787047000/image
+-------------
+Search Time: 7.89 seconds
+Search Query:
+--> Title: Marvel's Spider-Man
+--> SKU ID: CUSA11993
+--> Region: Sweden
+
+INFO:pyps4_2ndscreen.media_art:Direct Match
+INFO:__main__:
+Result 20:
+--> Title: Shadow of the Colossus™
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/TW/en/19/HP9000-CUSA08804_00-SOTC0000000000AS/1593487147000/image
+-------------
+Search Time: 7.96 seconds
+Search Query:
+--> Title: Shadow of the Colossus
+--> SKU ID: CUSA08804
+--> Region: Taiwan
 
 INFO:pyps4_2ndscreen.media_art:Direct Match
 INFO:__main__:
@@ -394,7 +393,7 @@ Result 24:
 --> Title: Overwatch®: Legendary Edition
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/RU/ru/19/EP0002-CUSA03975_00-OWLEGENDARY00000/1592581947000/image
 -------------
-Search Time: 7.8 seconds
+Search Time: 8.62 seconds
 Search Query:
 --> Title: Overwatch: Origins Edition
 --> SKU ID: CUSA03975
@@ -402,11 +401,46 @@ Search Query:
 
 INFO:pyps4_2ndscreen.media_art:Direct Match
 INFO:__main__:
+Result 25:
+--> Title: Call of Duty®: WWII - Gold Edition
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/US/en/19/UP0002-CUSA05969_00-CODWWIIGOLDED001/1593737326000/image
+-------------
+Search Time: 8.8 seconds
+Search Query:
+--> Title: Call of Duty®: WWII
+--> SKU ID: CUSA05969
+--> Region: United States
+
+INFO:pyps4_2ndscreen.media_art:Direct Match
+INFO:__main__:
+Result 28:
+--> Title: Call of Duty®: Black Ops 4
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/US/en/19/UP0002-CUSA11100_00-CODBO4OPEREDN004/1593737526000/image
+-------------
+Search Time: 8.82 seconds
+Search Query:
+--> Title: Call of Duty®: Black Ops 4
+--> SKU ID: CUSA11100
+--> Region: United States
+
+ERROR:asyncio:SSL error in data received
+protocol: <asyncio.sslproto.SSLProtocol object at 0x7f7c429748>
+transport: <_SelectorSocketTransport fd=19 read=polling write=<idle, bufsize=0>>
+Traceback (most recent call last):
+  File "/usr/lib/python3.7/asyncio/sslproto.py", line 526, in data_received
+    ssldata, appdata = self._sslpipe.feed_ssldata(data)
+  File "/usr/lib/python3.7/asyncio/sslproto.py", line 207, in feed_ssldata
+    self._sslobj.unwrap()
+  File "/usr/lib/python3.7/ssl.py", line 767, in unwrap
+    return self._sslobj.shutdown()
+ssl.SSLError: [SSL: KRB5_S_INIT] application data after close notify (_ssl.c:2609)
+INFO:pyps4_2ndscreen.media_art:Direct Match
+INFO:__main__:
 Result 23:
 --> Title: FOR HONOR™ STANDARD EDITION
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/RU/ru/19/EP0001-CUSA05265_00-FHGAMEPS40000003/1591193363000/image
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/RU/ru/19/EP0001-CUSA05265_00-FHGAMEPS40000003/1593621381000/image
 -------------
-Search Time: 8.49 seconds
+Search Time: 9.07 seconds
 Search Query:
 --> Title: For Honor
 --> SKU ID: CUSA05265
@@ -418,30 +452,31 @@ Result 30:
 --> Title: inFAMOUS First Light 
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/US/en/19/UP9000-CUSA00575_00-FIRSTLIGHTSHIP00/1591110573000/image
 -------------
-Search Time: 8.59 seconds
+Search Time: 9.21 seconds
 Search Query:
 --> Title: inFAMOUS First Light™
 --> SKU ID: CUSA00575
 --> Region: United States
 
-ERROR:asyncio:SSL error in data received
-protocol: <asyncio.sslproto.SSLProtocol object at 0x7f480c5d68>
-transport: <_SelectorSocketTransport fd=6 read=polling write=<idle, bufsize=0>>
-Traceback (most recent call last):
-  File "/usr/lib/python3.7/asyncio/sslproto.py", line 526, in data_received
-    ssldata, appdata = self._sslpipe.feed_ssldata(data)
-  File "/usr/lib/python3.7/asyncio/sslproto.py", line 207, in feed_ssldata
-    self._sslobj.unwrap()
-  File "/usr/lib/python3.7/ssl.py", line 767, in unwrap
-    return self._sslobj.shutdown()
-ssl.SSLError: [SSL: KRB5_S_INIT] application data after close notify (_ssl.c:2609)
+INFO:pyps4_2ndscreen.media_art:Direct Match
+INFO:__main__:
+Result 26:
+--> Title: UNCHARTED: The Lost Legacy
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/US/en/19/UP9000-CUSA07737_00-UNCHD4LOSTLEGACY/1593736569000/image
+-------------
+Search Time: 9.33 seconds
+Search Query:
+--> Title: UNCHARTED: The Lost Legacy
+--> SKU ID: CUSA07737
+--> Region: United States
+
 INFO:pyps4_2ndscreen.media_art:Direct Match
 INFO:__main__:
 Result 29:
 --> Title: HITMAN™ 2
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/US/en/19/UP4572-CUSA12421_00-HITMANSTANDARD00/1592614485000/image
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/US/en/19/UP4572-CUSA12421_00-HITMANSTANDARD00/1593735651000/image
 -------------
-Search Time: 9.3 seconds
+Search Time: 9.52 seconds
 Search Query:
 --> Title: HITMAN™ 2
 --> SKU ID: CUSA12421
@@ -451,9 +486,9 @@ INFO:pyps4_2ndscreen.media_art:Direct Match
 INFO:__main__:
 Result 27:
 --> Title: Battlefield™ V
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/US/en/19/UP0006-CUSA08724_00-BATTLEFIELDV0000/1592614679000/image
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/US/en/19/UP0006-CUSA08724_00-BATTLEFIELDV0000/1593737352000/image
 -------------
-Search Time: 9.77 seconds
+Search Time: 9.65 seconds
 Search Query:
 --> Title: Battlefield™ V
 --> SKU ID: CUSA08724
@@ -463,9 +498,9 @@ INFO:pyps4_2ndscreen.media_art:Direct Match
 INFO:__main__:
 Result 31:
 --> Title: God of War III Remastered
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/US/en/19/UP9000-CUSA01623_00-0000GODOFWAR3PS4/1592614821000/image
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/US/en/19/UP9000-CUSA01623_00-0000GODOFWAR3PS4/1593737148000/image
 -------------
-Search Time: 9.91 seconds
+Search Time: 10.16 seconds
 Search Query:
 --> Title: God of War® III Remastered
 --> SKU ID: CUSA01623
@@ -473,35 +508,11 @@ Search Query:
 
 INFO:pyps4_2ndscreen.media_art:Direct Match
 INFO:__main__:
-Result 28:
---> Title: Call of Duty®: Black Ops 4
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/US/en/19/UP0002-CUSA11100_00-CODBO4OPEREDN004/1592612490000/image
--------------
-Search Time: 10.06 seconds
-Search Query:
---> Title: Call of Duty®: Black Ops 4
---> SKU ID: CUSA11100
---> Region: United States
-
-INFO:pyps4_2ndscreen.media_art:Direct Match
-INFO:__main__:
-Result 25:
---> Title: Call of Duty®: WWII - Gold Edition
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/US/en/19/UP0002-CUSA05969_00-CODWWIIGOLDED001/1592612303000/image
--------------
-Search Time: 10.68 seconds
-Search Query:
---> Title: Call of Duty®: WWII
---> SKU ID: CUSA05969
---> Region: United States
-
-INFO:pyps4_2ndscreen.media_art:Direct Match
-INFO:__main__:
 Result 22:
 --> Title: The Last Of Us™ Remastered 
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/US/en/19/UP9000-CUSA00552_00-THELASTOFUS00000/1592614645000/image
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/US/en/19/UP9000-CUSA00552_00-THELASTOFUS00000/1593737320000/image
 -------------
-Search Time: 12.97 seconds
+Search Time: 14.18 seconds
 Search Query:
 --> Title: The Last of Us™ Remastered
 --> SKU ID: CUSA00552
@@ -511,18 +522,18 @@ INFO:__main__:
 Starting Search All Test:
 
 INFO:pyps4_2ndscreen.media_art:Searching other regions; Result may be incorrect
-INFO:pyps4_2ndscreen.media_art:Direct Match
+INFO:pyps4_2ndscreen.media_art:Parent Match
 INFO:__main__:
 Result 0:
 --> Title: Marvel’s Spider-Man
---> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/GR/en/19/EP9000-CUSA11994_00-MARVELSSPIDERMAN/1592437795000/image
+--> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/container/CY/en/19/EP9000-CUSA11994_00-MARVELSSPIDERMAN/1593787003/image
 -------------
-Search Time: 19.25 seconds
+Search Time: 14.09 seconds
 Search Query:
 --> Title: Marvel's Spider-Man
 --> SKU ID: CUSA11994
 --> Region: Australia
 
 INFO:__main__:All Tests Passed
-INFO:__main__:All Tests completed in 32.228864431381226 seconds
+INFO:__main__:All Tests completed in 28.28385877609253 seconds
 INFO:__main__:Success: True
