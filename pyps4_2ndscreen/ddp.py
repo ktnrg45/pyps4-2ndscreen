@@ -2,11 +2,11 @@
 """Device Discovery Protocol for PS4."""
 from __future__ import print_function
 
-import re
-import socket
-import logging
-import select
 import asyncio
+import logging
+import re
+import select
+import socket
 import time
 from typing import Optional
 
@@ -363,38 +363,41 @@ def launch(host, credential, broadcast=False, sock=None):
 class Discovery:
     """Device Discovery server."""
 
+    TIMEOUT = 3
+
     def __init__(self):
         """Init."""
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.settimeout(6.0)
+        self.sock.settimeout(0)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         self.msg = get_ddp_search_message()
-        self.host = '255.255.255.255'
+        self.host = BROADCAST_IP
         self.ps_list = []
 
     def search(self, host):
-        """Search for Devices."""
+        """Search for Devices for a specified time."""
         if host is None:
             host = self.host
-        null_responses = 0
+
+        start = time.time()
         try:
             self.send(host)
         except (socket.error, socket.timeout):
             self.sock.close()
             return self.ps_list
 
-        while null_responses < 3:
+        while time.time() - start < self.TIMEOUT:
             try:
                 device = self.receive()
                 if device is not None:
                     if device not in self.ps_list:
                         self.ps_list.append(device)
                         continue
-                null_responses += 1
             except (socket.error, socket.timeout):
                 self.sock.close()
                 return self.ps_list
 
+        self.sock.close()
         return self.ps_list
 
     def send(self, host):
