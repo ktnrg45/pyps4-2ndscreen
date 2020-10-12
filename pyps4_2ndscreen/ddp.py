@@ -14,7 +14,7 @@ _LOGGER = logging.getLogger(__name__)
 
 BROADCAST_IP = '255.255.255.255'
 UDP_IP = '0.0.0.0'
-UDP_PORT = 0
+UDP_PORT = 1987
 
 DDP_PORT = 987
 DDP_VERSION = '00020020'
@@ -368,6 +368,7 @@ class Discovery:
     def __init__(self):
         """Init."""
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.bind((UDP_IP, UDP_PORT))
         self.sock.settimeout(0)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         self.msg = get_ddp_search_message()
@@ -402,6 +403,13 @@ class Discovery:
 
     def send(self, host):
         """Broadcast Message."""
+        _LOGGER.debug(
+            "Discovery sent: SPORT:%s, DEST:%s, DPORT:%s",
+            self.sock.getsockname()[1],
+            host,
+            DDP_PORT
+        )
+
         self.sock.sendto(self.msg.encode('utf-8'), (host, DDP_PORT))
 
     def receive(self):
@@ -410,7 +418,12 @@ class Discovery:
         available, _, _ = select.select([self.sock], [], [], 0.01)
         if self.sock in available:
             data, addr = self.sock.recvfrom(1024)
+            _LOGGER.debug("Discovery RECV from: %s", addr)
             if data is not None:
-                data = parse_ddp_response(data.decode('utf-8'))
-                data[u'host-ip'] = addr[0]
+                if b'SRCH' in data:
+                    _LOGGER.debug("Discovery received broadcast msg")
+                    data = None
+                else:
+                    data = parse_ddp_response(data.decode('utf-8'))
+                    data[u'host-ip'] = addr[0]
         return data

@@ -45,10 +45,9 @@ Create virtual env first:
 .. code:: bash
 
     python -m venv .
-
     source bin/activate
 
-To install run:
+To install from pip:
 
 .. code:: bash
 
@@ -58,6 +57,7 @@ To install from source clone this repository and run from top-level:
 
 .. code:: bash
 
+    pip install -r requirements.txt
     python setup.py install
 
 Protocol
@@ -66,8 +66,9 @@ UDP is used to get status updates and retrieve user credentials. TCP is used to 
 
 Ports
 --------------------
+This module uses UDP port 1987 by default as the source port for polling the PS4.
+
 PS4 listens on ports 987 (Priveleged) to fetch user PSN credentials.
-Must run command on python path if no access.
 
 In order to obtain user credentials, the Python Interpreter needs access to port 987 on the host system.
 The credential service pretends to be a PS4 console and will receive broadcast packets from the PS4 2nd Screen app on port 987.

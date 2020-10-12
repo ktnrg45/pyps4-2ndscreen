@@ -1,14 +1,15 @@
 """Tests for pyps4_2ndscreen/ddp.py"""
-from unittest.mock import patch, MagicMock
 import asyncio
 import logging
 import socket
+from unittest.mock import MagicMock, patch
 
 import pytest
 from asynctest import CoroutineMock as mock_coro
 from pyps4_2ndscreen import ddp
 from pyps4_2ndscreen.credential import get_ddp_message
-from pyps4_2ndscreen.ps4 import Ps4Async as ps4, STATUS_STANDBY
+from pyps4_2ndscreen.ps4 import STATUS_STANDBY
+from pyps4_2ndscreen.ps4 import Ps4Async as ps4
 
 logging.basicConfig(level=logging.DEBUG)
 _LOGGER = logging.getLogger(__name__)
@@ -296,18 +297,20 @@ def test_discovery():
         return_value=([mock_disc.sock], [MagicMock()], [MagicMock()]),
     ):
         assert mock_disc.search(None)[0]['host-ip'] == MOCK_HOST
+    # Test that sock is closed on success
+    assert len(mock_disc.sock.close.mock_calls) == 1
 
     # Test Errors
     mock_disc.send = MagicMock(
         side_effect=(ddp.socket.error, ddp.socket.timeout))
     mock_disc.search(None)
-    assert len(mock_disc.sock.close.mock_calls) == 1
+    assert len(mock_disc.sock.close.mock_calls) == 2
 
     mock_disc.send = MagicMock()
     mock_disc.receive = MagicMock(
         side_effect=(ddp.socket.error, ddp.socket.timeout))
     mock_disc.search(None)
-    assert len(mock_disc.sock.close.mock_calls) == 2
+    assert len(mock_disc.sock.close.mock_calls) == 3
 
 
 def test_get_socket_error():
