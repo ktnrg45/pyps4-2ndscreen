@@ -1,10 +1,11 @@
 """Media Art Functions."""
-import logging
-from ssl import SSLError
 import asyncio
 import html
+import logging
 import re
 import urllib
+from ssl import SSLError
+
 import aiohttp
 from aiohttp.client_exceptions import ContentTypeError
 
@@ -301,8 +302,8 @@ async def async_search_ps_store(
 
     async with aiohttp.ClientSession() as session:
         for search in searches:
-            if search == 'all':
-                searches.extend([_r for _r in COUNTRIES])
+            if search == 'all':  # noqa: pylint: disable=comparison-with-callable
+                searches.extend(list(COUNTRIES.keys()))
                 searching_all = True
                 _LOGGER.info(
                     "Searching other regions; Result may be incorrect")
@@ -317,9 +318,9 @@ async def async_search_ps_store(
             for response in responses:
                 try:
                     result_item = parse_data(response, title_id, region)
-                except (TypeError, AttributeError):
+                except (TypeError, AttributeError) as type_attr_error:
                     result_item = None
-                    raise PSDataIncomplete
+                    raise PSDataIncomplete from type_attr_error
                 if result_item is not None:
                     break
             if result_item is not None:

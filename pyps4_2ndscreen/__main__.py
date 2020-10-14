@@ -1,19 +1,20 @@
 # -*- coding: utf-8 -*-
 """Main File for pyps4-2ndscreen."""
-import logging
 import curses
+import logging
 import time
 
 import click
 
+from .credential import DEFAULT_DEVICE_NAME
+from .ddp import DDP_PORT
 from .helpers import Helper
-from .ps4 import NotReady
+from .ps4 import NotReady, Ps4Legacy
 
 _LOGGER = logging.getLogger(__name__)
 
 
 def _get_ps4(ip_address=None, credentials=None, no_creds=False):
-    from .ps4 import Ps4Legacy
     helper = Helper()
 
     if credentials is None:
@@ -251,9 +252,6 @@ def credential():
 
 
 def _credentials_func():
-    from .credential import DEFAULT_DEVICE_NAME
-    from .ddp import DDP_PORT
-
     helper = Helper()
     is_creds = helper.check_data('credentials')
     if is_creds:

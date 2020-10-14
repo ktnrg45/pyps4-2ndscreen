@@ -4,14 +4,8 @@ import socket
 import time
 from typing import Optional
 
-from .ddp import (
-    DDP_PORT,
-    DDP_VERSION,
-    DDP_TYPE_SEARCH,
-    DDP_TYPE_WAKEUP,
-    UDP_IP,
-)
-
+from .ddp import (DDP_PORT, DDP_TYPE_SEARCH, DDP_TYPE_WAKEUP, DDP_VERSION,
+                  UDP_IP)
 from .errors import CredentialTimeout, UnknownDDPResponse
 
 _LOGGER = logging.getLogger(__name__)
@@ -96,7 +90,7 @@ class Credentials:
                     self.sock.close()
                     _LOGGER.info(
                         "Credential service has timed out with no response")
-                    raise CredentialTimeout
+                    raise CredentialTimeout from socket.error
                 data = response[0]
                 address = response[1]
                 try:
