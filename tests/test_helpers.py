@@ -1,5 +1,5 @@
 """Tests for pyps4_2ndscreen.helpers."""
-from unittest.mock import patch, MagicMock, mock_open
+from unittest.mock import MagicMock, mock_open, patch
 
 from pyps4_2ndscreen import helpers
 
@@ -17,7 +17,7 @@ def test_has_devices():
     """Test has_devices calls."""
     helper = helpers.Helper()
     mock_search = MagicMock()
-    mock_search.search = MagicMock(return_value=[{'host-ip': MOCK_HOST}])
+    mock_search.search = MagicMock(return_value=[{"host-ip": MOCK_HOST}])
     with patch("pyps4_2ndscreen.helpers.Discovery", return_value=mock_search):
         assert helper.has_devices()
         assert len(mock_search.search.mock_calls) == 1
@@ -107,16 +107,18 @@ def test_check_data():
     helper = helpers.Helper()
     helper.check_files = MagicMock(return_value=helpers.DEFAULT_PS4_FILE)
 
-    with patch("pyps4_2ndscreen.helpers.open", mock_open(read_data=MOCK_DATA)) as mock_file, patch(
-        "pyps4_2ndscreen.helpers.os.mkdir"
-    ), patch("pyps4_2ndscreen.helpers.os.path.isfile", return_value=True):
+    with patch(
+        "pyps4_2ndscreen.helpers.open", mock_open(read_data=MOCK_DATA)
+    ) as mock_file, patch("pyps4_2ndscreen.helpers.os.mkdir"), patch(
+        "pyps4_2ndscreen.helpers.os.path.isfile", return_value=True
+    ):
         assert helper.check_data("ps4")
         mock_file.assert_called_once_with(helpers.DEFAULT_PS4_FILE, "r")
 
         assert helper.check_data(file_name=MOCK_FILE_PATH)
         mock_file.assert_called_with(MOCK_FILE_PATH, "r")
 
-    with patch("pyps4_2ndscreen.helpers.open", mock_open(read_data='{}')), patch(
+    with patch("pyps4_2ndscreen.helpers.open", mock_open(read_data="{}")), patch(
         "pyps4_2ndscreen.helpers.os.mkdir"
     ), patch("pyps4_2ndscreen.helpers.os.path.isfile", return_value=True):
         assert not helper.check_data("ps4")
@@ -171,8 +173,7 @@ def test_save_files():
     ) as mock_open_file, patch("pyps4_2ndscreen.helpers.os.mkdir"), patch(
         "pyps4_2ndscreen.helpers.os.path.isfile", return_value=True
     ):
-        assert helper.save_files(
-            MOCK_DICT, file_type="ps4") == helpers.DEFAULT_PS4_FILE
+        assert helper.save_files(MOCK_DICT, file_type="ps4") == helpers.DEFAULT_PS4_FILE
         mock_open_file.assert_called_once_with(helpers.DEFAULT_PS4_FILE, "w+")
         assert helper.save_files([]) is None
         assert helper.save_files({}) is None
@@ -183,29 +184,27 @@ def test_get_exec_path():
     """Test get exec path."""
     helper = helpers.Helper()
     config = helpers.sysconfig.get_config_vars()
-    version = config['py_version_short']
-    base = config['projectbase']
-    mock_home = '/usr/bin'
-    mock_reg = '{}/python{}'.format(base, version)
+    version = config["py_version_short"]
+    base = config["projectbase"]
+    mock_home = "/usr/bin"
+    mock_reg = "{}/python{}".format(base, version)
     mock_path = MagicMock()
 
     # Test path is regular file.
     mock_path.is_symlink.return_value = False
     helpers.sys.executable = mock_reg
     helpers.sys._home = mock_home
-    with patch('pyps4_2ndscreen.helpers.Path', return_value=mock_path):
+    with patch("pyps4_2ndscreen.helpers.Path", return_value=mock_path):
         result = helper.get_exec_path()
         assert result == mock_reg
 
     # Test path is symlink.
     mock_path.is_symlink.return_value = True
-    with patch('pyps4_2ndscreen.helpers.Path', return_value=mock_path):
+    with patch("pyps4_2ndscreen.helpers.Path", return_value=mock_path):
         result = helper.get_exec_path()
         assert result == helpers.sys.executable
 
     # Test exception returns sys.executable
-    with patch(
-        'pyps4_2ndscreen.helpers.Path',
-            side_effect=(KeyError, AttributeError)):
+    with patch("pyps4_2ndscreen.helpers.Path", side_effect=(KeyError, AttributeError)):
         result = helper.get_exec_path()
         assert result == helpers.sys.executable

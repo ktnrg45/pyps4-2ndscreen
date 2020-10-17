@@ -1,29 +1,32 @@
 """Tests for pyps4_2ndscreen.ps4."""
 
-from unittest.mock import patch, MagicMock
-import pytest
 import socket
+from unittest.mock import MagicMock, patch
+
+import pytest
 from asynctest import CoroutineMock as mock_coro
+
 from pyps4_2ndscreen import ps4
-from pyps4_2ndscreen.media_art import PINNED_TITLES, PSDataIncomplete
 from pyps4_2ndscreen.ddp import (
     DDPProtocol,
     get_ddp_launch_message,
     get_ddp_wake_message,
-    UDP_PORT,
 )
+from pyps4_2ndscreen.media_art import PINNED_TITLES, PSDataIncomplete
 
 from .test_ddp import (
+    MOCK_CREDS,
+    MOCK_DDP_DICT,
+    MOCK_HOST,
     MOCK_HOST_ID,
     MOCK_HOST_NAME,
-    MOCK_TITLE_NAME,
-    MOCK_TITLE_ID,
-    MOCK_SYSTEM_VERSION,
-    MOCK_CREDS,
-    MOCK_HOST,
-    MOCK_DDP_DICT,
     MOCK_STANDBY_STATUS,
+    MOCK_SYSTEM_VERSION,
+    MOCK_TITLE_ID,
+    MOCK_TITLE_NAME,
 )
+
+pytestmark = pytest.mark.asyncio
 
 MOCK_COVER_URL = "https://someurl.com"
 MOCK_REGION = "United States"
@@ -40,7 +43,7 @@ def test_get_status():
     ) as mock_call:
         mock_status = mock_ps4.get_status()
     assert mock_status is not None
-    assert mock_ps4.status_code == MOCK_DDP_DICT['status_code']
+    assert mock_ps4.status_code == MOCK_DDP_DICT["status_code"]
     assert len(mock_call.mock_calls) == 1
 
 
@@ -52,7 +55,7 @@ def test_get_status_port():
     ) as mock_call:
         mock_status = mock_ps4.get_status()
     assert mock_status is not None
-    assert mock_ps4.status_code == MOCK_DDP_DICT['status_code']
+    assert mock_ps4.status_code == MOCK_DDP_DICT["status_code"]
     assert len(mock_call.mock_calls) == 1
 
 
@@ -172,7 +175,6 @@ def test_state_changed():
     assert mock_ps4.is_available is False
 
 
-@pytest.mark.asyncio
 async def test_get_ps_store_data():
     mock_ps4 = ps4.Ps4Legacy(MOCK_HOST, MOCK_CREDS)
     mock_ps4.status = MOCK_DDP_DICT
@@ -214,9 +216,7 @@ async def test_get_ps_store_data():
     with patch(
         "pyps4_2ndscreen.media_art.async_get_ps_store_requests",
         new=mock_coro(return_value=[]),
-    ) as mock_call, patch(
-        "pyps4_2ndscreen.media_art.parse_data", return_value=None
-    ):
+    ) as mock_call, patch("pyps4_2ndscreen.media_art.parse_data", return_value=None):
         result_item = await mock_ps4.async_get_ps_store_data(
             MOCK_TITLE_NAME, MOCK_TITLE_ID, MOCK_REGION
         )
@@ -224,7 +224,6 @@ async def test_get_ps_store_data():
         assert result_item is None
 
 
-@pytest.mark.asyncio
 async def test_get_pinned_data():
     """Test pinned data retrieved."""
     mock_ps4 = ps4.Ps4Legacy(MOCK_HOST, MOCK_CREDS)
@@ -493,7 +492,6 @@ def test_async_launch():
     mock_ddp.send_msg.assert_called_once_with(mock_ps4, mock_launch_msg)
 
 
-@pytest.mark.asyncio
 async def test_async_wakeup():
     """Test wakeup method."""
     mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS)
@@ -517,7 +515,6 @@ async def test_async_wakeup():
     assert len(mock_ps4.standby.mock_calls) == 1
 
 
-@pytest.mark.asyncio
 async def test_async_toggle():
     """Test toggle method."""
     mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS)
@@ -533,7 +530,6 @@ async def test_async_toggle():
     mock_ps4.standby.assert_awaited_once()
 
 
-@pytest.mark.asyncio
 async def test_async_login():
     """Test Login."""
     mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS)
@@ -546,11 +542,10 @@ async def test_async_login():
     mock_ps4.tcp_protocol = mock_tcp
     await mock_ps4.login()
     mock_ps4.tcp_protocol.login.assert_called_once_with(
-        '', mock_ps4._power_on, mock_ps4.login_delay
+        "", mock_ps4._power_on, mock_ps4.login_delay
     )
 
 
-@pytest.mark.asyncio
 async def test_async_standby():
     """Test Standby."""
     mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS)
@@ -573,7 +568,6 @@ async def test_async_standby():
     assert len(mock_ps4.wakeup.mock_calls) == 1
 
 
-@pytest.mark.asyncio
 async def test_async_start_title():
     """Test Start Title."""
     mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS)
@@ -597,7 +591,6 @@ async def test_async_start_title():
     )
 
 
-@pytest.mark.asyncio
 async def test_async_remote_control():
     """Test Remote Control."""
     mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS)
@@ -633,7 +626,6 @@ async def test_async_remote_control():
         await mock_ps4.remote_control("Not valid")
 
 
-@pytest.mark.asyncio
 async def test_async_close():
     """Test close methods."""
     mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS)
@@ -659,7 +651,6 @@ async def test_async_close():
     assert len(mock_ps4.tcp_protocol.disconnect.mock_calls) == 1
 
 
-@pytest.mark.asyncio
 async def test_async_connect():
     """Test connect method."""
     mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS)
@@ -721,7 +712,6 @@ async def test_async_connect():
     assert not mock_ps4._power_on
 
 
-@pytest.mark.asyncio
 async def test_async_connect_if_no_tcp():
     """Test connect if not tcp protocol."""
     mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS)
@@ -773,7 +763,6 @@ async def test_async_connect_if_no_tcp():
     assert len(mock_tcp_protocol.standby.mock_calls) == 1
 
 
-@pytest.mark.asyncio
 async def test_async_get_ddp_endpoint():
     """Test get_ddp_endpoint."""
     mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS)
@@ -790,40 +779,41 @@ async def test_async_get_ddp_endpoint():
 
     # Test fail
     mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS, port=MOCK_PORT)
-    with patch('pyps4_2ndscreen.ps4.async_create_ddp_endpoint', new=mock_coro(return_value=(None, None))):
+    with patch(
+        "pyps4_2ndscreen.ps4.async_create_ddp_endpoint",
+        new=mock_coro(return_value=(None, None)),
+    ):
         assert not await mock_ps4.get_ddp_endpoint()
 
 
-@pytest.mark.asyncio
 async def test_async_change_ddp_endpoint():
     """Test changing DDP Endpoint."""
-    mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS)
-    await mock_ps4.get_ddp_endpoint()
-    assert mock_ps4.ddp_protocol is not None
+    mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS, port=0)
+    mock_ps4.ddp_protocol = MagicMock()
     mock_ps4.add_callback(MagicMock)
     mock_old_protocol = mock_ps4.ddp_protocol
+    mock_port = 1235
 
-    success = await mock_ps4.change_ddp_endpoint(MOCK_PORT)
+    success = await mock_ps4.change_ddp_endpoint(mock_port)
     assert success is True
     assert mock_ps4.ddp_protocol is not None
-    assert mock_ps4.ddp_protocol.local_port == MOCK_PORT
-    assert mock_ps4.port == MOCK_PORT
-    assert not mock_old_protocol._transport.is_closing()
+    assert mock_ps4.ddp_protocol.local_port == mock_port
+    assert mock_ps4.port == mock_port
+    assert len(mock_old_protocol._transport.close.mock_calls) == 0
 
     # Test old protocol closes
     mock_old_protocol = mock_ps4.ddp_protocol
-    success = await mock_ps4.change_ddp_endpoint(UDP_PORT, True)
+    success = await mock_ps4.change_ddp_endpoint(0, True)
     assert success is True
     assert mock_ps4.ddp_protocol != mock_old_protocol
-    assert mock_ps4.ddp_protocol.local_port != MOCK_PORT
-    assert mock_ps4.port != MOCK_PORT
+    assert mock_ps4.ddp_protocol.local_port != mock_port
+    assert mock_ps4.port != mock_port
     assert mock_old_protocol._transport is None
 
 
-@pytest.mark.asyncio
 async def test_async_change_ddp_endpoint_errors():
     """Test changing DDP Endpoint errors."""
-    mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS)
+    mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS, port=0)
 
     # Test that no DDP protocol returns False.
     assert mock_ps4.ddp_protocol is None
@@ -841,7 +831,10 @@ async def test_async_change_ddp_endpoint_errors():
     assert success is False
 
     # Test socket error/fail to get new protocol
-    with patch('pyps4_2ndscreen.ps4.async_create_ddp_endpoint', new=mock_coro(return_value=(None, None))):
+    with patch(
+        "pyps4_2ndscreen.ps4.async_create_ddp_endpoint",
+        new=mock_coro(return_value=(None, None)),
+    ):
         success = await mock_ps4.change_ddp_endpoint(MOCK_PORT)
         assert success is False
         assert mock_ps4.ddp_protocol == mock_old_protocol

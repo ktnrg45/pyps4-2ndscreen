@@ -1,14 +1,17 @@
 """Tests for pyps4_2ndscreen.media_art."""
-import html
-import urllib
-import pytest
-import logging
 import asyncio
+import html
+import logging
+import urllib
 from unittest.mock import MagicMock, patch
 
-from asynctest import CoroutineMock as mock_coro, Mock
+import pytest
+from asynctest import CoroutineMock as mock_coro
+from asynctest import Mock
 
 from pyps4_2ndscreen import media_art as media
+
+pytestmark = pytest.mark.asyncio
 
 logging.basicConfig(level=logging.DEBUG)
 _LOGGER = logging.getLogger(__name__)
@@ -190,7 +193,6 @@ def test_get_url():
     assert result_title == mock_final
 
 
-@pytest.mark.asyncio
 async def test_search_ps_store():
     """Test PS store search."""
     with patch(
@@ -206,7 +208,6 @@ async def test_search_ps_store():
     assert result.parent is None
 
 
-@pytest.mark.asyncio
 async def test_search_all():
     """Test PS store search all."""
     with patch(
@@ -222,7 +223,6 @@ async def test_search_all():
     assert len(mock_call.mock_calls) > len(media.COUNTRIES)
 
 
-@pytest.mark.asyncio
 async def test_parse_errors():
     """Test PS store search errors."""
     with patch(
@@ -234,7 +234,6 @@ async def test_parse_errors():
         assert result is None
 
 
-@pytest.mark.asyncio
 async def test_fetch():
     """Test fetch coro."""
     session = Mock()
@@ -247,7 +246,6 @@ async def test_fetch():
     assert result == MOCK_DATA
 
 
-@pytest.mark.asyncio
 async def test_fetch_errors():
     """Test fetch errors."""
     session = Mock()
