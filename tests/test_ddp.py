@@ -1,5 +1,6 @@
 """Tests for pyps4_2ndscreen/ddp.py"""
 import asyncio
+import itertools
 import logging
 import socket
 from unittest.mock import MagicMock, patch
@@ -18,8 +19,9 @@ _LOGGER = logging.getLogger(__name__)
 MODULE_NAME = "pyps4_2ndscreen"
 
 MOCK_CREDS = "123412341234abcd12341234abcd12341234abcd12341234abcd12341234abcd"
-MOCK_NAME = "ha_ps4_name"
+MOCK_NAME = "ps4 name"
 MOCK_HOST = "192.168.0.2"
+MOCK_HOST2 = "192.168.0.3"
 MOCK_HOST_NAME = "Fake PS4"
 MOCK_HOST_ID = "A0000A0AA000"
 MOCK_HOST_TYPE = "PS4"
@@ -290,8 +292,16 @@ def test_discovery():
     """Tests for discovery."""
     mock_disc = ddp.Discovery()
     mock_disc.sock = MagicMock()
-    mock_disc.sock.recvfrom.return_value = (
-        MOCK_DDP_RESPONSE.encode(), (MOCK_HOST, MOCK_RANDOM_PORT))
+    mock_recv = (
+        MOCK_DDP_RESPONSE.encode(),
+        (MOCK_HOST, MOCK_RANDOM_PORT),
+    )
+    mock_recv2 = (
+        MOCK_DDP_RESPONSE.encode(),
+        (MOCK_HOST2, MOCK_RANDOM_PORT),
+    )
+
+    mock_disc.sock.recvfrom.return_value = mock_recv
     with patch(
         'pyps4_2ndscreen.ddp.select.select',
         return_value=([mock_disc.sock], [MagicMock()], [MagicMock()]),
@@ -300,12 +310,52 @@ def test_discovery():
     # Test that sock is closed on success
     assert len(mock_disc.sock.close.mock_calls) == 1
 
-    # Test Errors
+    # Test two hosts responding once each
+    mock_disc.sock.recvfrom.side_effect = [mock_recv, mock_recv2]
+    with patch(
+        'pyps4_2ndscreen.ddp.select.select',
+        side_effect=itertools.chain(
+            [
+                ([mock_disc.sock], [MagicMock()], [MagicMock()]),
+                ([mock_disc.sock], [MagicMock()], [MagicMock()]),
+            ],
+            itertools.repeat(([], [], [])),
+        ),
+    ):
+        mock_discovered = mock_disc.search(None)
+        assert mock_discovered[0]['host-ip'] == MOCK_HOST
+        assert mock_discovered[1]['host-ip'] == MOCK_HOST2
+        assert len(mock_discovered) == 2
+
+    assert len(mock_disc.sock.close.mock_calls) == 2
+
+
+def test_discovery_errors():
+    """Test discovery Errors."""
+    mock_disc = ddp.Discovery()
+    mock_disc.sock = MagicMock()
+
+    # Test receive search message
+    with patch(
+        'pyps4_2ndscreen.ddp.select.select',
+        return_value=([mock_disc.sock], [MagicMock()], [MagicMock()]),
+    ):
+        mock_disc.sock.recvfrom.return_value = (
+            ddp.get_ddp_search_message().encode(),
+            (MOCK_HOST, MOCK_RANDOM_PORT),
+        )
+        assert not mock_disc.search(None)
+    assert len(mock_disc.sock.close.mock_calls) == 1
+
+    # Test send error
+    mock_disc.sock.recvfrom.return_value = (
+        MOCK_DDP_RESPONSE.encode(), (MOCK_HOST, MOCK_RANDOM_PORT))
     mock_disc.send = MagicMock(
         side_effect=(ddp.socket.error, ddp.socket.timeout))
     mock_disc.search(None)
     assert len(mock_disc.sock.close.mock_calls) == 2
 
+    # Test receive error
     mock_disc.send = MagicMock()
     mock_disc.receive = MagicMock(
         side_effect=(ddp.socket.error, ddp.socket.timeout))

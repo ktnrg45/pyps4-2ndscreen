@@ -404,10 +404,9 @@ class Discovery:
     def send(self, host):
         """Broadcast Message."""
         _LOGGER.debug(
-            "Discovery sent: SPORT:%s, DEST:%s, DPORT:%s",
+            "Discovery sent: SPORT:%s, DEST:%s",
             self.sock.getsockname()[1],
-            host,
-            DDP_PORT
+            (host, DDP_PORT),
         )
 
         self.sock.sendto(self.msg.encode('utf-8'), (host, DDP_PORT))
