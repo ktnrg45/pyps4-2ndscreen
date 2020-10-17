@@ -3,6 +3,7 @@
 import curses
 import logging
 import time
+from collections import OrderedDict
 
 import click
 
@@ -24,13 +25,18 @@ def _get_ps4(ip_address=None, credentials=None, no_creds=False):
         if not no_creds:
             print('--credentials option required')
             return None
+        return Ps4Legacy(ip_address, '')
+
     if ip_address is not None and credentials is not None:
         return Ps4Legacy(ip_address, credentials)
 
     helper = Helper()
     is_data = helper.check_data('ps4')
     if not is_data:
-        print("No configuration found. Configure PS4 then retry.")
+        prompt_configure = input(
+            "No configuration found. Configure? Enter 'y' for yes.\n> ")
+        if prompt_configure.lower() == 'y':
+            link()
         return None
     data = helper.load_files('ps4')
     if len(data) > 1 and ip_address is None:
@@ -81,11 +87,19 @@ def _overwrite_creds():
     return True
 
 
-@click.group()
+@click.group(invoke_without_command=True)
+@click.pass_context
 @click.version_option()
-def cli():
+@click.option('-v', '--debug', is_flag=True, help="Enable debug logging.")
+def cli(ctx=None, debug=False):
     """Pyps4-2ndscreen CLI. Allows for simple commands from terminal."""
-    logging.basicConfig(level=logging.INFO)
+    level = logging.INFO
+    if debug:
+        print("Log level set to debug")
+        level = logging.DEBUG
+    logging.basicConfig(level=level)
+    if ctx.invoked_subcommand is None:
+        interactive()
 
 
 @cli.command(
@@ -220,29 +234,34 @@ def _search_func():
 def status(ip_address=None):
     """Get Status of PS4."""
     d_status = {}
-    if ip_address is not None:
+    if ip_address is None:
+        print("Getting status for any...")
         helper = Helper()
         devices = helper.has_devices(ip_address)
         if devices:
-            d_status = devices[0]
-
+            for d_status in devices:
+                _print_status(d_status)
+            return True
+        print("Try using --ip_address option.")
     else:
         _ps4 = _get_ps4(ip_address, None, True)
         if _ps4 is not None:
             d_status = _ps4.get_status()
-            ip_address = _ps4.host
 
-    if d_status:
-        print("\nGot Status for {}:\n".format(ip_address))
-        for key, value in d_status.items():
-            print("{}: {}".format(key, value))
-
-    elif ip_address is not None:
+        if d_status:
+            _print_status(d_status)
+            return True
         print(
             "PS4 @ {} can not be found."
             .format(ip_address))
-    else:
-        print("Or use --ip_address option.")
+    return False
+
+
+def _print_status(d_status):
+    if d_status:
+        print("\nGot Status for:\n")
+        for key, value in d_status.items():
+            print("{}: {}".format(key, value))
 
 
 @cli.command(help='Get PSN Credentials. Example: pyps4-2ndscreen credentials ')
@@ -287,7 +306,6 @@ def _credentials_func():
 @click.option('-c', '--credentials')
 def interactive(ip_address=None, credentials=None):
     """Interactive."""
-
     _ps4 = _get_ps4(ip_address, credentials)
     if _ps4 is not None:
         curses.wrapper(_interactive, _ps4)
@@ -313,14 +331,15 @@ def _interactive(stdscr, ps4):
 
     curses.start_color()
     curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)
-    curses.init_pair(2, curses.COLOR_BLUE, curses.COLOR_WHITE)
-    curses.init_pair(3, curses.COLOR_RED, curses.COLOR_WHITE)
+    curses.init_pair(2, curses.COLOR_CYAN, curses.COLOR_BLACK)
+    curses.init_pair(3, curses.COLOR_MAGENTA, curses.COLOR_BLACK)
     curses.init_pair(4, curses.COLOR_YELLOW, curses.COLOR_BLACK)
     curses.init_pair(5, curses.COLOR_GREEN, curses.COLOR_BLACK)
     ps4.auto_close = False
     _status = ps4.get_status()
-    _handle_status(stdscr, _status)
+    _handle_status(stdscr, _status, key_mapping)
     _run(stdscr, ps4, key_mapping)
+    ps4.close()
 
 
 # pylint: disable=no-member
@@ -331,11 +350,11 @@ def _write_str(
 
 
 # pylint: disable=no-member
-def _init_window(stdscr, _status):
+def _init_window(stdscr, _status, key_mapping):
     stdscr.addstr(
         0, 0,
-        "Interactive mode, press 'q' to exit. "
-        "Press 'k' for key KEY_MAPPING.\n",)
+        "Interactive mode, press 'q' to exit\n",
+    )
     if _status is not None:
         stdscr.addstr(
             1, 0,
@@ -353,30 +372,38 @@ def _init_window(stdscr, _status):
             1, 0,
             "Status: {}\n".format('Not Available'),
             curses.color_pair(3))
+    _show_mapping(stdscr, key_mapping)
     win_size = stdscr.getmaxyx()
     stdscr.setscrreg(stdscr.getyx()[0], win_size[0] - 1)
     stdscr.refresh()
 
 
 def _show_mapping(stdscr, key_mapping):
-    _write_str(
-        stdscr,
-        "Key : Action |\n", 4)
+    item = 3
+    _key_mapping = OrderedDict()
+    _key_mapping.update({'Key': ['Action']})
+    _key_mapping.update(key_mapping)
 
-    for key, values in key_mapping.items():
+    for key, values in _key_mapping.items():
         if key == '\n':
             key = 'KEY_ENTER'
         if values[0] == 'remote':
             value = values[2]
         else:
             value = values[0]
-        _write_str(
-            stdscr,
-            "{} : {} | ".format(key, value), 4)
-    stdscr.addstr('\n')
+        _write_str(stdscr, key, 5)
+        stdscr.addstr(' : ')
+        _write_str(stdscr, value, 4)
+        item += 1
+        if item >= 4:
+            item = 0
+            stdscr.addstr('\n')
+        else:
+            stdscr.addstr(' | ')
+    stdscr.addstr('\n\n')
 
 
-def _handle_status(stdscr, _status):
+def _handle_status(stdscr, _status, key_mapping):
     helper = Helper()
     games = helper.load_files('games')
     _write_str(
@@ -389,7 +416,7 @@ def _handle_status(stdscr, _status):
             games[title_id] = _status.get('running-app-name')
             helper.save_files(games, 'games')
     cur_pos = stdscr.getyx()
-    _init_window(stdscr, _status)
+    _init_window(stdscr, _status, key_mapping)
     stdscr.move(cur_pos[0], cur_pos[1])
 
 
@@ -445,12 +472,12 @@ def _handle_require_on(stdscr, mapping):
                 except KeyError:
                     _write_str(
                         stdscr,
-                        "> Invalid Title\n", 3)
+                        "Invalid Title\n", 3)
                     fail = True
             else:
                 _write_str(
                     stdscr,
-                    "> Cancelled\n", 3)
+                    "Cancelled\n", 3)
                 fail = True
         else:
             command()
@@ -466,26 +493,22 @@ def _handle_require_on(stdscr, mapping):
 def _handle_key(stdscr, key, key_mapping):
     fail = False
     arg = ''
-    # try:
+
     if key == "q":
         return False
-    if key == "k":
-        _show_mapping(stdscr, key_mapping)
-    elif key in key_mapping:
+    if key in key_mapping:
         mapping = key_mapping.get(key)
         action = mapping[0]
         command = mapping[1]
         if action == 'status_request':
             _status = command()
             if _status is not None:
-                for item, value in _status.items():
-                    _write_str(stdscr, '{}: {}\n'.format(item, value))
-                _write_str(stdscr, '\n')
+                _write_str(stdscr, 'Status Updated\n', 2)
         elif action == 'wakeup':
             command()
         else:
             fail, arg = _handle_require_on(stdscr, mapping)
-        if not fail:
+        if not fail and action != 'status_request':
             _write_str(
                 stdscr,
                 '> Sent {}: {}\n'.format(action, arg), 5)
@@ -497,8 +520,7 @@ def _handle_key(stdscr, key, key_mapping):
 def _run(stdscr, ps4, key_mapping):
     _status = ps4.get_status()
     stdscr.scrollok(True)
-    _init_window(stdscr, _status)
-    _show_mapping(stdscr, key_mapping)
+    _init_window(stdscr, _status, key_mapping)
     running = True
     key = None
     start_timer = 0
@@ -512,7 +534,7 @@ def _run(stdscr, ps4, key_mapping):
             if _status != new_status:
                 _status = new_status
                 if _status is not None:
-                    _handle_status(stdscr, _status)
+                    _handle_status(stdscr, _status, key_mapping)
         try:
             key = stdscr.getkey()
             running = _handle_key(stdscr, key, key_mapping)
