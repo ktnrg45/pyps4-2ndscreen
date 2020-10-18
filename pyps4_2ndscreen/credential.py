@@ -10,7 +10,7 @@ from .errors import CredentialTimeout, UnknownDDPResponse
 
 _LOGGER = logging.getLogger(__name__)
 
-DEFAULT_DEVICE_NAME = 'pyps4-2ndScreen'
+DEFAULT_DEVICE_NAME = 'pyps4-2ndscreen'
 STANDBY = '620 Server Standby'
 HOST_ID = '1234567890AB'
 REQ_PORT = 997

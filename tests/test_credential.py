@@ -13,9 +13,10 @@ STANDBY_RESPONSE = (
     "HTTP/1.1 620 Server Standby\n"
     "host-id:1234567890AB\n"
     "host-type:PS4\n"
-    "host-name:pyps4-2ndScreen\n"
+    "host-name:{}\n"
     "host-request-port:997\n"
     "device-discovery-protocol-version:00020020\n"
+    .format(credential.DEFAULT_DEVICE_NAME)
 )
 
 MOCK_CREDS = "123412341234abcd12341234abcd12341234abcd12341234abcd12341234abcd"

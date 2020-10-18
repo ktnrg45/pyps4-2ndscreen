@@ -49,7 +49,8 @@ class Ps4Base():
 
     :param host: The host PS4 IP address
     :param credential: The credentials of a PSN account
-    :param device_name: Name for device
+    :param device_name: Name for client device
+    :param port: Local UDP Port to use
     """
 
     def __init__(self, host: str, credential: str,
@@ -71,11 +72,11 @@ class Ps4Base():
 
     def __repr__(self):
         return (
-            "<{}.{} host={} local_port={} status_code={}>".format(
+            "<{}.{} ip_address={} name={} status_code={}>".format(
                 self.__module__,
                 self.__class__.__name__,
                 self.host,
-                self.port,
+                self.host_name,
                 self.status_code,
             )
         )
@@ -172,7 +173,7 @@ class Ps4Base():
 
     @property
     def host_id(self) -> str:
-        """Return the host id."""
+        """Return the host id/MAC address."""
         if self.status is not None:
             return self.status['host-id']
         return None

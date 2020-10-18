@@ -6,6 +6,7 @@ import logging
 import socket
 import time
 import asyncio
+import platform
 from typing import cast, Optional, Union
 
 from construct import (Bytes, Const, Int32ul, Padding, Struct, Container)
@@ -41,6 +42,16 @@ def _get_public_key_rsa() -> RSA.RsaKey:
     """Return RSA Key."""
     key = RSA.importKey(PUBLIC_KEY)
     return key.publickey()
+
+
+def _get_model_name() -> str:
+    """Return formatted model name."""
+    info = platform.uname()
+    formatted = "{}/{}".format(
+        info.system,
+        info.node,
+    )
+    return formatted
 
 
 def _handle_response(command: str, msg: bytes) -> bool:
@@ -142,6 +153,7 @@ def _get_login_request(
 
     pin = pin.encode()
     name = name.encode()
+    model = _get_model_name().encode()
 
     config = {
         # This label appears in the notification when logging in.
@@ -149,7 +161,7 @@ def _get_login_request(
         'account_id': credential.encode().ljust(64, b'\x00'),
         'os_version': b'4.4'.ljust(16, b'\x00'),
         # Used when linking, will be the name of device in settings.
-        'model': name.ljust(16, b'\x00'),
+        'model': model.ljust(16, b'\x00')[:16],
         'pin_code': pin.ljust(16, b'\x00'),
     }
 

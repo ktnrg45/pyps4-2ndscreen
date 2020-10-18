@@ -14,21 +14,21 @@ from .ps4 import Ps4Legacy
 
 _LOGGER = logging.getLogger(__name__)
 
-DEFAULT_PATH = str('{}{}'.format(Path.home(), '/.pyps4-2ndscreen'))
-DEFAULT_PS4_FILE = "{}/.ps4_info.json".format(DEFAULT_PATH)
-DEFAULT_CREDS_FILE = "{}/.ps4_creds.json".format(DEFAULT_PATH)
-DEFAULT_GAMES_FILE = "{}/.ps4_games.json".format(DEFAULT_PATH)
+DEFAULT_PATH = Path.home() / ".pyps4-2ndscreen"
+DEFAULT_PS4_FILE = DEFAULT_PATH / ".ps4_info.json"
+DEFAULT_CREDS_FILE = DEFAULT_PATH / ".ps4_creds.json"
+DEFAULT_GAMES_FILE = DEFAULT_PATH / ".ps4_games.json"
 
 FILE_TYPES = {
-    'ps4': DEFAULT_PS4_FILE,
-    'credentials': DEFAULT_CREDS_FILE,
-    'games': DEFAULT_GAMES_FILE
+    'ps4': str(DEFAULT_PS4_FILE),
+    'credentials': str(DEFAULT_CREDS_FILE),
+    'games': str(DEFAULT_GAMES_FILE),
 }
 
 
 # noqa: pylint: disable=no-self-use
 class Helper:
-    """Helpers for PS4. Used as class for simpler importing."""
+    """Helpers for PS4. Used as class."""
 
     def __init__(self):
         """Init Class."""
@@ -139,7 +139,7 @@ class Helper:
 
         :param file_type: Type of file
         """
-        file_path = DEFAULT_PATH
+        file_path = str(DEFAULT_PATH)
         if not os.path.exists(file_path):
             os.mkdir(file_path)
         if file_type in FILE_TYPES:

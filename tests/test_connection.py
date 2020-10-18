@@ -440,11 +440,11 @@ MOCK_LOGIN = bytes(
         0x00,
         0x00,
         0x00,
-        0x6E,
-        0x61,
         0x6D,
+        0x6F,
+        0x64,
         0x65,
-        0x00,
+        0x6C,
         0x00,
         0x00,
         0x00,
@@ -663,7 +663,8 @@ def test_handshake_request():
 
 def test_login_request():
     """Test login request."""
-    login = c._get_login_request(MOCK_CREDS, MOCK_NAME, MOCK_PIN)
+    with patch("pyps4_2ndscreen.connection._get_model_name", return_value="model"):
+        login = c._get_login_request(MOCK_CREDS, MOCK_NAME, MOCK_PIN)
     assert login == MOCK_LOGIN
 
 
@@ -943,12 +944,15 @@ async def test_async_login():
     mock_protocol.sync_send = MagicMock()
     mock_protocol._send_remote_control_request_sync = MagicMock()
 
-    asyncio.ensure_future(mock_protocol.login(pin=MOCK_PIN, delay=0.1, power_on=False))
-    await asyncio.sleep(0)
-    # Mock login success.
-    msg = MOCK_LOGIN_SUCCESS
-    mock_ps4.connection._decipher.decrypt = MagicMock(return_value=msg)
-    mock_protocol.data_received(msg)
+    with patch("pyps4_2ndscreen.connection._get_model_name", return_value="model"):
+        asyncio.ensure_future(
+            mock_protocol.login(pin=MOCK_PIN, delay=0.1, power_on=False)
+        )
+        await asyncio.sleep(0)
+        # Mock login success.
+        msg = MOCK_LOGIN_SUCCESS
+        mock_ps4.connection._decipher.decrypt = MagicMock(return_value=msg)
+        mock_protocol.data_received(msg)
     mock_protocol.send.assert_called_once_with(MOCK_LOGIN)
     mock_protocol.login_success.set()
     # Test RC Open sent.

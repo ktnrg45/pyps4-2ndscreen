@@ -130,7 +130,7 @@ def test_check_files():
     with patch("pyps4_2ndscreen.helpers.open", mock_open(read_data=MOCK_DATA)), patch(
         "pyps4_2ndscreen.helpers.os.mkdir"
     ), patch("pyps4_2ndscreen.helpers.os.path.isfile", return_value=True):
-        assert helper.check_files("ps4") == helpers.DEFAULT_PS4_FILE
+        assert helper.check_files("ps4") == helpers.FILE_TYPES['ps4']
         assert helper.check_files("random type") is None
 
     with patch("pyps4_2ndscreen.helpers.open", mock_open(read_data=MOCK_DATA)), patch(
@@ -138,8 +138,8 @@ def test_check_files():
     ), patch("pyps4_2ndscreen.helpers.os.mkdir") as mock_mkdir, patch(
         "pyps4_2ndscreen.helpers.os.path.isfile", return_value=True
     ):
-        assert helper.check_files("ps4") == helpers.DEFAULT_PS4_FILE
-        mock_mkdir.assert_called_once_with(helpers.DEFAULT_PATH)
+        assert helper.check_files("ps4") == helpers.FILE_TYPES['ps4']
+        mock_mkdir.assert_called_once_with(str(helpers.DEFAULT_PATH))
 
     with patch(
         "pyps4_2ndscreen.helpers.open", mock_open(read_data=MOCK_DATA)
@@ -150,9 +150,9 @@ def test_check_files():
     ), patch(
         "pyps4_2ndscreen.helpers.os.path.isfile", return_value=False
     ):
-        assert helper.check_files("ps4") == helpers.DEFAULT_PS4_FILE
-        mock_mkdir.assert_called_once_with(helpers.DEFAULT_PATH)
-        mock_create_file.assert_called_once_with(helpers.DEFAULT_PS4_FILE, "w+")
+        assert helper.check_files("ps4") == helpers.FILE_TYPES['ps4']
+        mock_mkdir.assert_called_once_with(str(helpers.DEFAULT_PATH))
+        mock_create_file.assert_called_once_with(helpers.FILE_TYPES['ps4'], "w+")
 
 
 def test_load_files():
@@ -173,8 +173,8 @@ def test_save_files():
     ) as mock_open_file, patch("pyps4_2ndscreen.helpers.os.mkdir"), patch(
         "pyps4_2ndscreen.helpers.os.path.isfile", return_value=True
     ):
-        assert helper.save_files(MOCK_DICT, file_type="ps4") == helpers.DEFAULT_PS4_FILE
-        mock_open_file.assert_called_once_with(helpers.DEFAULT_PS4_FILE, "w+")
+        assert helper.save_files(MOCK_DICT, file_type="ps4") == helpers.FILE_TYPES['ps4']
+        mock_open_file.assert_called_once_with(helpers.FILE_TYPES['ps4'], "w+")
         assert helper.save_files([]) is None
         assert helper.save_files({}) is None
         assert helper.save_files(MOCK_DICT, file_type="random type") is None

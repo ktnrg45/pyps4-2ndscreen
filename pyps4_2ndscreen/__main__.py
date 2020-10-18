@@ -112,7 +112,7 @@ def wakeup(ip_address=None, credentials=None):
     _ps4 = _get_ps4(ip_address, credentials)
     if _ps4 is not None:
         _ps4.wakeup()
-        print("Wakeup Sent to {}".format(ip_address))
+        print("Wakeup Sent to {}".format(_ps4.host))
 
 
 @cli.command(
