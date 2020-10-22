@@ -9,7 +9,7 @@ import sys
 
 from .errors import NotReady, LoginFailed
 from .credential import Credentials, DEFAULT_DEVICE_NAME
-from .ddp import Discovery, DDP_PORT
+from .ddp import search, DDP_PORT, UDP_PORT
 from .ps4 import Ps4Legacy
 
 _LOGGER = logging.getLogger(__name__)
@@ -33,11 +33,10 @@ class Helper:
     def __init__(self):
         """Init Class."""
 
-    def has_devices(self, host=None) -> list:
-        """Return status if there are devices that can be discovered."""
+    def has_devices(self, host=None, port=UDP_PORT) -> list:
+        """Return list of device status dicts that are discovered."""
         _LOGGER.debug("Searching for PS4 Devices")
-        discover = Discovery()
-        devices = discover.search(host)
+        devices = search(host, port)
         for device in devices:
             _LOGGER.debug("Found PS4 at: %s", device['host-ip'])
         return devices

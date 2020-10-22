@@ -14,7 +14,7 @@ _LOGGER = logging.getLogger(__name__)
 
 BROADCAST_IP = '255.255.255.255'
 UDP_IP = '0.0.0.0'
-UDP_PORT = 1987
+UDP_PORT = 0
 
 DDP_PORT = 987
 DDP_VERSION = '00020020'
@@ -225,6 +225,9 @@ def get_ddp_message(msg_type, data=None):
 def parse_ddp_response(rsp):
     """Parse the response."""
     data = {}
+    if DDP_TYPE_SEARCH in rsp:
+        _LOGGER.info("Received %s message", DDP_TYPE_SEARCH)
+        return data
     app_name = None
     for line in rsp.splitlines():
         if 'running-app-name' in line:
@@ -248,7 +251,7 @@ def parse_ddp_response(rsp):
 
 def get_ddp_search_message():
     """Get DDP search message."""
-    return get_ddp_message('SRCH')
+    return get_ddp_message(DDP_TYPE_SEARCH)
 
 
 def get_ddp_wake_message(credential):
@@ -258,7 +261,7 @@ def get_ddp_wake_message(credential):
         'client-type': 'a',
         'auth-type': 'C',
     }
-    return get_ddp_message('WAKEUP', data)
+    return get_ddp_message(DDP_TYPE_WAKEUP, data)
 
 
 def get_ddp_launch_message(credential):
@@ -268,7 +271,7 @@ def get_ddp_launch_message(credential):
         'client-type': 'a',
         'auth-type': 'C',
     }
-    return get_ddp_message('LAUNCH', data)
+    return get_ddp_message(DDP_TYPE_LAUNCH, data)
 
 
 def get_socket(timeout=3, port: Optional[int] = UDP_PORT):
@@ -288,141 +291,116 @@ def get_socket(timeout=3, port: Optional[int] = UDP_PORT):
     return sock
 
 
-def _send_recv_msg(host, broadcast, msg, receive=True, sock=None):
+def _send_recv_msg(
+        host,
+        msg,
+        receive=True,
+        send=True,
+        sock=None,
+        close=True):
     """Send a ddp message and receive the response."""
-    recv = None
+    response = None
     if sock is None:
+        if not close:
+            raise ValueError("Unspecified sockets must be closed")
         sock = get_socket()
 
-    if broadcast:
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        _host = host or BROADCAST_IP
-    else:
-        _host = host
-    _LOGGER.debug(
-        "SENT DDP MSG: SPORT=%s DEST=%s",
-        sock.getsockname()[1], (_host, DDP_PORT))
-    sock.sendto(msg.encode('utf-8'), (_host, DDP_PORT))
+    if send:
+        if host == BROADCAST_IP:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            _LOGGER.debug("Broadcast enabled")
+
+        sock.sendto(msg.encode('utf-8'), (host, DDP_PORT))
+        _LOGGER.debug(
+            "SENT DDP MSG: SPORT=%s DEST=%s",
+            sock.getsockname()[1], (host, DDP_PORT))
 
     if receive:
         available, _, _ = select.select([sock], [], [], 0.01)
         if sock in available:
-            recv = sock.recvfrom(1024)
+            response = sock.recvfrom(1024)
             _LOGGER.debug(
                 "RECV DDP MSG: DPORT=%s SRC=%s",
-                sock.getsockname()[1], (_host, DDP_PORT))
-    sock.close()
-    return recv
+                sock.getsockname()[1], response[1])
+    if close:
+        sock.close()
+    return response
 
 
-def _send_msg(host, broadcast, msg, sock=None):
+def _send_msg(host, msg, sock=None, close=True):
     """Send a ddp message."""
-    return _send_recv_msg(host, broadcast, msg, receive=False, sock=sock)
+    return _send_recv_msg(
+        host,
+        msg,
+        receive=False,
+        send=True,
+        sock=sock,
+        close=close,
+    )
+
+
+def _recv_msg(host, msg, sock=None, close=True):
+    """Send a ddp message."""
+    return _send_recv_msg(
+        host,
+        msg,
+        receive=True,
+        send=False,
+        sock=sock,
+        close=close,
+    )
 
 
 def send_search_msg(host, sock=None):
-    """Send message only."""
+    """Send SRCH message only."""
     msg = get_ddp_search_message()
-    return _send_msg(host, True, msg, sock=sock)
+    return _send_msg(host, msg, sock=sock)
 
 
-def search(host=None, broadcast=True, sock=None):
-    """Discover PS4s."""
-    ps_list = None
+def search(host=BROADCAST_IP, port=UDP_PORT, sock=None, timeout=3) -> list:
+    """Return list of discovered PS4s."""
+    ps_list = []
     msg = get_ddp_search_message()
-    data, addr = _send_recv_msg(host, broadcast, msg, sock=sock)
-    if data is not None:
-        ps_list = []
-        data = parse_ddp_response(data.decode('utf-8'))
-        data[u'host-ip'] = addr[0]
-        ps_list.append(data)
+    start = time.time()
+
+    if host is None:
+        host = BROADCAST_IP
+    if sock is None:
+        sock = get_socket(port)
+    _LOGGER.debug("Sending search message")
+    _send_msg(host, msg, sock=sock, close=False)
+    while time.time() - start < timeout:
+        response = _recv_msg(host, msg, sock=sock, close=False)
+        if response is not None:
+            data, addr = response
+        else:
+            continue
+        if data is not None:
+            data = parse_ddp_response(data.decode('utf-8'))
+            if data not in ps_list and data:
+                data[u'host-ip'] = addr[0]
+                ps_list.append(data)
+            if host != BROADCAST_IP:
+                break
+    sock.close()
     return ps_list
 
 
-def get_status(host, sock=None):
-    """Get status."""
-    try:
-        ps_list = search(host=host, sock=sock)
-    except TypeError:
+def get_status(host, port=UDP_PORT, sock=None):
+    """Return status dict."""
+    ps_list = search(host=host, port=port, sock=sock)
+    if not ps_list:
         return None
     return ps_list[0]
 
 
-def wakeup(host, credential, broadcast=False, sock=None):
-    """Wakeup PS4s."""
+def wakeup(host, credential, sock=None):
+    """Wakeup PS4."""
     msg = get_ddp_wake_message(credential)
-    _send_msg(host, broadcast, msg, sock)
+    _send_msg(host, msg, sock)
 
 
-def launch(host, credential, broadcast=False, sock=None):
+def launch(host, credential, sock=None):
     """Launch."""
     msg = get_ddp_launch_message(credential)
-    _send_msg(host, broadcast, msg, sock)
-
-
-class Discovery:
-    """Device Discovery server."""
-
-    TIMEOUT = 3
-
-    def __init__(self):
-        """Init."""
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.bind((UDP_IP, UDP_PORT))
-        self.sock.settimeout(0)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        self.msg = get_ddp_search_message()
-        self.host = BROADCAST_IP
-        self.ps_list = []
-
-    def search(self, host):
-        """Search for Devices for a specified time."""
-        if host is None:
-            host = self.host
-
-        start = time.time()
-        try:
-            self.send(host)
-        except (socket.error, socket.timeout):
-            self.sock.close()
-            return self.ps_list
-
-        while time.time() - start < self.TIMEOUT:
-            try:
-                device = self.receive()
-                if device is not None:
-                    if device not in self.ps_list:
-                        self.ps_list.append(device)
-                        continue
-            except (socket.error, socket.timeout):
-                self.sock.close()
-                return self.ps_list
-
-        self.sock.close()
-        return self.ps_list
-
-    def send(self, host):
-        """Broadcast Message."""
-        _LOGGER.debug(
-            "Discovery sent: SPORT:%s, DEST:%s",
-            self.sock.getsockname()[1],
-            (host, DDP_PORT),
-        )
-
-        self.sock.sendto(self.msg.encode('utf-8'), (host, DDP_PORT))
-
-    def receive(self):
-        """Receive Message."""
-        data = None
-        available, _, _ = select.select([self.sock], [], [], 0.01)
-        if self.sock in available:
-            data, addr = self.sock.recvfrom(1024)
-            _LOGGER.debug("Discovery RECV from: %s", addr)
-            if data is not None:
-                if b'SRCH' in data:
-                    _LOGGER.debug("Discovery received broadcast msg")
-                    data = None
-                else:
-                    data = parse_ddp_response(data.decode('utf-8'))
-                    data[u'host-ip'] = addr[0]
-        return data
+    _send_msg(host, msg, sock)

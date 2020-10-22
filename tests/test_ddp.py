@@ -198,6 +198,38 @@ def test_search():
         assert MOCK_HOST in mock_result.values()
 
 
+def test_search_multiple():
+    """Tests Search for multiple hosts."""
+    mock_sock = MagicMock()
+    mock_recv = (
+        MOCK_DDP_RESPONSE.encode(),
+        (MOCK_HOST, MOCK_RANDOM_PORT),
+    )
+    mock_recv2 = (
+        MOCK_DDP_RESPONSE.encode(),
+        (MOCK_HOST2, MOCK_RANDOM_PORT),
+    )
+
+    # Test two hosts responding once each
+    mock_sock.recvfrom.side_effect = [mock_recv, mock_recv2]
+    with patch(
+        "pyps4_2ndscreen.ddp.select.select",
+        side_effect=itertools.chain(
+            [
+                ([mock_sock], [MagicMock()], [MagicMock()]),
+                ([mock_sock], [MagicMock()], [MagicMock()]),
+            ],
+            itertools.repeat(([], [], [])),
+        ),
+    ):
+        mock_discovered = ddp.search(sock=mock_sock)
+        assert mock_discovered[0]["host-ip"] == MOCK_HOST
+        assert mock_discovered[1]["host-ip"] == MOCK_HOST2
+        assert len(mock_discovered) == 2
+
+    assert len(mock_sock.close.mock_calls) == 1
+
+
 def test_get_status():
     """Test that get_status returns correctly parsed response."""
     with patch(
@@ -206,7 +238,7 @@ def test_get_status():
     ) as mock_send:
         parsed = ddp.get_status(host=MOCK_HOST)
 
-    assert len(mock_send.mock_calls) == 1
+    assert len(mock_send.mock_calls) == 2
 
     for key, value in parsed.items():
         assert key in MOCK_DDP_DICT
@@ -290,81 +322,6 @@ def test_ddp_disable_polls():
     mock_ddp.send_msg(mock_ps4)
     assert len(mock_ddp._transport.sendto.mock_calls) == 2
     assert not mock_ddp.polls_disabled
-
-
-def test_discovery():
-    """Tests for discovery."""
-    mock_disc = ddp.Discovery()
-    mock_disc.sock = MagicMock()
-    mock_recv = (
-        MOCK_DDP_RESPONSE.encode(),
-        (MOCK_HOST, MOCK_RANDOM_PORT),
-    )
-    mock_recv2 = (
-        MOCK_DDP_RESPONSE.encode(),
-        (MOCK_HOST2, MOCK_RANDOM_PORT),
-    )
-
-    mock_disc.sock.recvfrom.return_value = mock_recv
-    with patch(
-        "pyps4_2ndscreen.ddp.select.select",
-        return_value=([mock_disc.sock], [MagicMock()], [MagicMock()]),
-    ):
-        assert mock_disc.search(None)[0]["host-ip"] == MOCK_HOST
-    # Test that sock is closed on success
-    assert len(mock_disc.sock.close.mock_calls) == 1
-
-    # Test two hosts responding once each
-    mock_disc.sock.recvfrom.side_effect = [mock_recv, mock_recv2]
-    with patch(
-        "pyps4_2ndscreen.ddp.select.select",
-        side_effect=itertools.chain(
-            [
-                ([mock_disc.sock], [MagicMock()], [MagicMock()]),
-                ([mock_disc.sock], [MagicMock()], [MagicMock()]),
-            ],
-            itertools.repeat(([], [], [])),
-        ),
-    ):
-        mock_discovered = mock_disc.search(None)
-        assert mock_discovered[0]["host-ip"] == MOCK_HOST
-        assert mock_discovered[1]["host-ip"] == MOCK_HOST2
-        assert len(mock_discovered) == 2
-
-    assert len(mock_disc.sock.close.mock_calls) == 2
-
-
-def test_discovery_errors():
-    """Test discovery Errors."""
-    mock_disc = ddp.Discovery()
-    mock_disc.sock = MagicMock()
-
-    # Test receive search message
-    with patch(
-        "pyps4_2ndscreen.ddp.select.select",
-        return_value=([mock_disc.sock], [MagicMock()], [MagicMock()]),
-    ):
-        mock_disc.sock.recvfrom.return_value = (
-            ddp.get_ddp_search_message().encode(),
-            (MOCK_HOST, MOCK_RANDOM_PORT),
-        )
-        assert not mock_disc.search(None)
-    assert len(mock_disc.sock.close.mock_calls) == 1
-
-    # Test send error
-    mock_disc.sock.recvfrom.return_value = (
-        MOCK_DDP_RESPONSE.encode(),
-        (MOCK_HOST, MOCK_RANDOM_PORT),
-    )
-    mock_disc.send = MagicMock(side_effect=(ddp.socket.error, ddp.socket.timeout))
-    mock_disc.search(None)
-    assert len(mock_disc.sock.close.mock_calls) == 2
-
-    # Test receive error
-    mock_disc.send = MagicMock()
-    mock_disc.receive = MagicMock(side_effect=(ddp.socket.error, ddp.socket.timeout))
-    mock_disc.search(None)
-    assert len(mock_disc.sock.close.mock_calls) == 3
 
 
 def test_get_socket_error():

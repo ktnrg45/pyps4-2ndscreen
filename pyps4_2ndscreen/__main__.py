@@ -259,7 +259,7 @@ def status(ip_address=None):
 
 def _print_status(d_status):
     if d_status:
-        print("\nGot Status for:\n")
+        print("\nGot Status for: {}".format(d_status['host-name']))
         for key, value in d_status.items():
             print("{}: {}".format(key, value))
 
