@@ -94,7 +94,7 @@ class Ps4Base():
         if self.port != UDP_PORT:
             sock = self._get_socket()
         try:
-            self.status = get_status(self.host, sock)
+            self.status = get_status(self.host, sock=sock)
         except socket.timeout:
             _LOGGER.debug("PS4 @ %s status timed out", self.host)
             self.status = None
@@ -270,11 +270,13 @@ class Ps4Legacy(Ps4Base):
 
     def launch(self):
         """Send Launch Packet."""
-        launch(self.host, self.credential)
+        sock = self._get_socket()
+        launch(self.host, self.credential, sock=sock)
 
     def wakeup(self):
         """Send Wakeup Packet."""
-        wakeup(self.host, self.credential)
+        sock = self._get_socket()
+        wakeup(self.host, self.credential, sock=sock)
         self._power_on = True
 
     def login(self, pin: Optional[str] = '') -> bool:

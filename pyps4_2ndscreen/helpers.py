@@ -9,7 +9,7 @@ import sys
 
 from .errors import NotReady, LoginFailed
 from .credential import Credentials, DEFAULT_DEVICE_NAME
-from .ddp import search, DDP_PORT, UDP_PORT
+from .ddp import search, DDP_PORT, DEFAULT_UDP_PORT
 from .ps4 import Ps4Legacy
 
 _LOGGER = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ class Helper:
     def __init__(self):
         """Init Class."""
 
-    def has_devices(self, host=None, port=UDP_PORT) -> list:
+    def has_devices(self, host=None, port=DEFAULT_UDP_PORT) -> list:
         """Return list of device status dicts that are discovered."""
         _LOGGER.debug("Searching for PS4 Devices")
         devices = search(host, port)
@@ -41,7 +41,13 @@ class Helper:
             _LOGGER.debug("Found PS4 at: %s", device['host-ip'])
         return devices
 
-    def link(self, host: str, creds: str, pin: str, device_name=None) -> tuple:
+    def link(
+            self,
+            host: str,
+            creds: str,
+            pin: str,
+            device_name=None,
+            port=DEFAULT_UDP_PORT) -> tuple:
         """Return tuple. Perform pairing with PS4.
 
         :param host: Host IP Address of PS4 console
@@ -51,7 +57,7 @@ class Helper:
 
         if device_name is None:
             device_name = DEFAULT_DEVICE_NAME
-        ps4 = Ps4Legacy(host, creds, device_name=device_name)
+        ps4 = Ps4Legacy(host, creds, device_name=device_name, port=port)
         is_ready = True
         is_login = True
         if not pin.isdigit():

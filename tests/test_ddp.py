@@ -162,6 +162,40 @@ def test_incorrect_ddp_msg_type():
         ddp.get_ddp_message("Random", b"")
 
 
+def test_parse_ddp_msg_search():
+    """Test handle of parsing search message."""
+    msg = ddp.get_ddp_search_message()
+    data = ddp.parse_ddp_response(msg)
+    assert not data
+
+
+def test_send_recv_msg_no_socket():
+    """Test that socket is generated if sock is None."""
+    msg = ddp.get_ddp_search_message()
+    mock_sock = MagicMock()
+    mock_sock.recvfrom.return_value = (
+        MOCK_DDP_RESPONSE.encode(),
+        (MOCK_HOST, MOCK_RANDOM_PORT),
+    )
+    with patch(
+        "pyps4_2ndscreen.ddp.get_socket",
+        return_value=mock_sock,
+    ), patch(
+        "pyps4_2ndscreen.ddp.select.select",
+        return_value=([mock_sock], [MagicMock()], [MagicMock()])
+    ):
+        ddp._send_recv_msg(MOCK_HOST, msg, sock=None)
+        assert len(mock_sock.sendto.mock_calls) == 1
+        assert len(mock_sock.recvfrom.mock_calls) == 1
+
+
+def test_unspecified_socket_no_close():
+    """Test that not closing unspecified socket raises error."""
+    msg = ddp.get_ddp_search_message()
+    with pytest.raises(ValueError):
+        ddp._send_recv_msg(MOCK_HOST, msg, sock=None, close=False)
+
+
 def test_wakeup():
     """Test Wakeup call."""
     mock_sock = MagicMock()
@@ -196,6 +230,33 @@ def test_search():
     ):
         mock_result = ddp.search(MOCK_HOST, sock=mock_sock)[0]
         assert MOCK_HOST in mock_result.values()
+
+    # Test search msg sent to broadcast IP if host is None.
+    with patch(
+        "pyps4_2ndscreen.ddp.select.select",
+        return_value=([mock_sock], [MagicMock()], [MagicMock()]),
+    ), patch("pyps4_2ndscreen.ddp._send_msg") as mock_send:
+        mock_result = ddp.search(host=None, sock=mock_sock)[0]
+        assert MOCK_HOST in mock_result.values()
+        args, _ = mock_send.call_args
+        assert ddp.BROADCAST_IP == args[0]
+        assert ddp.get_ddp_search_message() == args[1]
+
+
+def test_search_recv_retry():
+    """Test Search retries receiving if no response."""
+    mock_sock = MagicMock()
+    mock_sock.recvfrom.return_value = (
+        MOCK_DDP_RESPONSE.encode(),
+        (MOCK_HOST, MOCK_RANDOM_PORT),
+    )
+    with patch(
+        "pyps4_2ndscreen.ddp.select.select",
+        return_value=([MagicMock()], [MagicMock()], [MagicMock()]),
+    ) as mock_select:
+        mock_result = ddp.search(MOCK_HOST, sock=mock_sock)
+        assert not mock_result
+        assert len(mock_select.mock_calls) > 1
 
 
 def test_search_multiple():
@@ -333,24 +394,21 @@ def test_get_socket_error():
 
 async def test_create_ddp_protocol():
     """Test DDP Protocol init."""
+    mock_sock = MagicMock()
     with patch(
         "pyps4_2ndscreen.ddp.asyncio.get_event_loop", return_value=MagicMock()
-    ) as mock_loop:
+    ) as mock_loop, patch("pyps4_2ndscreen.ddp.get_socket", return_value=mock_sock):
         mock_loop = mock_loop()
         mock_create_task = mock_coro(return_value=(MagicMock(), MagicMock()))
         mock_call = mock_coro(return_value=(MagicMock(), MagicMock()))
         mock_loop.create_datagram_endpoint = mock_call
         mock_loop.create_task = mock_create_task
 
-        local_addr = (ddp.UDP_IP, ddp.UDP_PORT)
-        reuse_port = hasattr(socket, "SO_REUSEPORT")
-        allow_broadcast = True
-        sock = None
         mock_kwargs = {
-            "local_addr": local_addr,
-            "reuse_port": reuse_port,
-            "allow_broadcast": allow_broadcast,
-            "sock": sock,
+            "local_addr": None,
+            "reuse_port": None,
+            "allow_broadcast": None,
+            "sock": mock_sock,
         }
         _, mock_ddp = await ddp.async_create_ddp_endpoint()
         mock_ddp.close()
@@ -372,19 +430,15 @@ async def test_create_ddp_protocol_sock():
         mock_loop.create_datagram_endpoint = mock_call
         mock_loop.create_task = mock_create_task
         mock_port = 1234
-        mock_timeout = 3
 
-        local_addr = None
-        reuse_port = None
-        allow_broadcast = None
-        sock = ddp.get_socket(timeout=mock_timeout, port=mock_port)
+        sock = ddp.get_socket(port=mock_port)
 
-        assert sock.gettimeout() > 0
+        assert sock.gettimeout() == 0
         assert sock.getsockname() == (ddp.UDP_IP, mock_port)
         mock_kwargs = {
-            "local_addr": local_addr,
-            "reuse_port": reuse_port,
-            "allow_broadcast": allow_broadcast,
+            "local_addr": None,
+            "reuse_port": None,
+            "allow_broadcast": None,
             "sock": sock,
         }
         _, mock_ddp = await ddp.async_create_ddp_endpoint(sock=sock)

@@ -8,14 +8,14 @@ from collections import OrderedDict
 import click
 
 from .credential import DEFAULT_DEVICE_NAME
-from .ddp import DDP_PORT
+from .ddp import DDP_PORT, UDP_PORT
 from .helpers import Helper
 from .ps4 import NotReady, Ps4Legacy
 
 _LOGGER = logging.getLogger(__name__)
 
 
-def _get_ps4(ip_address=None, credentials=None, no_creds=False):
+def _get_ps4(ip_address=None, credentials=None, no_creds=False, port=UDP_PORT):
     helper = Helper()
 
     if credentials is None:
@@ -25,10 +25,10 @@ def _get_ps4(ip_address=None, credentials=None, no_creds=False):
         if not no_creds:
             print('--credentials option required')
             return None
-        return Ps4Legacy(ip_address, '')
+        return Ps4Legacy(ip_address, '', port=port)
 
     if ip_address is not None and credentials is not None:
-        return Ps4Legacy(ip_address, credentials)
+        return Ps4Legacy(ip_address, credentials, port=port)
 
     helper = Helper()
     is_data = helper.check_data('ps4')
@@ -36,7 +36,7 @@ def _get_ps4(ip_address=None, credentials=None, no_creds=False):
         prompt_configure = input(
             "No configuration found. Configure? Enter 'y' for yes.\n> ")
         if prompt_configure.lower() == 'y':
-            link()
+            _link_func(ip_address=None, credentials=None, port=port)
         return None
     data = helper.load_files('ps4')
     if len(data) > 1 and ip_address is None:
@@ -48,7 +48,7 @@ def _get_ps4(ip_address=None, credentials=None, no_creds=False):
             creds = value
     else:
         creds = data.get(ip_address)
-    _ps4 = Ps4Legacy(ip_address, creds)
+    _ps4 = Ps4Legacy(ip_address, creds, port=port)
     return _ps4
 
 
@@ -79,6 +79,13 @@ def _print_result(success, command):
         print("Command Failed: {}".format(command))
 
 
+def _print_status(d_status):
+    if d_status:
+        print("\nGot Status for: {}".format(d_status['host-name']))
+        for key, value in d_status.items():
+            print("{}: {}".format(key, value))
+
+
 def _overwrite_creds():
     proceed = input(
         "Overwrite existing credentials? Enter 'y' for yes.\n> ")
@@ -87,29 +94,33 @@ def _overwrite_creds():
     return True
 
 
-@click.group(invoke_without_command=True)
+@click.group(invoke_without_command=False)
 @click.pass_context
 @click.version_option()
 @click.option('-v', '--debug', is_flag=True, help="Enable debug logging.")
-def cli(ctx=None, debug=False):
+@click.option('-p', '--port', type=int, help="Local UDP Port to use")
+def cli(ctx=None, debug=False, port=UDP_PORT):
     """Pyps4-2ndscreen CLI. Allows for simple commands from terminal."""
     level = logging.INFO
     if debug:
         print("Log level set to debug")
         level = logging.DEBUG
     logging.basicConfig(level=level)
-    if ctx.invoked_subcommand is None:
-        interactive()
+
+    ctx.obj = {}
+    ctx.obj['port'] = port
+    print("Using local UDP port: {}".format(port))
 
 
 @cli.command(
     help='Wakeup PS4. Example: pyps4-2ndscreen wakeup '
     '-i 192.168.0.1 -c yourcredentials')
+@click.pass_context
 @click.option('-i', '--ip_address')
 @click.option('-c', '--credentials')
-def wakeup(ip_address=None, credentials=None):
+def wakeup(ctx, ip_address=None, credentials=None):
     """Wakeup PS4"""
-    _ps4 = _get_ps4(ip_address, credentials)
+    _ps4 = _get_ps4(ip_address, credentials, port=ctx.obj['port'])
     if _ps4 is not None:
         _ps4.wakeup()
         print("Wakeup Sent to {}".format(_ps4.host))
@@ -118,11 +129,12 @@ def wakeup(ip_address=None, credentials=None):
 @cli.command(
     help='Place PS4 in Standby. Example: pyps4-2ndscreen standby '
     '-i 192.168.0.1 -c yourcredentials')
+@click.pass_context
 @click.option('-i', '--ip_address')
 @click.option('-c', '--credentials')
-def standby(ip_address=None, credentials=None):
+def standby(ctx, ip_address=None, credentials=None):
     """Standby."""
-    _ps4 = _get_ps4(ip_address, credentials)
+    _ps4 = _get_ps4(ip_address, credentials, port=ctx.obj['port'])
     if _ps4 is not None:
         success = _ps4.standby()
         _print_result(success, 'Standby')
@@ -131,12 +143,13 @@ def standby(ip_address=None, credentials=None):
 @cli.command(
     help='Send Remote Control. Example: pyps4-2ndscreen remote ps '
     '-i 192.168.0.1 -c yourcredentials')
+@click.pass_context
 @click.option('-i', '--ip_address')
 @click.option('-c', '--credentials')
 @click.argument('command', required=True)
-def remote(command, ip_address=None, credentials=None):
+def remote(ctx, command, ip_address=None, credentials=None):
     """Send remote control."""
-    _ps4 = _get_ps4(ip_address, credentials)
+    _ps4 = _get_ps4(ip_address, credentials, port=ctx.obj['port'])
     if _ps4 is not None:
         success = _ps4.remote_control(command)
         _print_result(success, "Remote '{}'".format(command))
@@ -145,12 +158,13 @@ def remote(command, ip_address=None, credentials=None):
 @cli.command(
     help='Start title. Example: pyps4-2ndscreen start CUSA10000 '
     '-i 192.168.0.1 -c yourcredentials')
+@click.pass_context
 @click.option('-i', '--ip_address')
 @click.option('-c', '--credentials')
 @click.argument('title_id', required=True)
-def start(title_id, ip_address=None, credentials=None):
+def start(ctx, title_id, ip_address=None, credentials=None):
     """Start Title."""
-    _ps4 = _get_ps4(ip_address, credentials)
+    _ps4 = _get_ps4(ip_address, credentials, port=ctx.obj['port'])
     if _ps4 is not None:
         print("Starting title: {}".format(title_id))
         success = _ps4.start_title(title_id)
@@ -160,20 +174,21 @@ def start(title_id, ip_address=None, credentials=None):
 @cli.command(
     help='Configure/Link PS4. Example: pyps4-2ndscreen link '
     '-i 192.0.0.1 -c yourcredentials')
+@click.pass_context
 @click.option('-i', '--ip_address')
 @click.option('-c', '--credentials')
-def link(ip_address=None, credentials=None):
+def link(ctx, ip_address=None, credentials=None):
     """Link or register device with PS4."""
-    _link_func(ip_address, credentials)
+    _link_func(ip_address, credentials, port=ctx.obj['port'])
 
 
-def _link_func(ip_address, credentials):
+def _link_func(ip_address, credentials, port):
     helper = Helper()
     credentials = _check_creds(credentials)
     if credentials is None:
         return False
 
-    device_list = _search_func()
+    device_list = _search_func(port=port)
     if ip_address not in device_list and ip_address is not None:
         print(
             "PS4 @ {} can not be found. Ensure PS4 is on and connected."
@@ -196,7 +211,7 @@ def _link_func(ip_address, credentials):
     if not pin.isdigit() or len(pin) != 8:
         print("PIN Invalid. Must be 8 numbers.")
         return False
-    is_ready, is_login = helper.link(ip_address, credentials, pin)
+    is_ready, is_login = helper.link(ip_address, credentials, pin, port=port)
     if is_ready and is_login:
         print('\nPS4 Successfully Linked.')
         file_name = helper.check_files('ps4')
@@ -213,14 +228,16 @@ def _link_func(ip_address, credentials):
 
 
 @cli.command(help='Search for PS4 devices. Example: pyps4-2ndscreen search')
-def search() -> list:
+@click.pass_context
+def search(ctx) -> list:
     """Search LAN for PS4's."""
-    _search_func()
+    port = ctx.obj['port']
+    _search_func(port)
 
 
-def _search_func():
+def _search_func(port=UDP_PORT):
     helper = Helper()
-    devices = helper.has_devices()
+    devices = helper.has_devices(port=port)
     device_list = [device["host-ip"] for device in devices]
     print("Found {} devices:".format(len(device_list)))
     for ip_address in device_list:
@@ -230,21 +247,28 @@ def _search_func():
 
 @cli.command(
     help='Get status of PS4. Example: pyps4-2ndscreen status -i 192.168.0.1 ')
+@click.pass_context
 @click.option('-i', '--ip_address')
-def status(ip_address=None):
+def status(ctx, ip_address=None):
     """Get Status of PS4."""
+    port = ctx.obj['port']
     d_status = {}
     if ip_address is None:
         print("Getting status for any...")
         helper = Helper()
-        devices = helper.has_devices(ip_address)
+        devices = helper.has_devices(ip_address, port=port)
         if devices:
             for d_status in devices:
                 _print_status(d_status)
             return True
         print("Try using --ip_address option.")
     else:
-        _ps4 = _get_ps4(ip_address, None, True)
+        _ps4 = _get_ps4(
+            ip_address=ip_address,
+            credentials=None,
+            no_creds=True,
+            port=port,
+        )
         if _ps4 is not None:
             d_status = _ps4.get_status()
 
@@ -255,13 +279,6 @@ def status(ip_address=None):
             "PS4 @ {} can not be found."
             .format(ip_address))
     return False
-
-
-def _print_status(d_status):
-    if d_status:
-        print("\nGot Status for: {}".format(d_status['host-name']))
-        for key, value in d_status.items():
-            print("{}: {}".format(key, value))
 
 
 @cli.command(help='Get PSN Credentials. Example: pyps4-2ndscreen credentials ')
@@ -302,11 +319,12 @@ def _credentials_func():
     help='Toggle interactive mode for continuous control. '
     'Example: pyps4-2ndscreen interactive '
     '-i 192.168.0.1 -c yourcredentials')
+@click.pass_context
 @click.option('-i', '--ip_address')
 @click.option('-c', '--credentials')
-def interactive(ip_address=None, credentials=None):
+def interactive(ctx, ip_address=None, credentials=None):
     """Interactive."""
-    _ps4 = _get_ps4(ip_address, credentials)
+    _ps4 = _get_ps4(ip_address, credentials, port=ctx.obj['port'])
     if _ps4 is not None:
         curses.wrapper(_interactive, _ps4)
 

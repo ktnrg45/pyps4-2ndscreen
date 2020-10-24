@@ -14,13 +14,15 @@ MOCK_DICT = {"something": "somethingelse"}
 
 
 def test_has_devices():
-    """Test has_devices calls."""
+    """Test has_devices."""
     helper = helpers.Helper()
-    mock_search = MagicMock()
-    mock_search.search = MagicMock(return_value=[{"host-ip": MOCK_HOST}])
-    with patch("pyps4_2ndscreen.helpers.Discovery", return_value=mock_search):
+    mock_devices = [{"host-ip": MOCK_HOST}]
+    with patch(
+        "pyps4_2ndscreen.helpers.search",
+        return_value=mock_devices,
+    ) as mock_search:
         assert helper.has_devices()
-        assert len(mock_search.search.mock_calls) == 1
+        assert len(mock_search.mock_calls) == 1
 
 
 def test_link():

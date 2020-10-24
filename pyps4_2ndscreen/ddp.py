@@ -15,6 +15,7 @@ _LOGGER = logging.getLogger(__name__)
 BROADCAST_IP = '255.255.255.255'
 UDP_IP = '0.0.0.0'
 UDP_PORT = 0
+DEFAULT_UDP_PORT = 1987
 
 DDP_PORT = 987
 DDP_VERSION = '00020020'
@@ -191,20 +192,16 @@ class DDPProtocol(asyncio.DatagramProtocol):
         return False
 
 
-async def async_create_ddp_endpoint(sock=None):
+async def async_create_ddp_endpoint(sock=None, port=DEFAULT_UDP_PORT):
     """Create Async UDP endpoint."""
-    local_addr = (UDP_IP, UDP_PORT)
-    reuse_port = hasattr(socket, 'SO_REUSEPORT')
-    allow_broadcast = True
     loop = asyncio.get_event_loop()
-    if sock is not None:
-        sock.settimeout(0)
-        local_addr = None
-        reuse_port = None
-        allow_broadcast = None
+    if sock is None:
+        sock = get_socket(port=port)
+    sock.settimeout(0)
     connect = loop.create_datagram_endpoint(
-        lambda: DDPProtocol(), local_addr=local_addr,  # noqa: pylint: disable=unnecessary-lambda
-        reuse_port=reuse_port, allow_broadcast=allow_broadcast, sock=sock)
+        lambda: DDPProtocol(),  # noqa: pylint: disable=unnecessary-lambda
+        sock=sock,
+    )
     transport, protocol = await loop.create_task(connect)
     return transport, protocol
 
@@ -274,20 +271,25 @@ def get_ddp_launch_message(credential):
     return get_ddp_message(DDP_TYPE_LAUNCH, data)
 
 
-def get_socket(timeout=3, port: Optional[int] = UDP_PORT):
+def get_socket(port: Optional[int] = DEFAULT_UDP_PORT):
     """Return DDP socket object."""
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.settimeout(timeout)
-    try:
-        if port != UDP_PORT:
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        if hasattr(socket, "SO_REUSEPORT"):
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)  # noqa: pylint: disable=no-member
-        sock.bind((UDP_IP, port))
-    except socket.error as error:
-        _LOGGER.error(
-            "Error getting DDP socket with port: %s: %s", port, error)
-        sock = None
+    retries = 0
+    sock = None
+    while retries <= 1:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.settimeout(0)
+        try:
+            if hasattr(socket, "SO_REUSEPORT"):
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)  # noqa: pylint: disable=no-member
+            sock.bind((UDP_IP, port))
+        except socket.error as error:
+            _LOGGER.error(
+                "Error getting DDP socket with port: %s: %s", port, error)
+            sock = None
+            retries += 1
+            port = UDP_PORT
+        else:
+            return sock
     return sock
 
 
@@ -366,7 +368,7 @@ def search(host=BROADCAST_IP, port=UDP_PORT, sock=None, timeout=3) -> list:
     if host is None:
         host = BROADCAST_IP
     if sock is None:
-        sock = get_socket(port)
+        sock = get_socket(port=port)
     _LOGGER.debug("Sending search message")
     _send_msg(host, msg, sock=sock, close=False)
     while time.time() - start < timeout:
