@@ -8,14 +8,20 @@ from collections import OrderedDict
 import click
 
 from .credential import DEFAULT_DEVICE_NAME
-from .ddp import DDP_PORT, UDP_PORT
+from .ddp import DDP_PORT, DEFAULT_UDP_PORT
 from .helpers import Helper
 from .ps4 import NotReady, Ps4Legacy
 
 _LOGGER = logging.getLogger(__name__)
 
 
-def _get_ps4(ip_address=None, credentials=None, no_creds=False, port=UDP_PORT):
+def _get_ps4(
+    ip_address=None,
+    credentials=None,
+    no_creds=False,
+    port=DEFAULT_UDP_PORT
+):
+
     helper = Helper()
 
     if credentials is None:
@@ -98,8 +104,14 @@ def _overwrite_creds():
 @click.pass_context
 @click.version_option()
 @click.option('-v', '--debug', is_flag=True, help="Enable debug logging.")
-@click.option('-p', '--port', type=int, help="Local UDP Port to use")
-def cli(ctx=None, debug=False, port=UDP_PORT):
+@click.option(
+    '-p',
+    '--port',
+    type=int,
+    default=DEFAULT_UDP_PORT,
+    help="Local UDP Port to use.",
+)
+def cli(ctx=None, debug=False, port=DEFAULT_UDP_PORT):
     """Pyps4-2ndscreen CLI. Allows for simple commands from terminal."""
     level = logging.INFO
     if debug:
@@ -235,7 +247,7 @@ def search(ctx) -> list:
     _search_func(port)
 
 
-def _search_func(port=UDP_PORT):
+def _search_func(port=DEFAULT_UDP_PORT):
     helper = Helper()
     devices = helper.has_devices(port=port)
     device_list = [device["host-ip"] for device in devices]

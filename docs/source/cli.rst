@@ -10,11 +10,15 @@ Example:
 
 .. code:: bash
 
-    pyps4-2ndscreen start CUSA10000 -i 192.168.0.1 -c yourCredentials
+    pyps4-2ndscreen -p 1234 start CUSA10000 -i 192.168.0.1 -c yourCredentials
 
 Options:
-  --version          Show the version and exit.
-  --help             Show this message and exit.
+  --version           Show the version and exit.
+  -v, --debug         Enable debug logging.
+  -p, --port INTEGER  Local UDP Port to use.
+  --help              Show this message and exit.
+
+Parameters:
   --ip_address, -i   IP Address of PS4.
   --credentials, -c  Credentials to use.
 
