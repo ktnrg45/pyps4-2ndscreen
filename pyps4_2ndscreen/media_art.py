@@ -1,9 +1,6 @@
 """Media Art Functions."""
 import asyncio
-import html
 import logging
-import re
-import urllib
 from ssl import SSLError
 
 import aiohttp
@@ -96,20 +93,7 @@ COUNTRIES = {
     "United Kingdom": "en/gb",
 }
 
-TYPE_LIST = {
-    'de': ['Vollversion', 'Spiel', 'PSN-Spiel', 'Paket', 'App'],
-    'en': ['Full Game', 'Game', 'PSN Game', 'Bundle', 'App'],
-    'es': ['Juego completo', 'Juego', 'Juego de PSN', 'Paquete', 'Aplicación'],
-    'fr': ['Jeu complet', 'Jeu', 'Jeu PSN', 'Offre groupée', 'App'],
-    'it': ['Gioco completo', 'Gioco', 'Gioco PSN', 'Bundle', 'App'],
-    'ja': ['ゲーム本編', 'ゲーム本編', 'DL専用ゲーム', 'ゲーム本編', 'アプリ'],
-    'ko': ['제품판', '게임', 'PSN 게임', '번들', '앱'],
-    'nl': ['Volledige game', 'game', 'PSN-game', 'Bundel', 'App'],
-    'pt': ['Jogo completo', 'jogo', 'Jogo da PSN', 'Pacote', 'Aplicação'],
-    'ru': ['Полная версия', 'Игра', 'Игра PSN', 'Комплект', 'Приложение'],
-}
-
-TYPE_APP = 'App'
+TYPE_APP = 'APP'
 
 DEFAULT_HEADERS = {
     'User-Agent':
@@ -118,52 +102,14 @@ DEFAULT_HEADERS = {
         '(KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36'
 }
 
-FORMATS = ['chars', 'chars+', 'orig', 'tumbler']
-
-BASE_IMAGE_URL = (
-    'https://store.playstation.com'
-    '/store/api/chihiro/00_09_000/container/US/en/999/'
+BASE_URL = (
+    'https://store.playstation.com/store/api/chihiro/00_09_000/'
+    'titlecontainer/{}/{}/999/{}_00'
 )
 
-LEGACY_URL = (
-    'https://store.playstation.com/'
-    'valkyrie-api/{0}/19/faceted-search/'
-    '{1}?query={1}&platform=ps4'
-)
+BASE_IMAGE_URL = '{}/image'
 
-TUMBLER_URL = (
-    'https://store.playstation.com/valkyrie-api/{}/19/'
-    'tumbler-search/{}?suggested_size=9&mode=game'
-    '&platform=ps4'
-)
-
-PINNED_TITLES = {
-    'CUSA01780': {
-        'name': 'Spotify',
-        'sku_id': 'EP4950-CUSA01780_00-US00000000000000',
-        'url': '/1559667794000/image',
-        'type': 'App',
-    }
-}
-
-
-def _get_pinned_data(data: dict):
-    """Format pinned data as if retrieved from request."""
-    result_data = {
-        'name': data['name'],
-        'default-sku-id': data['sku_id'],
-        'game-content-type': data['type'],
-        'thumbnail-url-base': '{}{}{}'.format(
-            BASE_IMAGE_URL, data['sku_id'], data['url']),
-    }
-    return {'attributes': result_data}
-
-
-def get_pinned_item(data: dict):
-    """Return a pinned ResultItem using pinned data."""
-    result_data = _get_pinned_data(data)
-    item = ResultItem(result_data, TYPE_LIST['en'])
-    return item
+HTTP_STATUS_OK = 200
 
 
 def get_region(region):
@@ -180,296 +126,105 @@ def get_region(region):
     return regions[region]
 
 
-def get_lang(region) -> str:
-    """Get language code from region."""
-    regions = COUNTRIES
-    lang = regions[region]
-    lang = lang.split('/')
-    lang = lang[0]
-    assert lang in TYPE_LIST.keys()
-    return lang
-
-
-def get_ps_store_url(title, region, reformat='chars', legacy=False):
-    """Get URL for title search in PS Store."""
-    if reformat == 'chars':  # No Special Chars.
-        title = re.sub(r'[^A-Za-z0-9\ ]+', '', title)
-    elif reformat == 'chars+':  # ignore ' and - and :
-        title = re.sub(r'[^A-Za-z0-9\-\'\: ]+', '', title)
-    elif reformat == 'tumbler':  # Sub special chars with space
-        title = re.sub(r'[^A-Za-z0-9\ ]+', ' ', title)
-        title = re.sub(r'[  ]+', ' ', title)  # Remove multiple spaces
-        title = re.sub(r' .*', '', title)
-    elif reformat == 'orig':
-        pass
-    title = html.escape(title.rstrip())
-    title = urllib.parse.quote(title.encode('utf-8'))
-    if legacy is True:
-        _url = LEGACY_URL.format(region, title)
-    else:
-        _url = TUMBLER_URL.format(region, title)
-
-    url = [_url, DEFAULT_HEADERS, region.split('/')[0]]
-    return url
-
-
-def _format_url(url):
-    """Format url for aiohttp."""
-    f_params = {}
-    url = url[0]
-    url = url.split('?')
-    params = url[1]
-    params = params.replace('?', '')
-    params = params.split('&')
-    for item in params:
-        item = item.split('=')
-        f_params[item[0]] = item[1]
-    url = url[0]
-    return url, f_params
+def get_region_codes(region) -> list:
+    """Return list of country and language codes."""
+    region = get_region(region)
+    codes = region.split('/')
+    return codes
 
 
 async def fetch(url, params, session):
     """Get Request."""
     try:
+        _LOGGER.debug("PS Store GET %s", url)
         response = await session.get(url, params=params, timeout=3)
-        return await response.json()
+        if response.status != HTTP_STATUS_OK:
+            content = await response.json()
+            _LOGGER.error("PS Store HTTP Error; Reason: %s", response.reason)
+            _LOGGER.debug("PS Store HTTP response: %s", content)
+            return None
+        return response
     except (asyncio.TimeoutError, ContentTypeError, SSLError):
         return None
 
 
-async def async_get_ps_store_requests(title, region,
-                                      session: aiohttp.ClientSession) -> list:
-    """Return Title and Cover data with aiohttp."""
-    responses = []
-
-    for format_type in FORMATS:
-        _url = get_ps_store_url(
-            title, get_region(region), reformat=format_type, legacy=True)
-        url, params = _format_url(_url)
-
-        response = await fetch(url, params, session)
-        if response is not None:
-            responses.append(response)
-
-    for format_type in FORMATS:
-        _url = get_ps_store_url(
-            title, get_region(region), reformat=format_type, legacy=False)
-        url, params = _format_url(_url)
-
-        response = await fetch(url, params, session)
-        if response is not None:
-            responses.append(response)
-
-    return responses
-
-
-async def async_get_ps_store_requests_tumbler(
-        title, region, session: aiohttp.ClientSession) -> list:
-    """Perform tumbler search."""
-    responses = []
-    short_title = title.split(' ')
-    _title = short_title[0]
-    _url = get_ps_store_url(
-        _title, get_region(region), reformat='tumbler', legacy=False)
-    url, params = _format_url(_url)
-    _LOGGER.debug("Tumbler URL: %s", _url)
-
-    response = await fetch(url, params, session)
-    if response is not None:
-        responses.append(response)
-    return responses
-
-
 async def async_search_ps_store(
-        title: str, title_id: str, region: str, search_all: bool = False):
+        title_id: str, region: str, search_all: bool = False):
     """Search PS Store for title data."""
-    # Check if title is a pinned title first and return.
-    pinned = None
-    pinned = PINNED_TITLES.get(title_id)
-    if pinned is not None:
-        return get_pinned_item(pinned)
-
-    # Conduct Search Requests.
-    searches = [
-        async_get_ps_store_requests,
-        async_get_ps_store_requests_tumbler,
-    ]
-    if search_all:
-        searches.append('all')
     result_item = None
-    searching_all = False
     _LOGGER.debug("Starting search request")
+    codes = get_region_codes(region)
+    data_url = BASE_URL.format(codes[1], codes[0], title_id)
+    image_url = BASE_IMAGE_URL.format(data_url)
+    params = DEFAULT_HEADERS
 
     async with aiohttp.ClientSession() as session:
-        for search in searches:
-            if search == 'all':  # noqa: pylint: disable=comparison-with-callable
-                searches.extend(list(COUNTRIES.keys()))
-                searching_all = True
-                _LOGGER.info(
-                    "Searching other regions; Result may be incorrect")
-                continue
-            if searching_all:
-                region = search
-                search = async_get_ps_store_requests_tumbler
-            await asyncio.sleep(0)
-            responses = await search(
-                title, region, session)
+        image_check = await fetch(image_url, params, session)
+        data = await fetch(data_url, params, session)
+        if data is not None:
+            data = await data.json()
 
-            for response in responses:
-                try:
-                    result_item = parse_data(response, title_id, region)
-                except (TypeError, AttributeError) as type_attr_error:
-                    result_item = None
-                    raise PSDataIncomplete from type_attr_error
-                if result_item is not None:
-                    break
-            if result_item is not None:
-                break
-        await session.close()
-    return result_item
+    if image_check is None:
+        _LOGGER.error("Cover Art URL is invalid")
+        image_url = None
 
-
-def parse_data(result, title_id, region):
-    """Filter through each item in search request."""
-    lang = get_lang(region)
-    item_list = []
-    type_list = TYPE_LIST[lang]
-    type_list.append(TYPE_APP)
-    parent_list = []
-
-    for item in result['included']:
-        item_list.append(ResultItem(item, type_list))
-
-    # Filter each item by prioritized type
-    for g_type in type_list:
-        for item in item_list:
-            if item.game_type == g_type:
-                if item.sku_id == title_id:
-                    _LOGGER.debug(
-                        "Item: %s, %s", item.name, item.sku_id)
-                    if not item.parent or item.parent.data is None:
-                        _LOGGER.info("Direct Match")
-                        return item
-                    parent_list.append(item.parent)
-
-    for item in parent_list:
-        if item.data is not None:
-            if item.sku_id == title_id:
-                _LOGGER.info("Parent Match")
-                return item
-    return None
-
-
-def parse_id(sku_id):
-    """Format SKU."""
-    try:
-        sku_id = sku_id.split("-")
-        sku_id = sku_id[1].split("_")
-        parsed_id = sku_id[0]
-        return parsed_id
-    except IndexError:
+    if data is None or not data or not isinstance(data, dict):
         return None
+
+    if data.get('gameContentTypesList') is None or data.get('title_name') is None:
+        raise PSDataIncomplete("Title data missing keys")
+
+    result_item = ResultItem(title_id, image_url, data)
+    return result_item
 
 
 class ResultItem():
     """Item object."""
 
-    def __init__(self, data, type_list):
+    def __init__(self, title_id, image_url, data):
         """Init Class."""
-        self.type_list = type_list
-        self.data = data['attributes']
+        self._data = data
+        self._sku_id = title_id
+        self._cover_art = image_url
 
     def __repr__(self):
         return (
-            "<{}.{} name={} sku_id={} game_type={} parent={}>".format(
+            "<{}.{} name={} sku_id={} game_type={}>".format(
                 self.__module__,
                 self.__class__.__name__,
                 self.name,
                 self.sku_id,
                 self.game_type,
-                self.parent is not None,
             )
         )
 
     @property
     def name(self):
-        """Get Item Name."""
-        return self.data.get('name')
+        """Return Item Name."""
+        return self.data.get('title_name')
 
     @property
     def game_type(self):
-        """Get Game Type."""
-        game_type = self.data.get('game-content-type')
-        if game_type is not None:
-            if game_type == self.type_list[4]:
-                game_type = 'App'
+        """Return Game Type."""
+        game_type = None
+        game_types = self.data.get('gameContentTypesList')
+        if game_types and isinstance(game_types, list):
+            _game_types = game_types[0]
+            if isinstance(_game_types, dict):
+                game_type = _game_types.get('key')
         return game_type
 
     @property
     def sku_id(self):
-        """Get SKU."""
-        sku_id = self.data.get('default-sku-id')
-        if sku_id is not None:
-            sku_id = parse_id(sku_id)
-        return sku_id
+        """Return SKU."""
+        return self._sku_id
 
     @property
     def cover_art(self):
-        """Get Art URL."""
-        return self.data.get('thumbnail-url-base')
+        """Return Art URL."""
+        return self._cover_art
 
     @property
-    def parent(self):
-        """Get Parents."""
-        parent = self.data.get('parent')
-        if self.game_type is not None and parent is not None \
-                and parent != 'null':
-            return ParentItem(parent, self.game_type)
-        return None
-
-
-class ParentItem():
-    """Item object."""
-
-    def __init__(self, data, game_type=None):
-        """Init Class."""
-        self.data = data
-        self._game_type = game_type
-
-    def __repr__(self):
-        return (
-            "<{}.{} name={} sku_id={} game_type={}>"
-            .format(
-                self.__module__,
-                self.__class__.__name__,
-                self.name,
-                self.sku_id,
-                self.game_type,
-            )
-        )
-
-    @property
-    def name(self):
-        """Parent Name."""
-        return self.data.get('name')
-
-    @property
-    def sku_id(self):
-        """Parent SKU."""
-        sku_id = self.data.get('id')
-        if sku_id is not None:
-            sku_id = parse_id(sku_id)
-        return sku_id
-
-    @property
-    def cover_art(self):
-        """Parent Art."""
-        url = self.data.get('url')
-        if url is not None:
-            url = "{}{}".format(url, "/image")
-        return url
-
-    @property
-    def game_type(self):
-        """Parent Game type."""
-        return self._game_type
+    def data(self):
+        """Return dict of data attributes."""
+        return self._data

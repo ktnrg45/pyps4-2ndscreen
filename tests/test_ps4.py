@@ -12,7 +12,7 @@ from pyps4_2ndscreen.ddp import (
     get_ddp_launch_message,
     get_ddp_wake_message,
 )
-from pyps4_2ndscreen.media_art import PINNED_TITLES, PSDataIncomplete
+from pyps4_2ndscreen.media_art import PSDataIncomplete
 
 from .test_ddp import (
     MOCK_CREDS,
@@ -183,11 +183,9 @@ async def test_get_ps_store_data():
     mock_result.cover_art = MOCK_COVER_URL
 
     with patch(
-        "pyps4_2ndscreen.media_art.async_get_ps_store_requests",
-        new=mock_coro(return_value=[MagicMock()]),
-    ) as mock_call, patch(
-        "pyps4_2ndscreen.media_art.parse_data", return_value=mock_result
-    ):
+        "pyps4_2ndscreen.ps4.async_search_ps_store",
+        new=mock_coro(return_value=mock_result),
+    )as mock_call:
         result_item = await mock_ps4.async_get_ps_store_data(
             MOCK_TITLE_NAME, MOCK_TITLE_ID, MOCK_REGION
         )
@@ -197,42 +195,16 @@ async def test_get_ps_store_data():
         assert mock_ps4.running_app_ps_name == MOCK_TITLE_NAME
         assert mock_ps4.running_app_ps_cover == MOCK_COVER_URL
 
-    # Test errors with search
-    with patch(
-        "pyps4_2ndscreen.media_art.async_get_ps_store_requests",
-        new=mock_coro(return_value=[MagicMock()]),
-    ) as mock_call, patch(
-        "pyps4_2ndscreen.media_art.parse_data", side_effect=(TypeError, AttributeError)
-    ), pytest.raises(
-        PSDataIncomplete
-    ):
-        result_item = await mock_ps4.async_get_ps_store_data(
-            MOCK_TITLE_NAME, MOCK_TITLE_ID, MOCK_REGION
-        )
-        assert len(mock_call.mock_calls) == 1
-        assert result_item is None
-
     # Test no item found
     with patch(
-        "pyps4_2ndscreen.media_art.async_get_ps_store_requests",
-        new=mock_coro(return_value=[]),
-    ) as mock_call, patch("pyps4_2ndscreen.media_art.parse_data", return_value=None):
+        "pyps4_2ndscreen.ps4.async_search_ps_store",
+        new=mock_coro(return_value=None),
+    ) as mock_call:
         result_item = await mock_ps4.async_get_ps_store_data(
             MOCK_TITLE_NAME, MOCK_TITLE_ID, MOCK_REGION
         )
         assert len(mock_call.mock_calls) == 1
         assert result_item is None
-
-
-async def test_get_pinned_data():
-    """Test pinned data retrieved."""
-    mock_ps4 = ps4.Ps4Legacy(MOCK_HOST, MOCK_CREDS)
-    title_id, data = next(iter(PINNED_TITLES.items()))
-    result_item = await mock_ps4.async_get_ps_store_data(
-        data["name"], title_id, MOCK_REGION
-    )
-    assert result_item.name == data["name"]
-    assert data["sku_id"] in result_item.cover_art
 
 
 # ##### Ps4Legacy Tests ######

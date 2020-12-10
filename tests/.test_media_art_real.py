@@ -55,6 +55,7 @@ TEST_LIST = [  # title, titleid, region
 
 logging.basicConfig(level=logging.INFO)
 _LOGGER = logging.getLogger(__name__)
+logging.getLogger("asyncio").setLevel(logging.CRITICAL)
 
 TEST_HOST = "192.168.0.1"
 TEST_CREDS = "Imatest000"
@@ -139,20 +140,21 @@ class MediaArtTest():
         for item in TEST_LIST:
             test = self._get_cover_art(item, search_all=False)
             tests.append(test)
-        tests.pop(0)
-        test_search_all = self._get_cover_art(TEST_LIST[0], search_all=True)
+        # tests.pop(0)
+#        test_search_all = self._get_cover_art(TEST_LIST[0], search_all=True)
 
         results = await asyncio.gather(*tests)
         _LOGGER.info("\nStarting Search All Test:\n")
-        search_all_result = await test_search_all
+#        search_all_result = await test_search_all
         self._print_results()
         for index, item in enumerate(results):
             if item is not None:
                 fails = True
                 _LOGGER.info("Failed: %s", item)
-        if search_all_result is not None:
-            fails = True
-            _LOGGER.info("Search All Test Failed")
+        # if search_all_result is not None:
+        #     fails = True
+        #     _LOGGER.info("Search All Test Failed")
+
         if not fails:
             _LOGGER.info("All Tests Passed")
             return True
@@ -167,6 +169,7 @@ def main():
     loop = asyncio.get_event_loop()
     start = time.time()
     success = loop.run_until_complete(test_case._get_tests())
+    loop.stop()
     elapsed = time.time() - start
     _LOGGER.info("All Tests completed in %s seconds", elapsed)
     _LOGGER.info("Success: %s", success)

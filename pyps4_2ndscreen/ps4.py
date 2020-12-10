@@ -113,8 +113,10 @@ class Ps4Base():
             region: str,
             search_all: bool = False) -> ResultItem:
         """Return title data from PS Store."""
+        _LOGGER.debug(
+            "Searching for title: Name: %s, SKI_ID: %s", title, title_id)
         result_item = await async_search_ps_store(
-            title, title_id, region, search_all)
+            title_id, region, search_all)
         if result_item is not None:
             _LOGGER.debug("Found Title: %s, URL: %s",
                           result_item.name, result_item.cover_art)
