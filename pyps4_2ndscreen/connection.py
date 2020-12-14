@@ -44,16 +44,6 @@ def _get_public_key_rsa() -> RSA.RsaKey:
     return key.publickey()
 
 
-def _get_model_name() -> str:
-    """Return formatted model name."""
-    info = platform.uname()
-    formatted = "{}/{}".format(
-        info.system,
-        info.node,
-    )
-    return formatted
-
-
 def _handle_response(command: str, msg: bytes) -> bool:
     """Return Pass/Fail for sent message.
 
@@ -153,7 +143,7 @@ def _get_login_request(
 
     pin = pin.encode()
     name = name.encode()
-    model = _get_model_name().encode()
+    model = socket.gethostname().encode()[:16]
 
     config = {
         # This label appears in the notification when logging in.
@@ -161,7 +151,7 @@ def _get_login_request(
         'account_id': credential.encode().ljust(64, b'\x00'),
         'os_version': b'4.4'.ljust(16, b'\x00'),
         # Used when linking, will be the name of device in settings.
-        'model': model.ljust(16, b'\x00')[:16],
+        'model': model.ljust(16, b'\x00'),
         'pin_code': pin.ljust(16, b'\x00'),
     }
 
