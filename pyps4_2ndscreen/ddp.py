@@ -372,12 +372,11 @@ def search(host=BROADCAST_IP, port=UDP_PORT, sock=None, timeout=3) -> list:
     _LOGGER.debug("Sending search message")
     _send_msg(host, msg, sock=sock, close=False)
     while time.time() - start < timeout:
+        data = addr = None
         response = _recv_msg(host, msg, sock=sock, close=False)
         if response is not None:
             data, addr = response
-        else:
-            continue
-        if data is not None:
+        if data is not None and addr is not None:
             data = parse_ddp_response(data.decode('utf-8'))
             if data not in ps_list and data:
                 data[u'host-ip'] = addr[0]
