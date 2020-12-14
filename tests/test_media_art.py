@@ -1,7 +1,6 @@
 """Tests for pyps4_2ndscreen.media_art."""
 import asyncio
 import logging
-import itertools
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -277,28 +276,17 @@ async def test_search_ps_store():
 
 async def test_search_ps_store_errors():
     """Test PS store search errors."""
-    mock_response_1 = Mock()
-    mock_response_1.json.return_value = asyncio.Future()
-    mock_response_1.json.return_value.set_result(None)
-    mock_response_2 = Mock()
-    mock_response_2.json.return_value = asyncio.Future()
-    mock_response_2.json.return_value.set_result({})
+    mock_response = Mock()
+    mock_response.json.return_value = asyncio.Future()
+    mock_response.json.return_value.set_result({})
     with patch(
-        "pyps4_2ndscreen.media_art.fetch", new=mock_coro(side_effect=itertools.chain([None, mock_response_2]))
+        "pyps4_2ndscreen.media_art.fetch", new=mock_coro(return_value=mock_response)
     ) as mock_fetch:
         result = await media.async_search_ps_store(
             MOCK_TITLE_ID, MOCK_REGION_NAME
         )
         assert result is None
-        assert len(mock_fetch.mock_calls) == 2
-    with patch(
-        "pyps4_2ndscreen.media_art.fetch", new=mock_coro(side_effect=[mock_response_2, mock_response_1])
-    ) as mock_fetch:
-        result = await media.async_search_ps_store(
-            MOCK_TITLE_ID, MOCK_REGION_NAME
-        )
-        assert result is None
-        assert len(mock_fetch.mock_calls) == 2
+        assert len(mock_fetch.mock_calls) == 1
 
 
 async def test_fetch():

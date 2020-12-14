@@ -12,7 +12,6 @@ from pyps4_2ndscreen.ddp import (
     get_ddp_launch_message,
     get_ddp_wake_message,
 )
-from pyps4_2ndscreen.media_art import PSDataIncomplete
 
 from .test_ddp import (
     MOCK_CREDS,

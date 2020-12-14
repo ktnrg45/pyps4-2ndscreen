@@ -149,7 +149,7 @@ async def fetch(url, params, session):
 
 
 async def async_search_ps_store(
-        title_id: str, region: str, search_all: bool = False):
+        title_id: str, region: str):
     """Search PS Store for title data."""
     result_item = None
     _LOGGER.debug("Starting search request")
@@ -159,19 +159,15 @@ async def async_search_ps_store(
     params = DEFAULT_HEADERS
 
     async with aiohttp.ClientSession() as session:
-        image_check = await fetch(image_url, params, session)
         data = await fetch(data_url, params, session)
         if data is not None:
             data = await data.json()
 
-    if image_check is None:
-        _LOGGER.error("Cover Art URL is invalid")
-        image_url = None
-
     if data is None or not data or not isinstance(data, dict):
         return None
 
-    if data.get('gameContentTypesList') is None or data.get('title_name') is None:
+    if data.get('gameContentTypesList') is None or \
+            data.get('title_name') is None:
         raise PSDataIncomplete("Title data missing keys")
 
     result_item = ResultItem(title_id, image_url, data)
