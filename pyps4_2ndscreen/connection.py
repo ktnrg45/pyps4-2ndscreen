@@ -6,7 +6,6 @@ import logging
 import socket
 import time
 import asyncio
-import platform
 from typing import cast, Optional, Union
 
 from construct import (Bytes, Const, Int32ul, Padding, Struct, Container)
