@@ -74,7 +74,7 @@ git push
 
 read -p "Enter release message: " msg
 
-gh release create $VERSION -t $VERSION -n $msg --target-branch $MASTER_BRANCH
+gh release create $VERSION -t $VERSION -n "$msg" --target $MASTER_BRANCH
 
 read -p "Upload to pypi?: y> " msg_pypi
 if [ "$msg_pypi" == "y" ];
