@@ -1,6 +1,6 @@
 INFO:__main__:
-Test last ran on Mon Dec 14 08:14:49 2020
-Version: 1.1.1
+Test last ran on Sun Dec 20 21:25:39 2020
+Version: 1.2.0
 
 INFO:__main__:
 Result 0:
@@ -8,7 +8,7 @@ Result 0:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/au/en/999/CUSA11994_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 0.5 seconds
+Search Time: 0.54 seconds
 Search Query:
 --> Title: Marvel's Spider-Man
 --> SKU ID: CUSA11994
@@ -20,7 +20,7 @@ Result 1:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/ar/en/999/CUSA02299_00/image
 --> Game Type: BUNDLE
 -------------
-Search Time: 0.4 seconds
+Search Time: 0.42 seconds
 Search Query:
 --> Title: Marvel's Spider-Man
 --> SKU ID: CUSA02299
@@ -32,7 +32,7 @@ Result 2:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/au/en/999/CUSA11993_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 0.51 seconds
+Search Time: 0.65 seconds
 Search Query:
 --> Title: Marvel's Spider-Man
 --> SKU ID: CUSA11993
@@ -44,7 +44,7 @@ Result 3:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/at/de/999/CUSA11993_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 0.64 seconds
+Search Time: 0.57 seconds
 Search Query:
 --> Title: Marvel's Spider-Man
 --> SKU ID: CUSA11993
@@ -56,7 +56,7 @@ Result 4:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/fr/fr/999/CUSA11993_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 0.55 seconds
+Search Time: 0.65 seconds
 Search Query:
 --> Title: Marvel's Spider-Man
 --> SKU ID: CUSA11993
@@ -68,7 +68,7 @@ Result 5:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/it/it/999/CUSA11993_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 0.56 seconds
+Search Time: 0.66 seconds
 Search Query:
 --> Title: Marvel's Spider-Man
 --> SKU ID: CUSA11993
@@ -80,7 +80,7 @@ Result 6:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/jp/ja/999/CUSA09751_00/image
 --> Game Type: BUNDLE
 -------------
-Search Time: 0.47 seconds
+Search Time: 0.85 seconds
 Search Query:
 --> Title: Marvel's Spider-Man
 --> SKU ID: CUSA09751
@@ -92,7 +92,7 @@ Result 7:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/kr/ko/999/CUSA09893_00/image
 --> Game Type: BUNDLE
 -------------
-Search Time: 0.44 seconds
+Search Time: 0.4 seconds
 Search Query:
 --> Title: Marvel's Spider-Man
 --> SKU ID: CUSA09893
@@ -104,7 +104,7 @@ Result 8:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/nl/nl/999/CUSA11993_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 0.57 seconds
+Search Time: 0.6 seconds
 Search Query:
 --> Title: Marvel's Spider-Man
 --> SKU ID: CUSA11993
@@ -116,7 +116,7 @@ Result 9:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/pt/pt/999/CUSA11994_00/image
 --> Game Type: BUNDLE
 -------------
-Search Time: 0.38 seconds
+Search Time: 0.53 seconds
 Search Query:
 --> Title: Marvel's Spider-Man
 --> SKU ID: CUSA11994
@@ -128,7 +128,7 @@ Result 10:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/ru/ru/999/CUSA11995_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 0.84 seconds
+Search Time: 0.7 seconds
 Search Query:
 --> Title: Marvel's Spider-Man
 --> SKU ID: CUSA11995
@@ -140,7 +140,7 @@ Result 11:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/es/es/999/CUSA11994_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 0.65 seconds
+Search Time: 0.73 seconds
 Search Query:
 --> Title: Marvel's Spider-Man
 --> SKU ID: CUSA11994
@@ -152,7 +152,7 @@ Result 12:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/se/en/999/CUSA11993_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 0.79 seconds
+Search Time: 0.85 seconds
 Search Query:
 --> Title: Marvel's Spider-Man
 --> SKU ID: CUSA11993
@@ -164,7 +164,7 @@ Result 13:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/gb/en/999/CUSA01780_00/image
 --> Game Type: APP
 -------------
-Search Time: 0.67 seconds
+Search Time: 0.7 seconds
 Search Query:
 --> Title: Spotify
 --> SKU ID: CUSA01780
@@ -176,7 +176,7 @@ Result 14:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/us/en/999/CUSA00129_00/image
 --> Game Type: APP
 -------------
-Search Time: 0.72 seconds
+Search Time: 0.73 seconds
 Search Query:
 --> Title: Netflix
 --> SKU ID: CUSA00129
@@ -188,7 +188,7 @@ Result 15:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/es/es/999/CUSA00127_00/image
 --> Game Type: APP
 -------------
-Search Time: 0.74 seconds
+Search Time: 0.76 seconds
 Search Query:
 --> Title: Netflix
 --> SKU ID: CUSA00127
@@ -200,7 +200,7 @@ Result 16:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/pt/pt/999/CUSA01116_00/image
 --> Game Type: APP
 -------------
-Search Time: 0.76 seconds
+Search Time: 0.79 seconds
 Search Query:
 --> Title: Youtube
 --> SKU ID: CUSA01116
@@ -212,7 +212,7 @@ Result 17:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/pt/pt/999/CUSA00127_00/image
 --> Game Type: APP
 -------------
-Search Time: 0.8 seconds
+Search Time: 0.83 seconds
 Search Query:
 --> Title: Netflix
 --> SKU ID: CUSA00127
@@ -224,7 +224,7 @@ Result 18:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/pt/pt/999/CUSA07669_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 0.95 seconds
+Search Time: 1.03 seconds
 Search Query:
 --> Title: Fortnite
 --> SKU ID: CUSA07669
@@ -236,7 +236,7 @@ Result 19:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/pt/pt/999/CUSA00512_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 1.05 seconds
+Search Time: 0.99 seconds
 Search Query:
 --> Title: Beyond: Two Souls™
 --> SKU ID: CUSA00512
@@ -248,7 +248,7 @@ Result 20:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/tw/en/999/CUSA08804_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 1.24 seconds
+Search Time: 1.07 seconds
 Search Query:
 --> Title: Shadow of the Colossus
 --> SKU ID: CUSA08804
@@ -260,7 +260,7 @@ Result 21:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/es/es/999/CUSA07669_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 1.11 seconds
+Search Time: 1.1 seconds
 Search Query:
 --> Title: Fortnite
 --> SKU ID: CUSA07669
@@ -272,7 +272,7 @@ Result 22:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/us/en/999/CUSA00552_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 1.1 seconds
+Search Time: 1.12 seconds
 Search Query:
 --> Title: The Last of Us™ Remastered
 --> SKU ID: CUSA00552
@@ -284,7 +284,7 @@ Result 23:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/ru/ru/999/CUSA05265_00/image
 --> Game Type: BUNDLE
 -------------
-Search Time: 1.0 seconds
+Search Time: 1.13 seconds
 Search Query:
 --> Title: For Honor
 --> SKU ID: CUSA05265
@@ -296,7 +296,7 @@ Result 24:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/ru/ru/999/CUSA03975_00/image
 --> Game Type: BUNDLE
 -------------
-Search Time: 1.36 seconds
+Search Time: 1.19 seconds
 Search Query:
 --> Title: Overwatch: Origins Edition
 --> SKU ID: CUSA03975
@@ -308,7 +308,7 @@ Result 25:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/us/en/999/CUSA05969_00/image
 --> Game Type: BUNDLE
 -------------
-Search Time: 1.17 seconds
+Search Time: 1.18 seconds
 Search Query:
 --> Title: Call of Duty®: WWII
 --> SKU ID: CUSA05969
@@ -320,7 +320,7 @@ Result 26:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/us/en/999/CUSA07737_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 1.18 seconds
+Search Time: 1.19 seconds
 Search Query:
 --> Title: UNCHARTED: The Lost Legacy
 --> SKU ID: CUSA07737
@@ -332,7 +332,7 @@ Result 27:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/us/en/999/CUSA08724_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 1.2 seconds
+Search Time: 1.27 seconds
 Search Query:
 --> Title: Battlefield™ V
 --> SKU ID: CUSA08724
@@ -344,7 +344,7 @@ Result 28:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/us/en/999/CUSA11100_00/image
 --> Game Type: BUNDLE
 -------------
-Search Time: 1.35 seconds
+Search Time: 1.3 seconds
 Search Query:
 --> Title: Call of Duty®: Black Ops 4
 --> SKU ID: CUSA11100
@@ -356,7 +356,7 @@ Result 29:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/us/en/999/CUSA12421_00/image
 --> Game Type: BUNDLE
 -------------
-Search Time: 1.31 seconds
+Search Time: 1.36 seconds
 Search Query:
 --> Title: HITMAN™ 2
 --> SKU ID: CUSA12421
@@ -368,7 +368,7 @@ Result 30:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/us/en/999/CUSA00575_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 1.25 seconds
+Search Time: 1.28 seconds
 Search Query:
 --> Title: inFAMOUS First Light™
 --> SKU ID: CUSA00575
@@ -380,7 +380,7 @@ Result 31:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/us/en/999/CUSA01623_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 1.41 seconds
+Search Time: 1.43 seconds
 Search Query:
 --> Title: God of War® III Remastered
 --> SKU ID: CUSA01623
@@ -392,7 +392,7 @@ Result 32:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/us/en/999/CUSA04459_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 1.29 seconds
+Search Time: 1.3 seconds
 Search Query:
 --> Title: WATCH_DOGS® 2
 --> SKU ID: CUSA04459
@@ -404,7 +404,7 @@ Result 33:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/us/en/999/CUSA03220_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 1.42 seconds
+Search Time: 1.44 seconds
 Search Query:
 --> Title: Gran TurismoSPORT
 --> SKU ID: CUSA03220
@@ -416,7 +416,7 @@ Result 34:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/se/en/999/CUSA01073_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 1.37 seconds
+Search Time: 1.41 seconds
 Search Query:
 --> Title: Ratchet & Clank™
 --> SKU ID: CUSA01073
@@ -428,7 +428,7 @@ Result 35:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/us/en/999/CUSA02320_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 1.47 seconds
+Search Time: 1.48 seconds
 Search Query:
 --> Title: Uncharted: The Nathan Drake Collection™
 --> SKU ID: CUSA02320
@@ -440,7 +440,7 @@ Result 36:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/fr/fr/999/CUSA07580_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 1.46 seconds
+Search Time: 1.55 seconds
 Search Query:
 --> Title: NHL™ 18
 --> SKU ID: CUSA07580
@@ -452,7 +452,7 @@ Result 37:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/us/en/999/CUSA08966_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 1.48 seconds
+Search Time: 1.54 seconds
 Search Query:
 --> Title: Days Gone
 --> SKU ID: CUSA08966
@@ -464,7 +464,7 @@ Result 38:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/pt/pt/999/CUSA08670_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 1.58 seconds
+Search Time: 1.7 seconds
 Search Query:
 --> Title: Battlefield™ V
 --> SKU ID: CUSA08670
@@ -476,7 +476,7 @@ Result 39:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/fr/fr/999/CUSA00433_00/image
 --> Game Type: BUNDLE
 -------------
-Search Time: 1.54 seconds
+Search Time: 1.58 seconds
 Search Query:
 --> Title: Diablo III: Reaper of Souls – Ultimate Evil Edition
 --> SKU ID: CUSA00433
@@ -488,7 +488,7 @@ Result 40:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/ua/ru/999/CUSA04529_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 1.75 seconds
+Search Time: 1.71 seconds
 Search Query:
 --> Title: Uncharted 4: A Thief’s End
 --> SKU ID: CUSA04529
@@ -500,7 +500,7 @@ Result 41:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/jp/ja/999/CUSA00554_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 1.68 seconds
+Search Time: 2.34 seconds
 Search Query:
 --> Title: The Last of Us™ Remastered
 --> SKU ID: CUSA00554
@@ -512,7 +512,7 @@ Result 42:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/ru/ru/999/CUSA11379_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 1.96 seconds
+Search Time: 1.84 seconds
 Search Query:
 --> Title: Mortal Kombat 11
 --> SKU ID: CUSA11379
@@ -524,7 +524,7 @@ Result 43:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/ru/ru/999/CUSA23465_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 1.61 seconds
+Search Time: 1.7 seconds
 Search Query:
 --> Title: Worms Rumble
 --> SKU ID: CUSA23465
@@ -536,7 +536,7 @@ Result 44:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/fr/fr/999/CUSA03952_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 1.63 seconds
+Search Time: 1.69 seconds
 Search Query:
 --> Title: No Man's Sky
 --> SKU ID: CUSA03952
@@ -548,12 +548,12 @@ Result 45:
 --> Cover URL: https://store.playstation.com/store/api/chihiro/00_09_000/titlecontainer/pl/en/999/CUSA04893_00/image
 --> Game Type: FULL_GAME
 -------------
-Search Time: 1.67 seconds
+Search Time: 1.74 seconds
 Search Query:
 --> Title: Assassin's Creed The Ezio Collection
 --> SKU ID: CUSA04893
 --> Region: Poland
 
 INFO:__main__:All Tests Passed
-INFO:__main__:All Tests completed in 2.0215306282043457 seconds
+INFO:__main__:All Tests completed in 2.3860504627227783 seconds
 INFO:__main__:Success: True
