@@ -5,6 +5,13 @@ MASTER_BRANCH="master"
 CURRENT="Already up to date."
 VERSION="$(python -m pyps4_2ndscreen.__version__)"
 
+latest="$(gh release list | grep 'Latest' | head -c 5)"
+if [[ $VERSION == $latest ]];
+then
+	echo "Version: $VERSION is already latest."
+	exit 1
+fi
+
 git checkout dev
 git reset HEAD
 branch="$(git status | head -n 1 | tail -c 4)"
@@ -67,7 +74,7 @@ git push
 
 read -p "Enter release message: " msg
 
-gh release create $VERSION -t $VERSION -n $msg -d --target-branch $MASTER_BRANCH
+gh release create $VERSION -t $VERSION -n $msg --target-branch $MASTER_BRANCH
 
 read -p "Upload to pypi?: y> " msg_pypi
 if [ "$msg_pypi" == "y" ];
