@@ -3,12 +3,6 @@
 DEV_BRANCH="dev"
 MASTER_BRANCH="master"
 CURRENT="Already up to date."
-USER="$(git config --get user.name)"
-ACCESS_TOKEN="$(git config --get user.token)"
-repo_url="$(echo $(git config --get remote.origin.url) | grep -Po '.*(?=\.)')"
-url="$(echo $repo_url | sed 's\'github.com'\'api.github.com/repos'\g')"
-API_URL=$(printf "%s/releases" $url)
-
 VERSION="$(python -m pyps4_2ndscreen.__version__)"
 
 git checkout dev
@@ -73,8 +67,7 @@ git push
 
 read -p "Enter release message: " msg
 
-API_JSON="$(printf "{\"tag_name\": \"%s\",\"target_commitish\": \"master\",\"name\": \"%s\",\"body\": \"%s\",\"draft\": false,\"prerelease\": false}" "$VERSION" "$VERSION" "$msg")"
-curl -H "Authorization: token $ACCESS_TOKEN" --data "$API_JSON" --url $API_URL
+gh release create $VERSION -t $VERSION -n $msg -d --target-branch $MASTER_BRANCH
 
 read -p "Upload to pypi?: y> " msg_pypi
 if [ "$msg_pypi" == "y" ];
