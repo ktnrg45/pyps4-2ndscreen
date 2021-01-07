@@ -55,6 +55,8 @@ TEST_LIST = [  # title, titleid, region
     ["Worms Rumble", "CUSA23465", "Russia"],
     ["No Man's Sky", "CUSA03952", "France"],
     ["Assassin's Creed The Ezio Collection", "CUSA04893", "Poland"],
+    ["Worms Rumble", "CUSA23465", "Finland"],
+    ["Cat Quest II", "CUSA16553", "Finland"],
 ]
 
 logging.basicConfig(level=logging.INFO)
