@@ -658,7 +658,7 @@ class Ps4Async(Ps4Base):
                     self.tcp_protocol = tcp_protocol
                     self._connected = True
                     if self._power_on:  # If powering on
-                        if auto_login:
+                        if auto_login and self.task_queue is None:
                             await self.login()
                     self._power_on = False
 

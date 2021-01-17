@@ -925,7 +925,6 @@ def test_data_recv():
     msg = MOCK_LOGIN_SUCCESS
     mock_ps4.connection._decipher.decrypt = MagicMock(return_value=msg)
     mock_protocol.data_received(msg)
-    assert mock_protocol.login_success.is_set()
     assert mock_ps4.loggedin is True
     assert mock_protocol.task is None
 
@@ -940,22 +939,19 @@ def test_data_recv():
 async def test_async_login():
     """Test async login."""
     mock_protocol, mock_ps4 = setup_mock_protocol()
-
     mock_protocol.send = mock_coro()
     mock_protocol.sync_send = MagicMock()
     mock_protocol._send_remote_control_request_sync = MagicMock()
+    mock_protocol.connection_made(MagicMock())
 
     with patch("pyps4_2ndscreen.connection.socket.gethostname", return_value=MOCK_MODEL):
-        asyncio.ensure_future(
-            mock_protocol.login(pin=MOCK_PIN, delay=0.1, power_on=False)
-        )
+        await mock_protocol.login(pin=MOCK_PIN, delay=0.1, power_on=False)
         await asyncio.sleep(0)
         # Mock login success.
         msg = MOCK_LOGIN_SUCCESS
         mock_ps4.connection._decipher.decrypt = MagicMock(return_value=msg)
         mock_protocol.data_received(msg)
     mock_protocol.send.assert_called_once_with(MOCK_LOGIN)
-    mock_protocol.login_success.set()
     # Test RC Open sent.
     await asyncio.sleep(1)
     mock_protocol.sync_send.assert_called_once_with(MOCK_RC_OPEN)
@@ -965,17 +961,17 @@ async def test_async_login():
 
     # Test login with no pin and powering on.
     mock_protocol._send_remote_control_request_sync = MagicMock()
-    asyncio.ensure_future(mock_protocol.login(delay=0.1, power_on=True))
+    await mock_protocol.login(delay=0.1, power_on=True)
     await asyncio.sleep(0)
     # Mock login success.
     msg = MOCK_LOGIN_SUCCESS
     mock_ps4.connection._decipher.decrypt = MagicMock(return_value=msg)
     mock_protocol.data_received(msg)
-    mock_protocol.send.assert_called_once_with(MOCK_LOGIN)
-    mock_protocol.login_success.set()
+    len(mock_protocol.send.mock_calls) == 2
+
     # Test RC Open sent.
     await asyncio.sleep(1)
-    mock_protocol.sync_send.assert_called_once_with(MOCK_RC_OPEN)
+    len(mock_protocol.sync_send.mock_calls) == 2
     # Test RC PS not sent if not powering on.
     await asyncio.sleep(1)
     assert not mock_protocol._send_remote_control_request_sync.mock_calls
@@ -1013,14 +1009,15 @@ async def test_async_start_title():
     mock_protocol.send = mock_coro()
     mock_protocol._send_remote_control_request_sync = MagicMock()
 
-    asyncio.ensure_future(
-        mock_protocol.start_title(MOCK_TITLE_ID, running_id="Some ID")
-    )
     # Mock login success.
     await asyncio.sleep(0)
     msg = MOCK_LOGIN_SUCCESS
     mock_ps4.connection._decipher.decrypt = MagicMock(return_value=msg)
     mock_protocol.data_received(msg)
+
+    asyncio.ensure_future(
+        mock_protocol.start_title(MOCK_TITLE_ID, running_id="Some ID")
+    )
     await asyncio.sleep(0)
     mock_protocol.send.assert_called_with(MOCK_BOOT)
     msg = MOCK_BOOT_SUCCESS
@@ -1081,3 +1078,18 @@ async def test_heartbeat():
     # Test connection closed if heartbeat times out.
     await asyncio.sleep(1.1)
     assert len(mock_ps4._close.mock_calls) == 1
+
+
+async def test_task_timeout():
+    """Test task timeout."""
+    mock_protocol, mock_ps4 = setup_mock_protocol()
+    mock_protocol.connection_made(MagicMock())
+    mock_protocol.send = mock_coro()
+    mock_protocol.data_received = MagicMock()
+    # Block task
+    mock_protocol.task_available.clear()
+    mock_protocol.task = 'login'
+    await mock_protocol.standby()
+    await asyncio.sleep(6)
+    assert mock_protocol.task is None
+    assert mock_protocol.task_available.is_set()

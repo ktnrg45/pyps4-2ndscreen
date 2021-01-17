@@ -11,6 +11,7 @@ from typing import cast, Optional, Union
 from construct import (Bytes, Const, Int32ul, Padding, Struct, Container)
 from Cryptodome.Cipher import AES, PKCS1_OAEP
 from Cryptodome.PublicKey import RSA
+from async_timeout import timeout
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -475,7 +476,6 @@ class TCPProtocol(asyncio.Protocol):
         self.connection = ps4.connection
         self.task = None
         self.task_available = asyncio.Event()
-        self.login_success = asyncio.Event()
         self.ps_delay = PS_DELAY
         self.heartbeat_timeout = DEFAULT_HEARTBEAT_TIMEOUT
         self._last_heartbeat = None
@@ -486,6 +486,7 @@ class TCPProtocol(asyncio.Protocol):
 
         :param transport: asyncio.Transport class
         """
+        self.task_available.set()
         self.transport = cast(asyncio.Transport, transport)
         self.ps4._connected = True  # noqa: pylint: disable=protected-access
         _LOGGER.debug("PS4 Transport Connected @ %s", self.ps4.host)
@@ -496,15 +497,14 @@ class TCPProtocol(asyncio.Protocol):
             args = None
             initial_task = self.ps4.task_queue
             self.ps4.task_queue = None
-            args = initial_task[1:]
-            initial_task = initial_task[0]
-            task = valid_initial_tasks.get(initial_task)
-            if task is not None:
-                _LOGGER.info("Queued command: %s", initial_task)
-                self.task_available.set()
-                asyncio.ensure_future(task(*args))
-        else:
-            self.task_available.set()
+
+            if self.ps4._power_on:  # noqa: pylint: disable=protected-access
+                args = initial_task[1:]
+                initial_task = initial_task[0]
+                task = valid_initial_tasks.get(initial_task)
+                if task is not None:
+                    _LOGGER.info("Queued command: %s", initial_task)
+                    asyncio.ensure_future(task(*args))
 
     def data_received(self, data: bytes):
         """Call when data received.
@@ -512,7 +512,13 @@ class TCPProtocol(asyncio.Protocol):
         :param data: Bytes Received.
         """
         data = self.connection._decipher.decrypt(data)  # noqa: pylint: disable=protected-access
-        self._handle(data)
+        # Messages may be received together. Should always be 16 bytes.
+        msg_count = int(len(data) / 16)
+        # Split packet into 16 byte messages and handle separately.
+        for x in range(0, msg_count):
+            start = 16 * x
+            end = 16 * (x + 1)
+            self._handle(data[start:end])
 
     def connection_lost(self, exc: Exception):
         """Call if connection lost.
@@ -537,12 +543,22 @@ class TCPProtocol(asyncio.Protocol):
         :param func: Callable to call
         :param args: Tuple of args to pass
         """
-        task = func(*args)
-
-        await self.task_available.wait()
-        self.task_available.clear()
-        self.task = task_name
-        await task
+        async with timeout(TIMEOUT):
+            try:
+                await self.task_available.wait()
+                self.task_available.clear()
+                _LOGGER.debug("Task Available")
+            except (asyncio.TimeoutError, asyncio.CancelledError):
+                # Reset login event if timed out
+                if self.task == "login":
+                    self.ps4.loggedin = False
+                _LOGGER.warning("Task: %s cancelled", task_name)
+                self._complete_task()
+            else:
+                _LOGGER.debug("Task Running")
+                self.task = task_name
+                task = func(*args)
+                await task
 
     async def send(self, msg: bytes):
         """Send Message.
@@ -570,13 +586,12 @@ class TCPProtocol(asyncio.Protocol):
         _LOGGER.debug('RX: %s %s', len(data), binascii.hexlify(data))
         if data == STATUS_REQUEST:
             asyncio.ensure_future(self._ack_status())
-        elif self.task != 'remote_control':
+        elif self.task != 'remote_control' or self.task is not None:
             success = self.callback(self.task, data)
             if success:
                 _LOGGER.debug("Command successful: %s", self.task)
                 if self.task == 'login':
                     self.ps4.loggedin = True
-                    self.login_success.set()
             else:
                 if self.task == 'login':
                     self.ps4.loggedin = False
@@ -596,15 +611,13 @@ class TCPProtocol(asyncio.Protocol):
         :param delay: Delay to wait after logging in.
         """
         if not self.task == 'login':  # Only schedule one login task.
-            self.login_success.clear()
             task_name = 'login'
             msg = _get_login_request(
                 self.ps4.credential, self.ps4.device_name, pin)
             task = self.add_task(task_name, self.send, msg)  # noqa: pylint: disable=assignment-from-no-return
             await task
-            await self.login_success.wait()
-            await asyncio.sleep(delay)
 
+            await asyncio.sleep(delay)
             self.sync_send(_get_remote_control_open_request())  # Open RC
             # If not powering on, Send PS to switch user screens.
             if not power_on:
@@ -618,12 +631,12 @@ class TCPProtocol(asyncio.Protocol):
 
     async def standby(self):
         """Send Standby Command."""
+        task_name = 'standby'
         if not self.ps4.loggedin:
             await self.login()
-        task_name = 'standby'
         msg = _get_standby_request()
         task = self.add_task(task_name, self.send, msg)  # noqa: pylint: disable=assignment-from-no-return
-        asyncio.ensure_future(task)
+        await task
 
     def disconnect(self):
         """Close the connection."""
@@ -640,12 +653,12 @@ class TCPProtocol(asyncio.Protocol):
         :param title_id: Title Id to boot.
         :param running_id: Title Id of running title.
         """
+        task_name = 'start_title'
         if not self.ps4.loggedin:
             await self.login()
-        task_name = 'start_title'
         msg = _get_boot_request(title_id)
         task = self.add_task(task_name, self.send, msg)  # noqa: pylint: disable=assignment-from-no-return
-        asyncio.ensure_future(task)
+        await task
 
         await self.task_available.wait()
         if running_id is not None and running_id != title_id:
@@ -660,13 +673,13 @@ class TCPProtocol(asyncio.Protocol):
         :param operation: Operation to perform.
         :param hold_time: Time to hold in millis.
         """
+        task_name = 'remote_control'
         if not self.ps4.loggedin:
             await self.login()
-        task_name = 'remote_control'
         msg = _get_remote_control_request(operation, hold_time)
         task = self.add_task(task_name, self._send_remote_control_request,  # noqa: pylint: disable=assignment-from-no-return
                              msg, operation, hold_time)
-        asyncio.ensure_future(task)
+        await task
 
     async def _send_remote_control_request(
             self, msg: list, operation: int, hold_time: Optional[str] = 0):
