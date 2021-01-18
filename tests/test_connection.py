@@ -628,9 +628,9 @@ MOCK_NAME = "name"
 MOCK_MODEL = "model"
 MOCK_TITLE_ID = "CUSA00000"
 
-MOCK_LOGIN_SUCCESS = bytes(8) + b"\x11"
-MOCK_BOOT_SUCCESS = bytes(4) + b"\x0b"
-MOCK_STANDBY_SUCCESS = bytes(4) + b"\x1b"
+MOCK_LOGIN_SUCCESS = bytes(8) + b"\x11" + bytes(7)
+MOCK_BOOT_SUCCESS = bytes(4) + b"\x0b" + bytes(11)
+MOCK_STANDBY_SUCCESS = bytes(4) + b"\x1b" + bytes(11)
 
 
 def test_pub_key():
@@ -909,7 +909,7 @@ async def test_async_send():
     assert len(mock_protocol.transport.write.mock_calls) == 2
 
 
-def test_data_recv():
+async def test_data_recv():
     """Test data recv."""
     mock_protocol, mock_ps4 = setup_mock_protocol()
 
@@ -930,7 +930,7 @@ def test_data_recv():
 
     # Test login fail response
     mock_protocol.task = "login"
-    msg = bytes(8) + b"\x12"
+    msg = bytes(8) + b"\x15" + bytes(7)
     mock_ps4.connection._decipher.decrypt = MagicMock(return_value=msg)
     mock_protocol.data_received(msg)
     assert mock_ps4.loggedin is False
@@ -1093,3 +1093,14 @@ async def test_task_timeout():
     await asyncio.sleep(6)
     assert mock_protocol.task is None
     assert mock_protocol.task_available.is_set()
+
+
+async def test_no_connection_error():
+    """Test handling of no connection."""
+    mock_protocol, mock_ps4 = setup_mock_protocol()
+    mock_protocol.connection = None
+    with pytest.raises(c.PSConnectionError):
+        await mock_protocol.login()
+
+    with pytest.raises(c.PSConnectionError):
+        await mock_protocol.send(bytes(16))

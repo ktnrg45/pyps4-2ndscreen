@@ -1,6 +1,10 @@
 """Exceptions Definitions."""
 
 
+class PSConnectionError(Exception):
+    """PS4 Connection error."""
+
+
 class CredentialTimeout(Exception):
     """Recieved no credentials or timed out."""
 

@@ -13,6 +13,8 @@ from Cryptodome.Cipher import AES, PKCS1_OAEP
 from Cryptodome.PublicKey import RSA
 from async_timeout import timeout
 
+from .errors import PSConnectionError
+
 _LOGGER = logging.getLogger(__name__)
 
 TIMEOUT = 5
@@ -57,6 +59,10 @@ def _handle_response(command: str, msg: bytes) -> bool:
         'standby': [27],
         'login': [0, 17]
     }
+    login_failed = {
+        20: "Device not registered",
+        21: "PSN account not registered",
+    }
     if command is not None:
         _LOGGER.debug("Handling command: %s", command)
         if command == 'login':
@@ -64,7 +70,8 @@ def _handle_response(command: str, msg: bytes) -> bool:
             if response_byte in pass_response['login']:
                 _LOGGER.debug("Login Successful")
                 return True
-            _LOGGER.debug("Login Failed")
+            reason = login_failed.get(response_byte) or "Unknown"
+            _LOGGER.error("Login Failed; Reason: %s", reason)
             return False
 
         response_byte = msg[4]
@@ -515,9 +522,9 @@ class TCPProtocol(asyncio.Protocol):
         # Messages may be received together. Should always be 16 bytes.
         msg_count = int(len(data) / 16)
         # Split packet into 16 byte messages and handle separately.
-        for x in range(0, msg_count):
-            start = 16 * x
-            end = 16 * (x + 1)
+        for msg in range(0, msg_count):
+            start = 16 * msg
+            end = 16 * (msg + 1)
             self._handle(data[start:end])
 
     def connection_lost(self, exc: Exception):
@@ -525,6 +532,7 @@ class TCPProtocol(asyncio.Protocol):
 
         :param exc: Exception
         """
+        _LOGGER.debug("Transport @ %s is disconnected", self.ps4.host)
         if self._hb_handler is not None:
             self._hb_handler.cancel()
         self.ps4._closed()  # noqa: pylint: disable=protected-access
@@ -545,17 +553,16 @@ class TCPProtocol(asyncio.Protocol):
         """
         async with timeout(TIMEOUT):
             try:
+                _LOGGER.debug("Task queued: %s", task_name)
                 await self.task_available.wait()
                 self.task_available.clear()
-                _LOGGER.debug("Task Available")
             except (asyncio.TimeoutError, asyncio.CancelledError):
-                # Reset login event if timed out
                 if self.task == "login":
                     self.ps4.loggedin = False
-                _LOGGER.warning("Task: %s cancelled", task_name)
+                _LOGGER.warning("Task cancelled: %s", task_name)
                 self._complete_task()
             else:
-                _LOGGER.debug("Task Running")
+                _LOGGER.debug("Task running: %s", task_name)
                 self.task = task_name
                 task = func(*args)
                 await task
@@ -565,6 +572,8 @@ class TCPProtocol(asyncio.Protocol):
 
         :param msg: Message to send.
         """
+        if self.connection is None:
+            raise PSConnectionError("Encrypted connection not initialized")
         _LOGGER.debug('TX: %s %s', len(msg), binascii.hexlify(msg))
         msg = self.connection.encrypt_message(msg)
         self.transport.write(msg)
@@ -574,6 +583,8 @@ class TCPProtocol(asyncio.Protocol):
 
         :param msg: Message to send.
         """
+        if self.connection is None:
+            raise PSConnectionError("Encrypted connection not initialized")
         _LOGGER.debug('TX: %s %s', len(msg), binascii.hexlify(msg))
         msg = self.connection.encrypt_message(msg)
         self.transport.write(msg)
@@ -586,7 +597,7 @@ class TCPProtocol(asyncio.Protocol):
         _LOGGER.debug('RX: %s %s', len(data), binascii.hexlify(data))
         if data == STATUS_REQUEST:
             asyncio.ensure_future(self._ack_status())
-        elif self.task != 'remote_control' or self.task is not None:
+        elif self.task != 'remote_control':
             success = self.callback(self.task, data)
             if success:
                 _LOGGER.debug("Command successful: %s", self.task)
@@ -643,7 +654,6 @@ class TCPProtocol(asyncio.Protocol):
         if self.transport is not None:
             self.transport.close()
             self.transport = None
-            _LOGGER.debug("Transport @ %s is disconnected", self.ps4.host)
         self.connection._reset_crypto_init_vector()  # noqa: pylint: disable=protected-access
 
     async def start_title(
