@@ -1,5 +1,6 @@
 construct>=2.9.45
 pycryptodomex>=3.7.2
-aiohttp>=3.5.4
+aiohttp>=3.5.4, <3.7.0; python_version<"3.6"
+aiohttp>=3.5.4; python_version>="3.6"
 click>=7.0
 windows-curses>=2.1.0; platform_system=="Windows"

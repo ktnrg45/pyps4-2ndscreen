@@ -1,7 +1,7 @@
 PyPS4-2ndScreen
 ==========================================
 
-|BuildStatus| |WinBuildStatus| |PypiVersion| |PyPiPythonVersions| |CodeCov|
+|BuildStatus| |PypiVersion| |PyPiPythonVersions| |CodeCov|
 
 |Docs|
 
@@ -104,10 +104,8 @@ References
 - https://github.com/hthiery/python-ps4
 
 
-.. |BuildStatus| image:: https://img.shields.io/travis/ktnrg45/pyps4-2ndscreen?label=Linux&logo=linux&branch=dev
-                 :target: https://travis-ci.org/ktnrg45/pyps4-2ndscreen
-.. |WinBuildStatus| image:: https://img.shields.io/travis/ktnrg45/pyps4-2ndscreen?label=Windows&logo=windows&env=path=windows
-                    :target: https://travis-ci.org/ktnrg45/pyps4-2ndscreen
+.. |BuildStatus| image:: https://circleci.com/gh/ktnrg45/pyps4-2ndscreen.svg?style=svg)
+                 :target: https://circleci.com/gh/ktnrg45/pyps4-2ndscreen
 .. |PyPiVersion| image:: https://badge.fury.io/py/pyps4-2ndscreen.svg
                  :target: http://badge.fury.io/py/pyps4-2ndscreen
 .. |PyPiPythonVersions| image:: https://img.shields.io/pypi/pyversions/pyps4-2ndscreen.svg

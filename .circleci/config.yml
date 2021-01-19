@@ -1,0 +1,154 @@
+version: 2.1
+
+orbs:
+  python: circleci/python@1.3.2
+  win: circleci/windows@2.2.0
+
+workflows:
+  build:
+    jobs:
+      - windows
+      - py38
+      - py37
+      - py36
+      - py35
+
+jobs:
+  windows:
+    executor:
+      name: win/default
+      shell: powershell.exe
+    steps:
+      # - run:
+      #     name: Install python
+      #     command: choco install python --version 3.8.0
+      - checkout
+      - run:
+          name: Install pip
+          command: python -m pip install --upgrade pip
+      - run:
+          name: Install test requirements
+          command: pip install -r requirements_test.txt
+      - run:
+          name: Install requirements
+          command: pip install -r requirements.txt --trusted-host files.pythonhosted.org
+      - run:
+          name: Install
+          command: python setup.py install
+      - run:
+          name: Linters
+          command: |
+            flake8 --exclude __init__.py --max-line-length=82 pyps4_2ndscreen
+            flake8 --ignore=E501 tests
+            pylint pyps4_2ndscreen
+      - run:
+          name: Run tests
+          command: py.test --cov-report=xml --cov=pyps4_2ndscreen tests/
+
+  py38:
+    docker:
+      - image: cimg/python:3.8
+    steps:
+      - checkout
+      - run:
+          name: Install pip
+          command: python -m pip install --upgrade pip
+      - run:
+          name: Install test requirements
+          command: pip install -r requirements_test.txt
+      - run:
+          name: Install requirements
+          command: pip install -r requirements.txt --trusted-host files.pythonhosted.org
+      - run:
+          name: Install
+          command: python setup.py install
+      - run:
+          name: Linters
+          command: |
+            flake8 --exclude __init__.py --max-line-length=82 pyps4_2ndscreen
+            flake8 --ignore=E501 tests
+            pylint pyps4_2ndscreen
+      - run:
+          name: Run tests
+          command: py.test --cov-report=xml --cov=pyps4_2ndscreen tests/
+
+  py37:
+    docker:
+      - image: cimg/python:3.7
+    steps:
+      - checkout
+      - run:
+          name: Install pip
+          command: python -m pip install --upgrade pip
+      - run:
+          name: Install test requirements
+          command: pip install -r requirements_test.txt
+      - run:
+          name: Install requirements
+          command: pip install -r requirements.txt --trusted-host files.pythonhosted.org
+      - run:
+          name: Install
+          command: python setup.py install
+      - run:
+          name: Linters
+          command: |
+            flake8 --exclude __init__.py --max-line-length=82 pyps4_2ndscreen
+            flake8 --ignore=E501 tests
+            pylint pyps4_2ndscreen
+      - run:
+          name: Run tests
+          command: py.test --cov-report=xml --cov=pyps4_2ndscreen tests/
+
+  py36:
+    docker:
+      - image: cimg/python:3.6
+    steps:
+      - checkout
+      - run:
+          name: Install pip
+          command: python -m pip install --upgrade pip
+      - run:
+          name: Install test requirements
+          command: pip install -r requirements_test.txt
+      - run:
+          name: Install requirements
+          command: pip install -r requirements.txt --trusted-host files.pythonhosted.org
+      - run:
+          name: Install
+          command: python setup.py install
+      - run:
+          name: Linters
+          command: |
+            flake8 --exclude __init__.py --max-line-length=82 pyps4_2ndscreen
+            flake8 --ignore=E501 tests
+            pylint pyps4_2ndscreen
+      - run:
+          name: Run tests
+          command: py.test --cov-report=xml --cov=pyps4_2ndscreen tests/
+
+  py35:
+    docker:
+      - image: cimg/python:3.5
+    steps:
+      - checkout
+      - run:
+          name: Install pip
+          command: python -m pip install --upgrade pip
+      - run:
+          name: Install test requirements
+          command: pip install -r requirements_test.txt
+      - run:
+          name: Install requirements
+          command: pip install -r requirements.txt --trusted-host files.pythonhosted.org
+      - run:
+          name: Install
+          command: python setup.py install
+      - run:
+          name: Linters
+          command: |
+            flake8 --exclude __init__.py --max-line-length=82 pyps4_2ndscreen
+            flake8 --ignore=E501 tests
+            pylint pyps4_2ndscreen
+      - run:
+          name: Run tests
+          command: py.test --cov-report=xml --cov=pyps4_2ndscreen tests/
