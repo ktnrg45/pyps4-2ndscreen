@@ -741,15 +741,16 @@ async def test_async_get_ddp_endpoint():
     assert mock_ps4.ddp_protocol is not None
 
     # Test with specific port
-    mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS, port=MOCK_PORT)
-    assert mock_ps4.port == MOCK_PORT
+    mock_port = 1236
+    mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS, port=mock_port)
+    assert mock_ps4.port == mock_port
     await mock_ps4.get_ddp_endpoint()
     assert mock_ps4.ddp_protocol is not None
-    assert mock_ps4.ddp_protocol.local_port == MOCK_PORT
+    assert mock_ps4.ddp_protocol.local_port == mock_port
     mock_ps4.ddp_protocol.close()
 
     # Test fail
-    mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS, port=MOCK_PORT)
+    mock_ps4 = ps4.Ps4Async(MOCK_HOST, MOCK_CREDS, port=mock_port)
     with patch(
         "pyps4_2ndscreen.ps4.async_create_ddp_endpoint",
         new=mock_coro(return_value=(None, None)),
