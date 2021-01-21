@@ -194,6 +194,7 @@ def link(ctx, ip_address=None, credentials=None):
     _link_func(ip_address, credentials, port=ctx.obj['port'])
 
 
+# pylint: disable=too-many-return-statements
 def _link_func(ip_address, credentials, port):
     helper = Helper()
     credentials = _check_creds(credentials)
@@ -201,6 +202,8 @@ def _link_func(ip_address, credentials, port):
         return False
 
     device_list = _search_func(port=port)
+    if not device_list:
+        return False
     if ip_address not in device_list and ip_address is not None:
         print(
             "PS4 @ {} can not be found. Ensure PS4 is on and connected."
