@@ -773,12 +773,12 @@ def test_legacy_remote_control():
     mock_connection = setup_connection()
     mock_connection._send_msg = MagicMock()
     assert mock_connection.remote_control(16, 0) is True
-    assert len(mock_connection._send_msg.mock_calls) == 3
+    assert len(mock_connection._send_msg.mock_calls) == 1
 
     # Test PS
     mock_connection._send_msg = MagicMock()
     assert mock_connection.remote_control(128, 0) is True
-    assert len(mock_connection._send_msg.mock_calls) == 4
+    assert len(mock_connection._send_msg.mock_calls) == 2
 
     # Test socket error
     mock_connection._send_msg = MagicMock(side_effect=c.socket.error)
@@ -1045,21 +1045,21 @@ async def test_async_remote_control():
     mock_protocol.data_received(msg)
     await asyncio.sleep(1)
     assert mock_protocol.task is None
-    assert len(mock_protocol.sync_send.mock_calls) == 3
+    assert len(mock_protocol.sync_send.mock_calls) == 2
 
     # Test ps_hold.
     mock_protocol.sync_send = MagicMock()
     asyncio.ensure_future(mock_protocol.remote_control(128, 2000))
     await asyncio.sleep(2)
     assert mock_protocol.task is None
-    assert len(mock_protocol.sync_send.mock_calls) == 3
+    assert len(mock_protocol.sync_send.mock_calls) == 2
 
     # Test Enter.
     mock_protocol.sync_send = MagicMock()
     asyncio.ensure_future(mock_protocol.remote_control(16, 0))
     await asyncio.sleep(1)
     assert mock_protocol.task is None
-    assert len(mock_protocol.sync_send.mock_calls) == 2
+    assert len(mock_protocol.sync_send.mock_calls) == 1
 
 
 async def test_heartbeat():

@@ -196,23 +196,23 @@ def _get_boot_request(title_id: str) -> bytes:
     return msg
 
 
-def _get_remote_control_request(operation: int, hold_time: int) -> list:
-    """Return list of remote control command packets.
+def _get_remote_control_request(operation: int, hold_time: int) -> bytes:
+    """Return remote control command packets.
 
     :param operation: Operation to perform
     :param hold_time: Time to hold in millis
     """
-    msg = []
+    msgs = []
     # Prebuild required remote messages.
-
+    msgs.append(_get_remote_control_open_request())
     if operation == 128:
-        msg.append(_get_remote_control_msg(operation, 0))
-        msg.append(_get_remote_control_msg(operation, hold_time))
+        msgs.append(_get_remote_control_msg(operation, 0))
+        msgs.append(_get_remote_control_msg(operation, hold_time))
 
     else:
-        msg.append(_get_remote_control_msg(operation, hold_time))
-        msg.append(_get_remote_control_key_off_request())
-
+        msgs.append(_get_remote_control_msg(operation, hold_time))
+        msgs.append(_get_remote_control_key_off_request())
+    msg = b''.join(msgs)
     return msg
 
 
@@ -408,11 +408,7 @@ class LegacyConnection(BaseConnection):
         msg = _get_remote_control_request(operation, hold_time)
 
         try:
-            # Open RC
-            self._send_msg(
-                _get_remote_control_open_request(), encrypted=True)
-            for message in msg:
-                self._send_msg(message, encrypted=True)
+            self._send_msg(msg, encrypted=True)
 
             # Delay Close RC for PS
             if operation == 128:
@@ -709,10 +705,8 @@ class TCPProtocol(asyncio.Protocol):
         :param operation: Operation to perform.
         :param hold_time: Time to hold in millis.
         """
-        for message in msg:
-            # Messages are time sensitive.
-            # Needs to be immediately sent in order.
-            self.sync_send(message)
+        # Messages are time sensitive.
+        self.sync_send(msg)
 
         # For 'PS' command.
         if operation == 128:
