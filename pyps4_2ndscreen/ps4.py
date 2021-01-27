@@ -447,6 +447,7 @@ class Ps4Async(Ps4Base):
 
     def wakeup(self, ignore_conflict=False):
         """Send Wakeup packet."""
+        _LOGGER.debug("Command: Wakeup")
         if self.ddp_protocol is None:
             _LOGGER.error("DDP Protocol does not exist")
         else:
@@ -455,7 +456,6 @@ class Ps4Async(Ps4Base):
                 self._power_off = False
                 self.ddp_protocol.send_msg(
                     self, get_ddp_wake_message(self.credential))
-                _LOGGER.debug("Command: Wakeup")
             elif self.is_running and ignore_conflict:
                 _LOGGER.debug("Status is 'running'; Trying Command: Standby")
                 asyncio.ensure_future(self.standby())
@@ -511,6 +511,7 @@ class Ps4Async(Ps4Base):
 
         :param pin: Pin to send. Requred when linking.
         """
+        _LOGGER.debug("Command: Login")
         if self.tcp_protocol is None:
             _LOGGER.info("Login failed: TCP Protocol does not exist")
             if self.is_running:
@@ -523,6 +524,7 @@ class Ps4Async(Ps4Base):
 
     async def standby(self, ignore_conflict=False):
         """Send Standby Packet."""
+        _LOGGER.debug("Command: Standby")
         if self.is_standby:
             if ignore_conflict:
                 self.wakeup()
@@ -534,10 +536,10 @@ class Ps4Async(Ps4Base):
             if self.tcp_protocol is not None:
                 self._power_off = True
                 await self.tcp_protocol.standby()
-                _LOGGER.debug("Command: Standby")
 
     async def toggle(self):
         """Toggle Power."""
+        _LOGGER.debug("Command: Toggle")
         if self.is_standby:
             self.wakeup()
         elif self.is_running:
@@ -552,6 +554,9 @@ class Ps4Async(Ps4Base):
         :param title_id: Title to start; CUSA00000
         :param running_id: Title currently running
         """
+        _LOGGER.debug(
+            "Command: Start Title: title_id=%s, running_id=%s",
+            title_id, running_id)
         if running_id is None:
             if self.running_app_titleid is not None:
                 running_id = self.running_app_titleid
@@ -572,9 +577,6 @@ class Ps4Async(Ps4Base):
 
         if self.tcp_protocol is not None:
             await self.tcp_protocol.start_title(title_id, running_id)
-            _LOGGER.debug(
-                "Command: Start Title: title_id=%s, running_id=%s",
-                title_id, running_id)
 
     async def remote_control(
             self, button_name: str, hold_time: Optional[int] = 0):
@@ -583,6 +585,7 @@ class Ps4Async(Ps4Base):
         :param button_name: Button to send to PS4.
         :param hold_time: Time to hold in millis. Only affects PS command.
         """
+        _LOGGER.debug("Command: Remote Control: button=%s", button_name)
         button_name = button_name.lower()
         if button_name not in BUTTONS.keys():
             raise UnknownButton(
@@ -607,9 +610,6 @@ class Ps4Async(Ps4Base):
 
         if self.tcp_protocol is not None:
             await self.tcp_protocol.remote_control(operation, hold_time)
-            _LOGGER.debug(
-                "Command: Remote Control: button=%s",
-                button_name)
 
     async def close(self):
         """Close Connection."""

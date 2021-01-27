@@ -537,6 +537,7 @@ class TCPProtocol(asyncio.Protocol):
 
     def _complete_task(self):
         """Complete task/signal done."""
+        _LOGGER.debug("Task Done: %s", self.task)
         self.task = None
         self.task_available.set()
 
