@@ -11,7 +11,6 @@ workflows:
       - py38
       - py37
       - py36
-      - py35
 
 jobs:
   windows:
@@ -102,33 +101,6 @@ jobs:
   py36:
     docker:
       - image: cimg/python:3.6
-    steps:
-      - checkout
-      - run:
-          name: Install pip
-          command: python -m pip install --upgrade pip
-      - run:
-          name: Install test requirements
-          command: pip install -r requirements_test.txt
-      - run:
-          name: Install requirements
-          command: pip install -r requirements.txt --trusted-host files.pythonhosted.org
-      - run:
-          name: Install
-          command: python setup.py install
-      - run:
-          name: Linters
-          command: |
-            flake8 --exclude __init__.py --max-line-length=82 pyps4_2ndscreen
-            flake8 --ignore=E501 tests
-            pylint pyps4_2ndscreen
-      - run:
-          name: Run tests
-          command: py.test --cov-report=xml --cov=pyps4_2ndscreen tests/
-
-  py35:
-    docker:
-      - image: cimg/python:3.5
     steps:
       - checkout
       - run:

@@ -29,7 +29,7 @@ Compatibility
 --------------------
 Tested on:
 
-- Environment: Python 3.5/3.6/3.7/3.8
+- Environment: Python 3.6/3.7/3.8
 
 - Operating System: Debian
 
