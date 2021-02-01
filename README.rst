@@ -104,7 +104,7 @@ References
 - https://github.com/hthiery/python-ps4
 
 
-.. |BuildStatus| image:: https://circleci.com/gh/ktnrg45/pyps4-2ndscreen.svg?style=svg)
+.. |BuildStatus| image:: https://circleci.com/gh/ktnrg45/pyps4-2ndscreen.svg?style=svg
                  :target: https://circleci.com/gh/ktnrg45/pyps4-2ndscreen
 .. |PyPiVersion| image:: https://badge.fury.io/py/pyps4-2ndscreen.svg
                  :target: http://badge.fury.io/py/pyps4-2ndscreen
