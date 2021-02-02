@@ -1,32 +1,38 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Setup for pyps4-2ndscreen."""
 
 from setuptools import setup, find_packages
-import pyps4_2ndscreen.__version__ as version
 
-MIN_PY_VERSION = '.'.join(map(str, version.REQUIRED_PYTHON_VER))
+version = {}
+with open("./pyps4_2ndscreen/__version__.py") as f:
+    exec(f.read(), version)
+
+MIN_PY_VERSION = '.'.join(map(str, version['REQUIRED_PYTHON_VER']))
 
 REQUIRES = list(open('requirements.txt'))
 
 CLASSIFIERS = [
-    'Development Status :: 4 - Beta',
+    'Development Status :: 5 - Production/Stable',
     'Environment :: Console',
+    'Environment :: Console :: Curses',
+    'Framework :: AsyncIO',
     'License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)',
     'Natural Language :: English',
     'Operating System :: OS Independent',
     'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8',
-    'Topic :: Software Development :: Libraries :: Python Modules',
+    'Topic :: Games/Entertainment',
     'Topic :: Home Automation',
+    'Topic :: Software Development :: Libraries :: Python Modules',
+    'Topic :: System :: Hardware',
 ]
 
 with open('README.rst') as f:
     readme = f.read()
 
 setup(name='pyps4_2ndscreen',
-      version=version.__version__,
+      version=version['__version__'],
       description='PS4 2nd Screen Python Library',
       long_description=readme,
       long_description_content_type='text/markdown',
