@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 """TCP Connection Handling for PS4."""
 
+import asyncio
 import binascii
 import logging
 import socket
 import time
-import asyncio
-from typing import cast, Optional, Union
+from typing import Optional, Union, cast
 
-from construct import (Bytes, Const, Int32ul, Padding, Struct, Container)
+from async_timeout import timeout
+from construct import Bytes, Const, Container, Int32ul, Padding, Struct
 from Cryptodome.Cipher import AES, PKCS1_OAEP
 from Cryptodome.PublicKey import RSA
-from async_timeout import timeout
 
 from .errors import PSConnectionError
 
@@ -22,6 +22,7 @@ PS_DELAY = 0.5
 DEFAULT_LOGIN_DELAY = 1
 DEFAULT_HEARTBEAT_TIMEOUT = 15
 TCP_PORT = 997
+MAX_CONNECTION_TIME = 60
 
 STATUS_REQUEST = \
     b'\x0c\x00\x00\x00\x12\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
@@ -483,6 +484,7 @@ class TCPProtocol(asyncio.Protocol):
         self.heartbeat_timeout = DEFAULT_HEARTBEAT_TIMEOUT
         self._last_heartbeat = None
         self._hb_handler = None
+        self._last_activity = 0.0
 
     def connection_made(self, transport: asyncio.Transport):
         """When connected.
@@ -508,6 +510,13 @@ class TCPProtocol(asyncio.Protocol):
                 if task is not None:
                     _LOGGER.info("Queued command: %s", initial_task)
                     asyncio.ensure_future(task(*args))
+
+        #  Schedule to close after some time as PS4 doesn't respond.
+        self._last_activity = time.time()
+        self.loop.call_later(
+            self.ps4.connection_timeout,
+            self._timeout_close,
+        )
 
     def data_received(self, data: bytes):
         """Call when data received.
@@ -548,6 +557,7 @@ class TCPProtocol(asyncio.Protocol):
         :param func: Callable to call
         :param args: Tuple of args to pass
         """
+        self._last_activity = time.time()
         async with timeout(TIMEOUT):
             try:
                 _LOGGER.debug("Task queued: %s", task_name)
@@ -746,10 +756,23 @@ class TCPProtocol(asyncio.Protocol):
         hb_delta = self.heartbeat_delta
         if hb_delta is not None:
             _LOGGER.debug("Heartbeat Delta: %s", hb_delta)
-            if hb_delta > self.heartbeat_timeout:
+            if hb_delta > self.heartbeat_timeout and self.ps4 is not None:
                 _LOGGER.warning(
                     "Timed out waiting for PS4 heartbeat status; Closing...")
                 self.ps4._close()  # noqa: pylint: disable=protected-access
+
+    def _timeout_close(self):
+        """Close if connection time exceeded."""
+        if self.ps4 is None:
+            return
+        if time.time() - self._last_activity > self.ps4.connection_timeout:
+            _LOGGER.debug("Max login time exceeded. Closing PS4 TCP connection")
+            self.ps4._close()  # noqa: pylint: disable=protected-access
+        else:
+            self.loop.call_later(
+                self.ps4.connection_timeout,
+                self._timeout_close,
+            )
 
     @property
     def heartbeat_delta(self) -> float:

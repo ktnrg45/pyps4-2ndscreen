@@ -1,27 +1,18 @@
 """Methods for interfacing with a PlayStation 4 Console."""
-import logging
-import time
-import socket
 import asyncio
+import logging
+import socket
+import time
 from typing import Optional, Union
 
-from .connection import LegacyConnection, AsyncConnection, DEFAULT_LOGIN_DELAY
+from .connection import (DEFAULT_LOGIN_DELAY, MAX_CONNECTION_TIME,
+                         AsyncConnection, LegacyConnection)
 from .credential import DEFAULT_DEVICE_NAME
-from .ddp import (
-    DDPProtocol,
-    get_status,
-    launch,
-    wakeup,
-    get_ddp_launch_message,
-    get_ddp_wake_message,
-    async_create_ddp_endpoint,
-    get_socket,
-    UDP_PORT,
-    STATUS_OK,
-    STATUS_STANDBY,
-)
-from .errors import NotReady, UnknownButton, LoginFailed
-from .media_art import async_search_ps_store, ResultItem
+from .ddp import (STATUS_OK, STATUS_STANDBY, UDP_PORT, DDPProtocol,
+                  async_create_ddp_endpoint, get_ddp_launch_message,
+                  get_ddp_wake_message, get_socket, get_status, launch, wakeup)
+from .errors import LoginFailed, NotReady, UnknownButton
+from .media_art import ResultItem, async_search_ps_store
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -55,11 +46,13 @@ class Ps4Base():
 
     def __init__(self, host: str, credential: str,
                  device_name: Optional[str] = DEFAULT_DEVICE_NAME,
-                 port: Optional[int] = UDP_PORT):
+                 port: Optional[int] = UDP_PORT,
+                 connection_timeout: Optional[int] = MAX_CONNECTION_TIME):
         self.host = host
         self.credential = None
         self.device_name = device_name
         self._port = port
+        self._connection_timeout = connection_timeout
         self._power_on = False
         self._power_off = False
         self.msg_sending = False
@@ -214,6 +207,12 @@ class Ps4Base():
         if self.running_app_titleid is None:
             self.ps_name = None
         return self.ps_name
+
+    @property
+    def connection_timeout(self) -> int:
+        if self._connection_timeout < 1.0:
+            self._connection_timeout = MAX_CONNECTION_TIME
+        return self._connection_timeout
 
 
 class Ps4Legacy(Ps4Base):
