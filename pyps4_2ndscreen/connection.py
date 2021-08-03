@@ -485,6 +485,7 @@ class TCPProtocol(asyncio.Protocol):
         self._last_heartbeat = None
         self._hb_handler = None
         self._last_activity = 0.0
+        self._connection_timeout = MAX_CONNECTION_TIME
 
     def connection_made(self, transport: asyncio.Transport):
         """When connected.
@@ -514,7 +515,7 @@ class TCPProtocol(asyncio.Protocol):
         #  Schedule to close after some time as PS4 doesn't respond.
         self._last_activity = time.time()
         self.loop.call_later(
-            self.ps4.connection_timeout,
+            self.connection_timeout,
             self._timeout_close,
         )
 
@@ -765,12 +766,12 @@ class TCPProtocol(asyncio.Protocol):
         """Close if connection time exceeded."""
         if self.ps4 is None:
             return
-        if time.time() - self._last_activity > self.ps4.connection_timeout:
+        if time.time() - self._last_activity > self.connection_timeout:
             _LOGGER.debug("Max login time exceeded. Closing PS4 TCP connection")
             self.ps4._close()  # noqa: pylint: disable=protected-access
         else:
             self.loop.call_later(
-                self.ps4.connection_timeout,
+                self.connection_timeout,
                 self._timeout_close,
             )
 
@@ -780,3 +781,10 @@ class TCPProtocol(asyncio.Protocol):
         if self._last_heartbeat is None:
             return None
         return time.time() - self._last_heartbeat
+
+    @property
+    def connection_timeout(self) -> int:
+        """Return the connection timeout value."""
+        if self._connection_timeout < 1:
+            self._connection_timeout = MAX_CONNECTION_TIME
+        return self._connection_timeout

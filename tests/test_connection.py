@@ -5,7 +5,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from asynctest import CoroutineMock as mock_coro
-
 from pyps4_2ndscreen import connection as c
 
 pytestmark = pytest.mark.asyncio
@@ -120,54 +119,54 @@ MOCK_LOGIN = bytes(
         0x32,
         0x33,
         0x34,
-        0x61,
-        0x62,
-        0x63,
-        0x64,
-        0x31,
-        0x32,
-        0x33,
-        0x34,
-        0x61,
-        0x62,
-        0x63,
-        0x64,
-        0x31,
-        0x32,
-        0x33,
-        0x34,
-        0x61,
-        0x62,
-        0x63,
-        0x64,
-        0x31,
-        0x32,
-        0x33,
-        0x34,
-        0x61,
-        0x62,
-        0x63,
-        0x64,
-        0x31,
-        0x32,
-        0x33,
-        0x34,
-        0x61,
-        0x62,
-        0x63,
-        0x64,
-        0x31,
-        0x32,
-        0x33,
-        0x34,
-        0x61,
-        0x62,
-        0x63,
-        0x64,
-        0x31,
-        0x32,
-        0x33,
-        0x34,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
         0x6E,
         0x61,
         0x6D,
@@ -620,9 +619,7 @@ MOCK_RC_KEY_ENTER = bytes(
 )
 
 MOCK_HOST = "192.168.0.1"
-
-MOCK_CREDS = "abcd1234abcd1234" "abcd1234abcd1234" "abcd1234abcd1234" "abcd1234abcd1234"
-
+MOCK_CREDS = "abcd1234abcd1234"
 MOCK_PIN = "12345678"
 MOCK_NAME = "name"
 MOCK_MODEL = "model"
@@ -664,8 +661,11 @@ def test_handshake_request():
 
 def test_login_request():
     """Test login request."""
-    with patch("pyps4_2ndscreen.connection.socket.gethostname", return_value=MOCK_MODEL):
+    with patch(
+        "pyps4_2ndscreen.connection.socket.gethostname", return_value=MOCK_MODEL
+    ):
         login = c._get_login_request(MOCK_CREDS, MOCK_NAME, MOCK_PIN)
+        print(login.hex())
     assert login == MOCK_LOGIN
 
 
@@ -944,7 +944,9 @@ async def test_async_login():
     mock_protocol._send_remote_control_request_sync = MagicMock()
     mock_protocol.connection_made(MagicMock())
 
-    with patch("pyps4_2ndscreen.connection.socket.gethostname", return_value=MOCK_MODEL):
+    with patch(
+        "pyps4_2ndscreen.connection.socket.gethostname", return_value=MOCK_MODEL
+    ):
         await mock_protocol.login(pin=MOCK_PIN, delay=0.1, power_on=False)
         await asyncio.sleep(0)
         # Mock login success.
@@ -1088,7 +1090,7 @@ async def test_task_timeout():
     mock_protocol.data_received = MagicMock()
     # Block task
     mock_protocol.task_available.clear()
-    mock_protocol.task = 'login'
+    mock_protocol.task = "login"
     await mock_protocol.standby()
     await asyncio.sleep(6)
     assert mock_protocol.task is None
