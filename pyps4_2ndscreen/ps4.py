@@ -210,7 +210,8 @@ class Ps4Base():
 
     @property
     def connection_timeout(self) -> int:
-        if self._connection_timeout < 1.0:
+        """Return the connection timeout value."""
+        if self._connection_timeout < 1:
             self._connection_timeout = MAX_CONNECTION_TIME
         return self._connection_timeout
 
