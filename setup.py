@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Setup for pyps4-2ndscreen."""
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 version = {}
 with open("./pyps4_2ndscreen/__version__.py") as f:
@@ -37,7 +37,7 @@ setup(name='pyps4_2ndscreen',
       long_description=readme,
       long_description_content_type='text/markdown',
       author='ktnrg45',
-      author_email='ktnrg45@gmail.com',
+      author_email='ktnrg45dev@gmail.com',
       packages=find_packages(exclude=['tests']),
       url='https://github.com/ktnrg45/pyps4-2ndscreen',
       license='LGPLv2+',
