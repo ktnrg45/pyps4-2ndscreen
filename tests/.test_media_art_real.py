@@ -1,12 +1,12 @@
 """Tests for media_art. Uses actual HTTP response."""
-import logging
 import asyncio
-import time
 import itertools
+import logging
+import time
 
 import pyps4_2ndscreen.ps4 as ps4
-from pyps4_2ndscreen.errors import PSDataIncomplete
 from pyps4_2ndscreen.__version__ import __version__
+from pyps4_2ndscreen.errors import PSDataIncomplete
 
 TEST_LIST = [  # title, titleid, region
     ["Marvel's Spider-Man", 'CUSA11994', 'Australia'],  # Incorrect Region
@@ -45,7 +45,6 @@ TEST_LIST = [  # title, titleid, region
     ["Gran TurismoSPORT", 'CUSA03220', 'United States'],
     ["Ratchet & Clank™", 'CUSA01073', 'Sweden'],
     ["Uncharted: The Nathan Drake Collection™", 'CUSA02320', 'United States'],
-    ["NHL™ 18", 'CUSA07580', 'France'],
     ["Days Gone", 'CUSA08966', 'United States'],
     ["Battlefield™ V", 'CUSA08670', 'Portugal'],
     ["Diablo III: Reaper of Souls \u2013 Ultimate Evil Edition", 'CUSA00433', 'France'],
