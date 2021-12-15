@@ -8,6 +8,7 @@ from asynctest import CoroutineMock as mock_coro
 from asynctest import Mock
 
 from pyps4_2ndscreen import media_art as media
+import copy
 
 pytestmark = pytest.mark.asyncio
 
@@ -331,7 +332,7 @@ async def test_fetch_errors():
 
 async def test_result_item_missing_data():
     """Test Parsing with missing keys returns None."""
-    data = MOCK_DATA
+    data = copy.deepcopy(MOCK_DATA)
     data.pop("gameContentTypesList")
     data.pop("title_name")
     mock_response = Mock()
